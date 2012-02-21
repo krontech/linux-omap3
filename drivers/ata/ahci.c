@@ -110,8 +110,6 @@ static struct ata_port_operations ahci_sb600_ops = {
 	.pmp_softreset		= ahci_sb600_softreset,
 };
 
-#define AHCI_HFLAGS(flags)	.private_data	= (void *)(flags)
-
 static const struct ata_port_info ahci_port_info[] = {
 	/* by features */
 	[board_ahci] =
