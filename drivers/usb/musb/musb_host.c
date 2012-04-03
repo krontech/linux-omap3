@@ -42,7 +42,6 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/dma-mapping.h>
-#include <asm/cacheflush.h>
 
 #include "musb_core.h"
 #include "musb_host.h"
@@ -863,9 +862,6 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 	/* IN/receive */
 	} else {
 		u16	csr;
-
-		/* invalidate the receive buffer cache */
-		invalidate_kernel_vmap_range(buf + offset, len);
 
 		if (hw_ep->rx_reinit) {
 			musb_rx_reinit(musb, qh, hw_ep);
