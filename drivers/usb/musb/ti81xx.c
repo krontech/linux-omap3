@@ -72,14 +72,14 @@ extern u32 omap_ctrl_readl(u16 offset);
 
 static inline u32 usbss_read(u32 offset)
 {
-	if (!usbss_init_done)
+	if (!usbss_init_done || !usbss_virt_base)
 		return 0;
 	return readl(usbss_virt_base + offset);
 }
 
 static inline void usbss_write(u32 offset, u32 data)
 {
-	if (!usbss_init_done)
+	if (!usbss_init_done || !usbss_virt_base)
 		return ;
 	writel(data, usbss_virt_base + offset);
 }
@@ -87,14 +87,18 @@ static inline void usbss_write(u32 offset, u32 data)
 static void usbotg_ss_init(void)
 {
 	if (!usbss_init_done) {
+		usbss_init_done = 1;
+
 		/* reset the usbss for usb0/usb1 */
-		usbss_write(USBSS_SYSCONFIG,
-			usbss_read(USBSS_SYSCONFIG) | USB_SOFT_RESET_MASK);
+		usbss_write(USBSS_SYSCONFIG, USB_SOFT_RESET_MASK);
+
+		/* Wait for reset sequence to complete */
+		while (usbss_read(USBSS_SYSCONFIG) & USB_SOFT_RESET_MASK)
+			cpu_relax();
 
 		/* clear any USBSS interrupts */
 		usbss_write(USBSS_IRQ_EOI, 0);
 		usbss_write(USBSS_IRQ_STATUS, usbss_read(USBSS_IRQ_STATUS));
-		usbss_init_done = 1;
 	}
 }
 static void usbotg_ss_uninit(void)
