@@ -1048,13 +1048,18 @@ int ti81xx_musb_set_mode(struct musb *musb, u8 musb_mode)
 #define USBPHY_RX_CALIB		1
 void usb2phy_config(struct musb *musb, u8 config)
 {
-	u32 regs_offset, val, sign, rx_calib;
+	u32 regs_offset, val, sign, rx_calib, timeout = 0x1000;
 
 	switch (config)	{
 	case USBPHY_RX_CALIB:
 
 		regs_offset = 0x304;
-		val = musb_readl(musb->ctrl_base, regs_offset);
+		/* wait till rx_calib done become true */
+		do {
+			val = musb_readl(musb->ctrl_base, regs_offset);
+		} while (timeout-- && !(val & (1 << 22)));
+		pr_info("%s: default rxcalib regval %08x\n", __func__, val);
+
 		sign = (val >> 29) & 1;
 		rx_calib = (val >> 24) & 0x1F;
 		pr_info("%s: musb(%d) sign %d current RXcalib %d\n", __func__,
