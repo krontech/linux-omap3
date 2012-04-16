@@ -1276,9 +1276,10 @@ static struct musb_platform_ops ti81xx_ops = {
 	.dma_controller_create	= cppi41_dma_controller_create,
 	.dma_controller_destroy	= cppi41_dma_controller_destroy,
 	.simulate_babble_intr	= musb_simulate_babble,
-
+#ifdef CONFIG_USB_TI_CPPI41_DMA
 	.txfifoempty_intr_enable = txfifoempty_intr_enable,
 	.txfifoempty_intr_disable = txfifoempty_intr_disable,
+#endif
 };
 
 static void __devexit ti81xx_delete_musb_pdev(struct ti81xx_glue *glue, u8 id)
