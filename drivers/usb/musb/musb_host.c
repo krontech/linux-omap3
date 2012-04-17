@@ -358,16 +358,32 @@ static inline void musb_save_toggle(struct musb_qh *qh, int is_in,
 {
 	void __iomem		*epio = qh->hw_ep->regs;
 	u16			csr;
+	u8			curr_toggle;
 
 	/*
 	 * FIXME: the current Mentor DMA code seems to have
 	 * problems getting toggle correct.
 	 */
 
-	if (is_in)
+	if (is_in) {
 		csr = musb_readw(epio, MUSB_RXCSR) & MUSB_RXCSR_H_DATATOGGLE;
-	else
+		curr_toggle = csr ? 1 : 0;
+
+		/* check if data toggle has gone out of sync */
+		if (curr_toggle == qh->hw_ep->prev_toggle) {
+			DBG(4, "Data toggle same as previous (=%d) on ep%d\n",
+					curr_toggle, qh->hw_ep->epnum);
+
+			csr = musb_readw(epio, MUSB_RXCSR);
+			csr |= MUSB_RXCSR_H_DATATOGGLE |
+					MUSB_RXCSR_H_WR_DATATOGGLE;
+			musb_writew(epio, MUSB_RXCSR, csr);
+
+			csr = 1;
+		}
+	} else {
 		csr = musb_readw(epio, MUSB_TXCSR) & MUSB_TXCSR_H_DATATOGGLE;
+	}
 
 	usb_settoggle(urb->dev, qh->epnum, !is_in, csr ? 1 : 0);
 }
@@ -902,6 +918,9 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 				musb_writew(hw_ep->regs, MUSB_RXCSR, csr);
 				csr = musb_readw(hw_ep->regs,
 						MUSB_RXCSR);
+
+				hw_ep->prev_toggle = (csr &
+					MUSB_RXCSR_H_DATATOGGLE) ? 1 : 0;
 
 				/* unless caller treats short rx transfers as
 				 * errors, we dare not queue multiple transfers.
