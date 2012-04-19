@@ -1411,6 +1411,9 @@ static int __init ti81xx_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
+	/* wait till all dependent clocks enabled */
+	mdelay(100);
+
 	/* iomap for usbss mem space */
 	glue->mem_va =
 		ioremap(glue->mem_pa->start, resource_size(glue->mem_pa));
