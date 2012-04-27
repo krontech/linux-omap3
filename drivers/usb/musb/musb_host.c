@@ -2269,8 +2269,14 @@ static int musb_cleanup_urb(struct urb *urb, struct musb_qh *qh)
 	} else  {
 		musb_h_ep0_flush_fifo(ep);
 	}
-	if (status == 0)
+
+	if (status == 0) {
+		/* As this urb is dequeued by stack/application
+		 * we return this urb with ECANCELED status
+		 */
+		urb->status = -ECANCELED;
 		musb_advance_schedule(ep->musb, urb, ep, is_in);
+	}
 	return status;
 }
 
