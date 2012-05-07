@@ -25,6 +25,7 @@
 #include <asm/mach-types.h>
 #include <asm/mach/map.h>
 #include <asm/pmu.h>
+#include <asm/delay.h>
 #include <asm/hardware/edma.h>
 
 #include <plat/tc.h>
@@ -2255,6 +2256,76 @@ static void ti81xx_ethernet_init(void)
 	else
 		ti814x_cpsw_init();
 }
+
+static inline void ti814x_sata_pllcfg(void)
+{
+	if (cpu_is_ti814x()) {
+		/* Configure SATA0 PLL -applies for TI814x*/
+		omap_ctrl_writel(0x00000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 100 MHz Operation) */
+		omap_ctrl_writel(0x812C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x00000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x00000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0xC00000016 to 0x40000016 for 100MHz
+		* Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0x40000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+
+		/* cfgpll0 Replaced 0xC0007077 with 0x40007077 for
+		* 100MHz Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0x40007077, TI814X_CONTROL_SATA_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+
+}
+
+static inline void ti814x_pcie_pllcfg(void)
+{
+	if (cpu_is_ti814x()) {
+		/* TODO: Add bitfield macros for following */
+		omap_ctrl_writel(0x00000002, TI814X_SERDES_REFCLK_CTL);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG0);
+		omap_ctrl_writel(0x0064003C, TI814X_CONTROL_PCIE_PLLCFG1);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG2);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_PCIE_PLLCFG3);
+		omap_ctrl_writel(0x0000609C, TI814X_CONTROL_PCIE_PLLCFG4);
+
+		/* Configure SERDES misc bits - values as is from h/w */
+		if (omap_rev() > TI8148_REV_ES1_0) {
+			omap_ctrl_writel(0x0000039E,
+				TI814X_CONTROL_PCIE_MISCCFG);
+		} else
+			omap_ctrl_writel(0x00000E7B, TI814X_CONTROL_SMA0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000004, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(50);
+		omap_ctrl_writel(0x00000014, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(50);
+		omap_ctrl_writel(0x00000016, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(50);
+		omap_ctrl_writel(0x30000016, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(50);
+		omap_ctrl_writel(0x70007016, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(50);
+		omap_ctrl_writel(0x70007017, TI814X_CONTROL_PCIE_PLLCFG0);
+		udelay(200);
+		/* poll the status field to check if pll lock occured. */
+		while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+}
 #endif
 
 #if defined(CONFIG_SATA_AHCI_PLATFORM) || \
@@ -2288,13 +2359,16 @@ static struct clk *omap_sata_clk;
 /* These values are tried and tested and not expected to change.
  * Hence not using a macro to generate them.
  */
-#define TI814X_SATA_PHY_CFGRX0_VAL		0x00C7CC22
-#define TI814X_SATA_PHY_CFGRX1_VAL		0x008E0500
-#define TI814X_SATA_PHY_CFGRX2_VAL		0x7BDEF000
-#define TI814X_SATA_PHY_CFGRX3_VAL		0x1F180B0F
-#define TI814X_SATA_PHY_CFGTX0_VAL		0x01001622
-#define TI814X_SATA_PHY_CFGTX1_VAL		0x40000002
-#define TI814X_SATA_PHY_CFGTX2_VAL		0x073CE39E
+#define TI814X_SATA_PHY_CFGRX0_VAL      0x008FCC22
+#define TI814X_SATA_PHY_CFGRX1_VAL      0x008E0500
+#define TI814X_SATA_PHY_CFGRX2_VAL      0x7BDEF000
+#define TI814X_SATA_PHY_CFGRX3_VAL      0x1F180B0F
+#define TI814X_SATA_PHY_CFGTX0_VAL      0x01003622
+#define TI814X_SATA_PHY_CFGTX1_VAL      0x40000002
+#define TI814X_SATA_PHY_CFGTX2_VAL      0x00C201F8
+#define TI814X_SATA_PHY_CFGTX3_VAL      0x073CE39E
+
+
 
 static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
 {
@@ -2313,10 +2387,12 @@ static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
 		goto err;
 	}
 
-	ret = clk_enable(omap_sata_clk);
-	if (ret) {
-		pr_err("ahci : Clock enable failed\n");
-		goto err;
+	if (!cpu_is_ti814x()) {
+		ret = clk_enable(omap_sata_clk);
+		if (ret) {
+			pr_err("ahci : Clock enable failed\n");
+			goto err;
+		}
 	}
 
 	if (cpu_is_ti816x()) {
@@ -2338,7 +2414,23 @@ static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
 		writel(phy_val, base + SATA_P0PHYCR_REG);
 		writel(phy_val, base + SATA_P1PHYCR_REG);
 	} else if (cpu_is_ti814x()) {
-		/* Configuring TI814X SATA PHY */
+
+
+		ret = clk_enable(omap_sata_clk);
+		if (ret) {
+			pr_err("ahci : Clock enable failed\n");
+			goto err;
+		}
+
+		/* configure the SATA PHY */
+		writel(TI814X_SATA_PHY_CFGTX0_VAL,
+			base + TI814X_SATA_PHY_CFGTX0_OFFSET);
+		writel(TI814X_SATA_PHY_CFGTX1_VAL,
+			base + TI814X_SATA_PHY_CFGTX1_OFFSET);
+		writel(TI814X_SATA_PHY_CFGTX2_VAL,
+			base + TI814X_SATA_PHY_CFGTX2_OFFSET);
+		writel(TI814X_SATA_PHY_CFGTX3_VAL,
+			base + TI814X_SATA_PHY_CFGTX3_OFFSET);
 		writel(TI814X_SATA_PHY_CFGRX0_VAL,
 			base + TI814X_SATA_PHY_CFGRX0_OFFSET);
 		writel(TI814X_SATA_PHY_CFGRX1_VAL,
@@ -2347,12 +2439,6 @@ static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
 			base + TI814X_SATA_PHY_CFGRX2_OFFSET);
 		writel(TI814X_SATA_PHY_CFGRX3_VAL,
 			base + TI814X_SATA_PHY_CFGRX3_OFFSET);
-		writel(TI814X_SATA_PHY_CFGTX0_VAL,
-			base + TI814X_SATA_PHY_CFGTX0_OFFSET);
-		writel(TI814X_SATA_PHY_CFGTX1_VAL,
-			base + TI814X_SATA_PHY_CFGTX1_OFFSET);
-		writel(TI814X_SATA_PHY_CFGTX2_VAL,
-			base + TI814X_SATA_PHY_CFGTX2_OFFSET);
 	}
 
 	return 0;
@@ -2524,42 +2610,7 @@ static inline void ti81xx_init_pcie(void)
 	} else if (cpu_is_ti814x()) {
 
 		/* TODO: Add bitfield macros for following */
-
-		omap_ctrl_writel(0x00000002, TI814X_SERDES_REFCLK_CTL);
-		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG0);
-		omap_ctrl_writel(0x00640000, TI814X_CONTROL_PCIE_PLLCFG1);
-		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG2);
-		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_PCIE_PLLCFG3);
-		omap_ctrl_writel(0x0000609C, TI814X_CONTROL_PCIE_PLLCFG4);
-
-		/* Configure SERDES misc bits - values as is from h/w */
-		if (omap_rev() > TI8148_REV_ES1_0)
-			omap_ctrl_writel(0x0000039E,
-					TI814X_CONTROL_PCIE_MISCCFG);
-		else
-			omap_ctrl_writel(0x00000E7B, TI814X_CONTROL_SMA0);
-
-		udelay(50);
-		omap_ctrl_writel(0x00000004, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		udelay(50);
-		omap_ctrl_writel(0x00000014, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		udelay(50);
-		omap_ctrl_writel(0x00000016, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		udelay(50);
-		omap_ctrl_writel(0x30000016, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		udelay(50);
-		omap_ctrl_writel(0x70007016, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		udelay(200);
-		omap_ctrl_writel(0x70007017, TI814X_CONTROL_PCIE_PLLCFG0);
-
-		while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
-			cpu_relax();
-
+		/* PLL configuration has be done by now */
 		omap_ctrl_writel(TI81XX_PCIE_DEVTYPE_RC,
 				TI814X_CONTROL_PCIE_CFG);
 
@@ -2692,6 +2743,11 @@ static int __init omap2_init_devices(void)
 	omap_init_aes();
 	omap_init_vout();
 #ifdef CONFIG_ARCH_TI81XX
+	if (cpu_is_ti814x()) {
+		/* Init PCIe,SATA PLL here, before invoking respective init*/
+		ti814x_pcie_pllcfg();
+		ti814x_sata_pllcfg();
+	}
 	ti81xx_ethernet_init();
 	ti81xx_init_pcie();
 	ti81xx_register_edma();
