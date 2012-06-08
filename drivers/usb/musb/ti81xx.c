@@ -1232,8 +1232,8 @@ int ti81xx_musb_init(struct musb *musb)
 	musb_platform_set_mode(musb, mode);
 
 #ifdef CONFIG_USB_TI_CPPI41_DMA
-	if (cpu_is_ti81xx() && ((omap_rev() == TI8168_REV_ES2_0) ||
-		(omap_rev() == TI8148_REV_ES2_0))) {
+	if (cpu_is_ti81xx() && ((omap_rev() >= TI8168_REV_ES2_0) ||
+		(omap_rev() >= TI8148_REV_ES2_0))) {
 
 		/* Enabling txfifo intr features, is not working
 		 * reliablely, hence disable txfifo intr logic
