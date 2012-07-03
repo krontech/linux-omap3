@@ -2015,7 +2015,7 @@ static int ahci_port_start(struct ata_port *ap)
 		mem1_dma = 0x40300000 + dma_sz;
 	}
 	printk(KERN_CRIT"ahci: reserving memory from OCMC. mem=%p dma=%p sz=%d\n",
-		mem1, mem1_dma, dma_sz);
+		mem1, (void*) mem1_dma, dma_sz);
 #endif
 	/* avoiding checks to see if memory is already allocated from OCMC
 	 * assuming port_start is called only once for each port
