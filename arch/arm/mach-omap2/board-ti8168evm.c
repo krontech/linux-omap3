@@ -28,7 +28,6 @@
 #include <linux/gpio.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/gpio-regulator.h>
-#include <linux/sii9022a.h>
 #include <linux/clk.h>
 
 #include <mach/hardware.h>
