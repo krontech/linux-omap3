@@ -42,7 +42,8 @@
 #include <plat/hdmi_lib.h>
 #include <linux/delay.h>
 #include <linux/module.h>
-#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/interrupt.h>
 #include <linux/seq_file.h>
 #include <sound/pcm.h>
 #include <linux/hrtimer.h>
@@ -240,11 +241,18 @@
 #define HDMI_WP_IRQSTATUS_OCPTIMEOUT 0x00000010
 
 #define HDMI_CORE_SYS__SYS_STAT_HPD 0x02
+#define HDMI_CORE_SYS__SYS_STAT_RSEN 0x4
 
 #define HDMI_IP_CORE_SYSTEM__INTR2__BCAP	0x80
 #define HDMI_IP_CORE_SYSTEM__INTR3__RI_ERR	0xF0
 
 bool first_hpd, dirty;
+
+struct hdmi_isr_data {
+	hdmi_int_cb		isr;
+	struct hdmi_irq_status	*arg;
+	struct list_head	list;
+};
 
 static struct {
 	void __iomem *base_core;	/* 0 */
@@ -255,8 +263,11 @@ static struct {
 	struct hdmi_config hdmi_cfg;
 	struct mutex mutex;
 	struct list_head notifier_head;
+	struct list_head int_cb_list;
+	spinlock_t irqlock;
 } hdmi;
 
+void HDMI_W1_HPD_handler(struct hdmi_irq_status *status);
 static inline void hdmi_write_reg(u32 base, u16 idx, u32 val)
 {
 	void __iomem *b;
@@ -1695,6 +1706,8 @@ int hdmi_lib_init(void){
 
 	mutex_init(&hdmi.mutex);
 	INIT_LIST_HEAD(&hdmi.notifier_head);
+	INIT_LIST_HEAD(&hdmi.int_cb_list);
+	spin_lock_init(&hdmi.irqlock);
 
 	rev = hdmi_read_reg(HDMI_WP, HDMI_WP_REVISION);
 	printk(KERN_INFO "HDMI W1 rev %d.%d\n",
@@ -1707,6 +1720,15 @@ int hdmi_lib_init(void){
 
 void hdmi_lib_exit(void){
 	iounmap(hdmi.base_wp);
+	while (!list_empty(&hdmi.int_cb_list)) {
+		struct hdmi_isr_data *isrd;
+		isrd = list_first_entry(&hdmi.int_cb_list,
+				struct hdmi_isr_data,
+				list);
+		list_del(&isrd->list);
+		kfree(isrd);
+	}
+
 }
 
 int hdmi_set_irqs(int i)
@@ -1738,8 +1760,34 @@ int hdmi_set_irqs(int i)
 	return 0;
 }
 
+static irqreturn_t hdmi_irq_handler(int irq, void *arg)
+{
+	unsigned long flags;
+	struct hdmi_isr_data *isrd;
+	struct hdmi_irq_status irq_status;
+
+	/* process interrupt in critical section to handle conflicts */
+	spin_lock_irqsave(&hdmi.irqlock, flags);
+
+	irq_status.hpd_status = 0;
+	irq_status.hpd_pin_status = 0;
+	irq_status.rsen_pin_status = 0;
+	HDMI_W1_HPD_handler(&irq_status);
+
+	list_for_each_entry(isrd, &hdmi.int_cb_list, list) {
+		if (isrd->isr && isrd->arg) {
+			isrd->arg->hpd_status = irq_status.hpd_status;
+			isrd->arg->hpd_pin_status = irq_status.hpd_pin_status;
+			isrd->arg->rsen_pin_status = irq_status.rsen_pin_status;
+			isrd->isr(isrd->arg);
+		}
+	}
+	spin_unlock_irqrestore(&hdmi.irqlock, flags);
+	return IRQ_HANDLED;
+}
+
 /* Interrupt handler */
-void HDMI_W1_HPD_handler(int *r)
+void HDMI_W1_HPD_handler(struct hdmi_irq_status *status)
 {
 	u32 val, set = 0, hpd_intr = 0, core_state = 0;
 	u32 time_in_ms, intr2 = 0, intr3 = 0;
@@ -1793,7 +1841,7 @@ void HDMI_W1_HPD_handler(int *r)
 		if (hpd_intr & 0x40) {
 			if  (set & HDMI_CORE_SYS__SYS_STAT_HPD) {
 				if ((first_hpd == 0) && (dirty == 0)) {
-					*r |= HDMI_FIRST_HPD;
+					status->hpd_status |= TI81XXHDMI_FIRST_HPD;
 					first_hpd++;
 					DBG("first hpd");
 				} else {
@@ -1803,16 +1851,16 @@ void HDMI_W1_HPD_handler(int *r)
 							(int)ktime_to_us(ktime_sub\
 									(ts_hpd_high, ts_hpd_low)) / 1000;
 						if (time_in_ms >= 80)
-							*r |= HDMI_HPD_MODIFY;
+							status->hpd_status |= TI81XXHDMI_HPD_MODIFY;
 						else
-							*r |= HDMI_HPD_HIGH;
+							status->hpd_status |= TI81XXHDMI_HPD_HIGH;
 						dirty = 0;
 					}
 				}
 			} else {
 				ts_hpd_low = ktime_get();
 				dirty = 1;
-				*r |= HDMI_HPD_LOW;
+				status->hpd_status |= TI81XXHDMI_HPD_LOW;
 			}
 		}
 	}
@@ -1828,67 +1876,68 @@ void HDMI_W1_HPD_handler(int *r)
 	}
 
 	if (intr2 & HDMI_IP_CORE_SYSTEM__INTR2__BCAP)
-		*r |= HDMI_BCAP;
+		status->hpd_status |= TI81XXHDMI_BCAP;
 
 	if (intr3 & HDMI_IP_CORE_SYSTEM__INTR3__RI_ERR)
-		*r |= HDMI_RI_ERR;
+		status->hpd_status |= TI81XXHDMI_RI_ERR;
 
 	/* Ack other interrupts if any */
 	hdmi_write_reg(HDMI_WP, HDMI_WP_IRQSTATUS, val);
 	/* flush posted write */
 	hdmi_read_reg(HDMI_WP, HDMI_WP_IRQSTATUS);
+	status->hpd_pin_status = ((set & HDMI_CORE_SYS__SYS_STAT_HPD) ? 1 : 0);
+	status->rsen_pin_status = ((set & HDMI_CORE_SYS__SYS_STAT_RSEN) ? 1 : 0);
 }
-#if 0
-int hdmi_rxdet(void)
-{
-	int state = 0;
-	int loop = 0, val1, val2, val3, val4;
-	struct hdmi_irq_vector IrqHdmiVectorEnable;
-
-	hdmi_write_reg(HDMI_WP, HDMI_WP_WP_DEBUG_CFG, 4);
-
-	do {
-		val1 = hdmi_read_reg(HDMI_WP, HDMI_WP_WP_DEBUG_DATA);
-		udelay(5);
-		val2 = hdmi_read_reg(HDMI_WP, HDMI_WP_WP_DEBUG_DATA);
-		udelay(5);
-		val3 = hdmi_read_reg(HDMI_WP, HDMI_WP_WP_DEBUG_DATA);
-		udelay(5);
-		val4 = hdmi_read_reg(HDMI_WP, HDMI_WP_WP_DEBUG_DATA);
-	} while ((val1 != val2 || val2 != val3 || val3 != val4)
-		&& (loop < 100));
-
-	hdmi_write_reg(HDMI_WP, HDMI_WP_WP_DEBUG_CFG, 0);
-
-	if (loop == 100)
-		state = -1;
-	else
-		state = (val1 & 1);
-
-	/* Turn on the wakeup capability of the interrupts
-	It is recommended to turn on opposite interrupt wake
-	up capability in connected and disconnected state.
-	This is to avoid race condition in interrupts.
-	*/
-	IrqHdmiVectorEnable.core = 1;
-	if (state) {
-		IrqHdmiVectorEnable.phyDisconnect = 1;
-		IrqHdmiVectorEnable.phyConnect = 0;
-		hdmi_w1_irq_wakeup_enable(&IrqHdmiVectorEnable);
-	} else {
-		IrqHdmiVectorEnable.phyDisconnect = 0;
-		IrqHdmiVectorEnable.phyConnect = 1;
-		hdmi_w1_irq_wakeup_enable(&IrqHdmiVectorEnable);
-	}
-
-	return state;
-}
-#endif
 
 /* wrapper functions to be used until L24.5 release */
 int HDMI_CORE_DDC_READEDID(u32 name, u8 *p, u16 max_length)
 {
 	int r = read_edid(p, max_length);
+	return r;
+}
+
+int hdmi_register_interrupt_cb(hdmi_int_cb cb, void *arg)
+{
+	int r = 0;
+	struct hdmi_isr_data *isrd, *new;
+
+	mutex_lock(&hdmi.mutex);
+	if (list_empty(&hdmi.int_cb_list))
+		r = request_irq(TI81XX_IRQ_HDMIINT, hdmi_irq_handler, 0,
+			"HDMI", (void *)0);
+	if (r)
+		goto exit;
+	list_for_each_entry(isrd, &hdmi.int_cb_list, list) {
+		if ((isrd->isr == cb) && (isrd->arg == arg)) {
+			r = -EINVAL;
+			goto exit;
+		}
+	}
+	new = kzalloc(sizeof(*isrd), GFP_KERNEL);
+	new->isr = cb;
+	new->arg = arg;
+	list_add_tail(&new->list, &hdmi.int_cb_list);
+exit:
+	mutex_unlock(&hdmi.mutex);
+	return r;
+}
+
+int hdmi_unregister_interrupt_cb(hdmi_int_cb cb, void *arg)
+{
+	int r = 0;
+	struct hdmi_isr_data  *isrd,  *next;
+
+	mutex_lock(&hdmi.mutex);
+	list_for_each_entry_safe(isrd, next, &hdmi.int_cb_list, list) {
+		if ((isrd->arg == arg) && (isrd->isr == cb)) {
+			list_del(&isrd->list);
+			kfree(isrd);
+			break;
+		}
+	}
+	if (list_empty(&hdmi.int_cb_list))
+		free_irq(TI81XX_IRQ_HDMIINT, NULL);
+	mutex_unlock(&hdmi.mutex);
 	return r;
 }
 
@@ -2378,7 +2427,6 @@ EXPORT_SYMBOL(hdmi_lib_enable);
 EXPORT_SYMBOL(hdmi_lib_init);
 EXPORT_SYMBOL(hdmi_lib_exit);
 EXPORT_SYMBOL(hdmi_set_irqs);
-EXPORT_SYMBOL(HDMI_W1_HPD_handler);
 EXPORT_SYMBOL(HDMI_CORE_DDC_READEDID);
 EXPORT_SYMBOL(HDMI_W1_StopVideoFrame);
 EXPORT_SYMBOL(HDMI_W1_StartVideoFrame);
@@ -2409,3 +2457,5 @@ EXPORT_SYMBOL(hdmi_lib_cec_reg_dev);
 EXPORT_SYMBOL(hdmi_lib_cec_activate);
 EXPORT_SYMBOL(hdmi_lib_cec_write_msg);
 EXPORT_SYMBOL(hdmi_lib_cec_read_msg);
+EXPORT_SYMBOL(hdmi_register_interrupt_cb);
+EXPORT_SYMBOL(hdmi_unregister_interrupt_cb);

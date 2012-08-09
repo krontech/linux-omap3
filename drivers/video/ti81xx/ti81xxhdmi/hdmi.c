@@ -47,6 +47,8 @@
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/ioctl.h>
+#include <linux/wait.h>
+#include <linux/sched.h>
 #include <linux/uaccess.h>
 #include <linux/ti81xxhdmi.h>
 #include "../vpss/display_interface.h"
@@ -157,6 +159,8 @@ struct hdmi {
 	void __iomem *base_prcm;
 	void __iomem *base_wp;
 	struct mutex lock;
+	wait_queue_head_t hpd_changed;
+	int hpd_update;
 	int code;
 	int mode;
 	int deep_color;
@@ -170,6 +174,7 @@ struct hdmi {
 	struct hdmi_config cfg;
 	struct platform_device *pdev;
 	struct ti81xx_venc_info vencinfo;
+	struct hdmi_irq_status irq_status;
 	enum hdmi_cec_state cec_state;
 } hdmi;
 
@@ -1077,6 +1082,28 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		}
 		mutex_unlock(&hdmi.lock);
 		break;
+	case TI81XXHDMI_WAIT_FOR_HPD_CHANGE:
+		r = -EFAULT;
+		while (arg) {
+			struct ti81xxhdmi_hpd_status *status =
+				(struct ti81xxhdmi_hpd_status *) arg;
+
+			wait_event_interruptible(hdmi.hpd_changed,
+					hdmi.hpd_update != 0);
+		/* aquire lock again once we wake up */
+			mutex_lock(&hdmi.lock);
+			status->hpd_status = hdmi.irq_status.hpd_status;
+			status->hpd_pin_status = hdmi.irq_status.hpd_pin_status;
+			status->rsen_pin_status = hdmi.irq_status.rsen_pin_status;
+			spin_lock_irqsave(&irqstatus_lock, flags);
+			hdmi.hpd_update = 0;
+			spin_unlock_irqrestore(&irqstatus_lock, flags);
+			r = 0;
+			mutex_unlock(&hdmi.lock);
+			break;
+		}
+		break;
+
 	default:
 		r = -EINVAL;
 		THDMIDBG("Un-recoganized command, cmd = %d", cmd);
@@ -1200,10 +1227,9 @@ static void hdmi_work_queue(struct work_struct *ws)
 {
 	struct hdmi_work_struct *work =
 		container_of(ws, struct hdmi_work_struct, work);
-	int r = work->r;
+	int r  = work->r;
 
-
-	if (r & HDMI_HPD_MODIFY) {
+	if (r & TI81XXHDMI_HPD_MODIFY) {
 		/* FIX ME When connected sink is removed, (not a toggel on HPD)
 			ensure to set hdmi.cec_state to HDMI_CEC_BYPASS
 			if this device was registered in the CEC n/w */
@@ -1232,30 +1258,21 @@ static inline void hdmi_handle_irq_work(int r)
 		}
 	}
 }
-static bool hdmi_connected;
-static irqreturn_t hdmi_irq_handler(int irq, void *arg)
+
+static void hdmi_cb_handler(struct hdmi_irq_status *irq_status)
 {
-	unsigned long flags;
-	int r = 0;
-
-
-
 	/* process interrupt in critical section to handle conflicts */
-	spin_lock_irqsave(&irqstatus_lock, flags);
-
-	HDMI_W1_HPD_handler(&r);
-
-
-	if (r & HDMI_CONNECT)
-		hdmi_connected = true;
-	if (r & HDMI_DISCONNECT)
-		hdmi_connected = false;
-
-	spin_unlock_irqrestore(&irqstatus_lock, flags);
-#if 1
-	hdmi_handle_irq_work(r);
+	if (irq_status->hpd_status & (TI81XXHDMI_HPD_MODIFY |
+					TI81XXHDMI_FIRST_HPD |
+					TI81XXHDMI_HPD_LOW   |
+					TI81XXHDMI_HPD_HIGH)) {
+		hdmi.hpd_update = 1;
+		wake_up_interruptible(&hdmi.hpd_changed);
+	}
+#if 0
+	hdmi_handle_irq_work(irq_status->hpd_status);
 #endif
-	return IRQ_HANDLED;
+
 }
 
 static int hdmi_enable_display(void)
@@ -1264,8 +1281,7 @@ static int hdmi_enable_display(void)
 	mutex_lock(&hdmi.lock);
 
 	r = hdmi_start_display();
-	r = request_irq(TI81XX_IRQ_HDMIINT, hdmi_irq_handler, 0,
-			"HDMI", (void *)0);
+	hdmi_register_interrupt_cb(hdmi_cb_handler, &hdmi.irq_status);
 	hdmi.status = TI81xx_EXT_ENCODER_ENABLED;
 	mutex_unlock(&hdmi.lock);
 	return r;
@@ -1278,7 +1294,7 @@ static void hdmi_disable_display(void)
 	/* Free irq befor disabling the hardware else it will generate continous
 	   interrupts.
 	 */
-	free_irq(TI81XX_IRQ_HDMIINT, NULL);
+	hdmi_unregister_interrupt_cb(hdmi_cb_handler, &hdmi.irq_status);
 	hdmi_stop_display();
 	/*setting to default only in case of disable and not suspend*/
 	hdmi.mode = 1 ; /* HDMI */
@@ -1313,6 +1329,8 @@ int __init hdmi_init(void)
 
 	THDMIDBG("Initializing HDMI\n");
 	mutex_init(&hdmi.lock);
+	init_waitqueue_head(&hdmi.hpd_changed);
+	hdmi.hpd_update = 0;
 
 	/* Devices CEC default state */
 	hdmi.cec_state = HDMI_CEC_BYPASS;

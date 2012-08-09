@@ -68,6 +68,11 @@
  */
 #define TI81XXHDMI_CEC_TRANSMIT_MSG	TI81XXHDMI_IOWR(8, unsigned char *)
 
+/* This ioctl waits till HPD event is detected. Once HPD event is detected,
+* application can re-negotiate audio and video format with new sink.
+*/
+#define TI81XXHDMI_WAIT_FOR_HPD_CHANGE TI81XXHDMI_IOR(15, unsigned char *)
+
 /* Use this command only when hdmi is streaming video to a sink */
 /* TODO Not supported for now */
 #if 0
@@ -76,9 +81,41 @@
 #endif
 
 
+
 struct ti81xxhdmi_status {
 	unsigned int is_hpd_detected;
 	unsigned int is_hdmi_streaming;
+};
+
+/* Below are various HPD status. */
+/* HPD status is modified */
+#define TI81XXHDMI_HPD_MODIFY		0x04
+/* First HPD detected after inserting HDMI */
+#define TI81XXHDMI_FIRST_HPD		0x08
+/* HPD modified to low */
+#define TI81XXHDMI_HPD_LOW		0x10
+/* Same as HPD_MODIFY but HPD_low and HPD high occured very fast. Sequence will
+be something like this.
+HPD_MODIFY
+HPD_LOW
+HPD_HIGH
+In above sequence MODIFY-->LOW-->HIGH occur in quick succession, like debouce
+effect */
+#define TI81XXHDMI_HPD_HIGH		0x20
+/* Below Two will not be seen by application */
+#define TI81XXHDMI_BCAP			0x40
+#define TI81XXHDMI_RI_ERR		0x80
+
+struct ti81xxhdmi_hpd_status {
+	/* This status says whether HPD occured or not. This is to
+	   protect against the debouce and first HDP We make sure
+	   here that debouce effect is nullified using some timer
+	   value Valid values are above defined HPD status*/
+	unsigned int hpd_status;
+	/* This is status of actual HPD pin, it will be 1 on HPD connect
+	   else 0 on HPD disconnect */
+	unsigned int hpd_pin_status;
+	unsigned int rsen_pin_status;
 };
 
 /* The following lists the valid device types & logical address on the CEC n/w

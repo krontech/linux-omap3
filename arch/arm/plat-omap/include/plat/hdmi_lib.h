@@ -487,14 +487,22 @@ struct snd_hdmi_platform_data {
 	u32 fifo_level;
 };
 
-#define HDMI_CONNECT		0x01
-#define HDMI_DISCONNECT		0x02
-#define HDMI_HPD_MODIFY		0x04
-#define HDMI_FIRST_HPD		0x08
-#define HDMI_HPD_LOW		0x10
-#define HDMI_HPD_HIGH		0x20
-#define HDMI_BCAP		0x40
-#define HDMI_RI_ERR		0x80
+struct hdmi_irq_status {
+	/* This status says whether HPD occured or not. This is to
+	   protect against the debouce and first HDP We make sure
+	   here that debouce effect is nullified using some timer
+	   value*/
+	u32 hpd_status;
+	/* This is status of actual HPD pin, it will be 1 on HPD connect
+	   else 0 on HPD disconnect */
+	u32 hpd_pin_status;
+	/* This is status of receiver sense pin. This is used to get status
+	   of receiver, this will be 0 on receiver off and 1 on receiver on
+	   This makes sense only when hpd_pin_status = 1 */
+	u32 rsen_pin_status;
+};
+
+typedef void (*hdmi_int_cb)(struct hdmi_irq_status *arg);
 
 #define HDMI_EVENT_POWEROFF	0x00
 #define HDMI_EVENT_POWERPHYOFF	0x01
@@ -513,7 +521,6 @@ int hdmi_w1_stop_audio_transfer(u32);
 int hdmi_w1_start_audio_transfer(u32);
 int HDMI_CORE_DDC_READEDID(u32 Core, u8 *data, u16 max_length);
 int hdmi_lib_enable(struct hdmi_config *cfg);
-void HDMI_W1_HPD_handler(int *r);
 int hdmi_lib_init(void);
 void hdmi_lib_exit(void);
 int hdmi_configure_csc(enum hdmi_core_av_csc csc);
@@ -543,5 +550,7 @@ int hdmi_lib_cec_reg_dev(struct ti81xxhdmi_cec_register_dev *dev, __u8 *pa);
 int hdmi_lib_cec_activate(void);
 int hdmi_lib_cec_write_msg(struct ti81xxhdmi_cec_transmit_msg *msg);
 int hdmi_lib_cec_read_msg(struct ti81xxhdmi_cec_received_msg *msg);
+int hdmi_register_interrupt_cb(hdmi_int_cb cb, void *arg);
+int hdmi_unregister_interrupt_cb(hdmi_int_cb cb, void *arg);
 #endif
 
