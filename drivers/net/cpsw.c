@@ -471,16 +471,18 @@ static int cpts_isr(struct cpsw_priv *priv)
 		event_tslo = __raw_readl(&priv->cpts_reg->event_low);
 		__raw_writel(0x01, &priv->cpts_reg->event_pop);
 
+		if (priv->cpts_time->first_half &&
+				event_tslo & 0x80000000) {
+			/* this is misaligned ts */
+			ts = (u64)(priv->cpts_time->tshi - 1);
+		} else {
+			ts = (u64)(priv->cpts_time->tshi);
+		}
+		ts = (ts << 32) | event_tslo;
+
 		if ((event_high & 0xf00000) == CPTS_TS_PUSH) {
 			/*Push TS to Read */
-			if (priv->cpts_time->first_half &&
-					event_tslo & 0x80000000) {
-				/* this is misaligned ts */
-				ts = (u64)(priv->cpts_time->tshi - 1);
-			} else {
-				ts = (u64)(priv->cpts_time->tshi);
-			}
-			time_push = (ts << 32) | event_tslo;
+			time_push = ts;
 		} else if ((event_high & 0xf00000) == CPTS_TS_ROLLOVER) {
 			/* Roll over */
 			spin_lock_irqsave(&cpts_time_lock, flags);
@@ -503,14 +505,7 @@ static int cpts_isr(struct cpsw_priv *priv)
 			evt.event_high = event_high & 0xfffff;
 			evt.ts = event_tslo;
 
-			if (priv->cpts_time->first_half &&
-					event_tslo & 0x80000000) {
-				/* this is misaligned ts */
-				ts = (u64)(priv->cpts_time->tshi - 1);
-			} else {
-				ts = (u64)(priv->cpts_time->tshi);
-			}
-			evt.ts |= ts << 32;
+			evt.ts = ts;
 			if (priv->cpts_time->enable_timestamping) {
 				spin_lock_irqsave(&cpts_time_lock, flags);
 				cpts_time_evts_fifo_push(
@@ -523,14 +518,8 @@ static int cpts_isr(struct cpsw_priv *priv)
 
 			evt.event_high = event_high & 0xfffff;
 			evt.ts = event_tslo;
-			if (priv->cpts_time->first_half &&
-					event_tslo & 0x80000000) {
-				/* this is misaligned ts */
-				ts = (u64)(priv->cpts_time->tshi - 1);
-			} else {
-				ts = (u64)(priv->cpts_time->tshi);
-			}
-			evt.ts |= ts << 32;
+
+			evt.ts = ts;
 			if (priv->cpts_time->enable_timestamping) {
 				spin_lock_irqsave(&cpts_time_lock, flags);
 				cpts_time_evts_fifo_push(
