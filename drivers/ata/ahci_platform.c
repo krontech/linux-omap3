@@ -49,16 +49,16 @@ MODULE_DEVICE_TABLE(platform, ahci_devtype);
 static const struct ata_port_info ahci_port_info[] = {
 	/* by features */
 	[AHCI] = {
+		AHCI_HFLAGS	(AHCI_HFLAG_DELAY_ENGINE),
 		.flags		= AHCI_FLAG_COMMON,
 		.pio_mask	= ATA_PIO4,
 		.udma_mask	= ATA_UDMA6,
-		.port_ops	= &ahci_ops,
+		.port_ops	= &ahci_pmp_retry_srst_ops,
 	},
 	[IMX53_AHCI] = {
 		.flags		= AHCI_FLAG_COMMON,
 		.pio_mask	= ATA_PIO4,
 		.udma_mask	= ATA_UDMA6,
-		.port_ops	= &ahci_pmp_retry_srst_ops,
 	},
 	[STRICT_AHCI] = {
 		AHCI_HFLAGS	(AHCI_HFLAG_DELAY_ENGINE),
@@ -87,6 +87,8 @@ static int __init ahci_probe(struct platform_device *pdev)
 	int n_ports;
 	int i;
 	int rc;
+
+	printk("ahci probe: devid name is %s\n",id->name);
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!mem) {

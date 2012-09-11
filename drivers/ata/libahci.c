@@ -387,6 +387,13 @@ void ahci_save_initial_config(struct device *dev,
 	 * reset.  Values without are used for driver operation.
 	 */
 	hpriv->saved_cap = cap = readl(mmio + HOST_CAP);
+	printk("ahci CAP register dump =0x%x\n", cap);
+	cap |= (1 << 27);
+	writel(cap, mmio + HOST_CAP);
+
+	hpriv->saved_cap = cap = readl(mmio + HOST_CAP);
+	printk("Modified ahci CAP register dump =0x%x\n", cap);
+
 	hpriv->saved_port_map = port_map = readl(mmio + HOST_PORTS_IMPL);
 
 	/* CAP2 register is only defined for AHCI 1.2 and later */
