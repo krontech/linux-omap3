@@ -169,6 +169,7 @@ MODULE_VERSION(HECC_MODULE_VERSION);
 #define HECC_CANES_SMA		BIT(5)	/* suspend mode ack */
 #define HECC_CANES_CCE		BIT(4)	/* Change config enabled */
 #define HECC_CANES_PDA		BIT(3)	/* Power down mode ack */
+#define HECC_CANES_RM		BIT(1)	/* Receive Mode bit */
 
 #define HECC_CANBTC_SAM		BIT(7)	/* sample points */
 
@@ -193,6 +194,13 @@ MODULE_VERSION(HECC_MODULE_VERSION);
 #define HECC_CANGIM_I0EN	BIT(0)	/* Int line 0 enable */
 #define HECC_CANGIM_DEF_MASK	0x700	/* only busoff/warning/passive */
 #define HECC_CANGIM_SIL		BIT(2)	/* system interrupts to int line 1 */
+
+/*
+ * Receive Mode bit reflects what the CAN protocol kernel (CPK) is
+ * actually doing regardless of mailbox configuration. CPK receive
+ * mode timeout. Tried from 1 - 5us and kept 10 as a safety value.
+ */
+#define RM_TIMEOUT_US		10
 
 /* CAN Bittiming constants as per HECC specs */
 static struct can_bittiming_const ti_hecc_bittiming_const = {
@@ -615,7 +623,7 @@ static int ti_hecc_rx_poll(struct napi_struct *napi, int quota)
 	struct ti_hecc_priv *priv = netdev_priv(ndev);
 	u32 num_pkts = 0;
 	u32 mbx_mask;
-	unsigned long pending_pkts, flags;
+	unsigned long pending_pkts, flags, timeout;
 
 	if (!netif_running(ndev))
 		return 0;
@@ -627,12 +635,20 @@ static int ti_hecc_rx_poll(struct napi_struct *napi, int quota)
 			if (ti_hecc_rx_pkt(priv, priv->rx_next) < 0)
 				return num_pkts;
 			++num_pkts;
-		} else if (priv->rx_next > HECC_RX_BUFFER_MBOX) {
+		} else if (priv->rx_next >= HECC_RX_BUFFER_MBOX) {
 			break; /* pkt not received yet */
 		}
 		--priv->rx_next;
-		if (priv->rx_next == HECC_RX_BUFFER_MBOX) {
+		if (priv->rx_next == HECC_RX_BUFFER_MBOX - 1) {
 			/* enable high bank mailboxes */
+			timeout = jiffies + usecs_to_jiffies(RM_TIMEOUT_US);
+			while (hecc_get_bit(priv, HECC_CANES, HECC_CANES_RM)) {
+				cpu_relax();
+				if (time_after(jiffies, timeout)) {
+					netdev_warn(ndev, "receiving pkt\n");
+					break;
+				}
+			}
 			spin_lock_irqsave(&priv->mbx_lock, flags);
 			mbx_mask = hecc_read(priv, HECC_CANME);
 			mbx_mask |= HECC_RX_HIGH_MBOX_MASK;
