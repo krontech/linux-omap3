@@ -721,7 +721,8 @@ static int ti81xxfb_apply_changes(struct fb_info *fbi, int init)
 
 		offset = (var->xoffset * fbi->var.bits_per_pixel >> 3)
 				+ var->yoffset * fbi->fix.line_length;
-
+		/*offset must be 16 byte alignment*/
+		offset = (offset + 0xF) & ~0xF ;
 		buf_addr = ti81xxfb_get_fb_paddr(tfbi) + offset;
 
 		if ((regp.regionheight != var->yres) ||
