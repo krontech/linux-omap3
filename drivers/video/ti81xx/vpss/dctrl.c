@@ -1043,7 +1043,7 @@ exit:
 static void dc_select_dvo2_clock(u32 src)
 {
 	u32 temp;
-	if (v_pdata->cpu != CPU_DM816X)
+	if (v_pdata->cpu == CPU_DM816X)
 		return;
 
 	temp = omap_readl(
