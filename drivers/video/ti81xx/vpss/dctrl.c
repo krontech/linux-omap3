@@ -2561,12 +2561,22 @@ static int parse_def_clksrc(const char *clksrc)
 			}
 		}
 		if (i == ARRAY_SIZE(vclksrc_name)) {
-			if (v_pdata->cpu == CPU_DM813X) {
+			if (v_pdata->cpu != CPU_DM816X) {
+
 				if (dc_get_vencid(venc, &vid)) {
 					VPSSERR("wrong venc\n");
 					break;
 				}
-				if (vid == VPS_DC_VENC_HDCOMP) {
+				/*this apply for both DM813X and DM814x*/
+				if (vid == VPS_DC_VENC_DVO2) {
+					if (sysfs_streq(csrc, "hdmi"))
+						dc_select_dvo2_clock(HDMI);
+					else
+						dc_select_dvo2_clock(DVO2);
+				}
+
+				if ((v_pdata->cpu == CPU_DM813X) &&
+				    (vid == VPS_DC_VENC_HDCOMP)) {
 					enum vps_vplloutputclk pllclk;
 					pllclk =
 					    VPS_SYSTEM_VPLL_OUTPUT_MAX_VENC;
@@ -2582,9 +2592,8 @@ static int parse_def_clksrc(const char *clksrc)
 						VPS_SYSTEM_VPLL_OUTPUT_VENC_RF;
 					dc_select_hdcomp_pll(pllclk);
 				}
-
-			} else
-				VPSSERR("wrong clock source\n");
+			}
+			VPSSERR("wrong clock source\n");
 		}
 		if (options == NULL)
 			break;
