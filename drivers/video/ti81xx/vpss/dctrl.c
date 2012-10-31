@@ -2592,8 +2592,8 @@ static int parse_def_clksrc(const char *clksrc)
 						VPS_SYSTEM_VPLL_OUTPUT_VENC_RF;
 					dc_select_hdcomp_pll(pllclk);
 				}
-			}
-			VPSSERR("wrong clock source\n");
+			} else
+				VPSSERR("wrong clock source\n");
 		}
 		if (options == NULL)
 			break;
