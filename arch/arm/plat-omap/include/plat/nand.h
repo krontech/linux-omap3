@@ -18,6 +18,11 @@ enum nand_io {
 	NAND_OMAP_PREFETCH_IRQ		/* prefetch enabled irq mode */
 };
 
+enum nand_bussize {
+	NAND_OMAP_BUS_8,
+	NAND_OMAP_BUS_16
+};
+
 struct omap_nand_platform_data {
 	unsigned int		options;
 	int			cs;
@@ -31,7 +36,7 @@ struct omap_nand_platform_data {
 	int			gpmc_irq;
 	enum nand_io		xfer_type;
 	unsigned long		phys_base;
-	int			devsize;
+	enum nand_bussize		bussize;
 	enum omap_ecc           ecc_opt;
 };
 

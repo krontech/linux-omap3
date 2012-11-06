@@ -758,7 +758,7 @@ static void __init ti811x_evm_init(void)
 			ARRAY_SIZE(ti814x_nand_partitions), 0, bw);
 	} else
 		board_nand_init(ti814x_nand_partitions,
-		ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_BUSWIDTH_16);
+		ARRAY_SIZE(ti814x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);

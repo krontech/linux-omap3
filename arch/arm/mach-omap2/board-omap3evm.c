@@ -977,7 +977,7 @@ static void __init omap3_evm_init(void)
 	/* NAND */
 	board_nand_init(omap3_evm_nand_partitions,
 			ARRAY_SIZE(omap3_evm_nand_partitions),
-			0, NAND_BUSWIDTH_16);
+			0, NAND_OMAP_BUS_16);
 	board_onenand_init(omap3_evm_onenand_partitions,
 			ARRAY_SIZE(omap3_evm_onenand_partitions), 0);
 }

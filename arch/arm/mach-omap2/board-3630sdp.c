@@ -210,7 +210,7 @@ static void __init omap_sdp_init(void)
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBP);
 	zoom_peripherals_init();
 	board_smc91x_init();
-	board_flash_init(sdp_flash_partitions, chip_sel_sdp, NAND_BUSWIDTH_16);
+	board_flash_init(sdp_flash_partitions, chip_sel_sdp, NAND_OMAP_BUS_16);
 	enable_board_wakeup_source();
 	usb_ehci_init(&ehci_pdata);
 }

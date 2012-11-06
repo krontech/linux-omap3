@@ -130,7 +130,7 @@ static void __init omap_zoom_init(void)
 	}
 
 	board_nand_init(zoom_nand_partitions, ARRAY_SIZE(zoom_nand_partitions),
-						ZOOM_NAND_CS, NAND_BUSWIDTH_16);
+						ZOOM_NAND_CS, NAND_OMAP_BUS_16);
 	zoom_debugboard_init();
 	zoom_peripherals_init();
 }

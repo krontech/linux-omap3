@@ -1138,7 +1138,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 	pdata->ecc_opt		= OMAP_ECC_BCH8_CODE_HW;
 	info->ecc_opt		= pdata->ecc_opt;
 
-	info->nand.options	= pdata->devsize;
+	info->nand.options	= NAND_BUSWIDTH_AUTO;
 	info->nand.options	|= NAND_SKIP_BBTSCAN;
 
 	/* NAND write protect off */
@@ -1182,13 +1182,8 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		break;
 
 	case NAND_OMAP_POLLED:
-		if (info->nand.options & NAND_BUSWIDTH_16) {
-			info->nand.read_buf   = omap_read_buf16;
-			info->nand.write_buf  = omap_write_buf16;
-		} else {
-			info->nand.read_buf   = omap_read_buf8;
-			info->nand.write_buf  = omap_write_buf8;
-		}
+		info->nand.read_buf   = omap_read_buf8;
+		info->nand.write_buf  = omap_write_buf8;
 		break;
 
 	case NAND_OMAP_PREFETCH_DMA:
@@ -1253,14 +1248,25 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		info->nand.ecc.mode             = NAND_ECC_HW;
 	}
 
-	/* DIP switches on some boards change between 8 and 16 bit
-	 * bus widths for flash.  Try the other width if the first try fails.
-	 */
+	gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 0);
 	if (nand_scan_ident(&info->mtd, 1, NULL)) {
-		info->nand.options ^= NAND_BUSWIDTH_16;
-		if (nand_scan_ident(&info->mtd, 1, NULL)) {
+		err = -ENXIO;
+		goto out_release_mem_region;
+	}
+	/* update for 16 bits device */
+	pr_info("%s: detected %s flash \n", DRIVER_NAME,
+			(info->nand.options & NAND_OMAP_BUS_16) ? "x16" : "x8");
+	if (info->nand.options & NAND_BUSWIDTH_16) {
+		if (!(pdata->bussize & NAND_OMAP_BUS_16)) {
+			dev_err(&pdev->dev, "%s: detected x16 flash, but board "
+					"supports x8 flash", DRIVER_NAME);
 			err = -ENXIO;
 			goto out_release_mem_region;
+		}
+		gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 1);
+		if (pdata->xfer_type == NAND_OMAP_POLLED) {
+			info->nand.read_buf   = omap_read_buf16;
+			info->nand.write_buf  = omap_write_buf16;
 		}
 	}
 

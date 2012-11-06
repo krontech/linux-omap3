@@ -159,17 +159,17 @@ static struct omap_nand_platform_data board_nand_data = {
 	.gpmc_t		= &nand_timings,
 	.dma_channel	= -1,		/* disable DMA in OMAP NAND driver */
 	.dev_ready	= NULL,
-	.devsize	= 0,	/* '0' for 8-bit, '1' for 16-bit device */
+	.bussize        = NAND_OMAP_BUS_8
 };
 
 void
 __init board_nand_init(struct mtd_partition *nand_parts,
-			u8 nr_parts, u8 cs, int nand_type)
+			u8 nr_parts, u8 cs, int bus_type)
 {
 	board_nand_data.cs		= cs;
 	board_nand_data.parts		= nand_parts;
 	board_nand_data.nr_parts	= nr_parts;
-	board_nand_data.devsize		= nand_type;
+	board_nand_data.bussize		= bus_type;
 
 	board_nand_data.gpmc_irq = OMAP_GPMC_IRQ_BASE + cs;
 
@@ -196,7 +196,7 @@ __init board_nand_init(struct mtd_partition *nand_parts,
 #else
 void
 __init board_nand_init(struct mtd_partition *nand_parts, u8 nr_parts,
-		u8 cs, int nand_type)
+		u8 cs, int bus_type)
 {
 }
 #endif /* CONFIG_MTD_NAND_OMAP2 || CONFIG_MTD_NAND_OMAP2_MODULE */
@@ -241,7 +241,7 @@ unmap:
  * @return - void.
  */
 void board_flash_init(struct flash_partitions partition_info[],
-			char chip_sel_board[][GPMC_CS_NUM], int nand_type)
+			char chip_sel_board[][GPMC_CS_NUM], int bus_type)
 {
 	u8		cs = 0;
 	u8		norcs = GPMC_CS_NUM + 1;
@@ -294,5 +294,5 @@ void board_flash_init(struct flash_partitions partition_info[],
 		pr_err("NAND: Unable to find configuration in GPMC\n");
 	else
 		board_nand_init(partition_info[2].parts,
-			partition_info[2].nr_parts, nandcs, nand_type);
+			partition_info[2].nr_parts, nandcs, bus_type);
 }

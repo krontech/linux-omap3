@@ -613,7 +613,7 @@ static void __init omap3beagle_flash_init(void)
 		printk(KERN_INFO "Registering NAND on CS%d\n", nandcs);
 		board_nand_init(omap3beagle_nand_partitions,
 			ARRAY_SIZE(omap3beagle_nand_partitions),
-			nandcs, NAND_BUSWIDTH_16);
+			nandcs, NAND_OMAP_BUS_16);
 	}
 }
 

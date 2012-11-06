@@ -925,7 +925,7 @@ static void __init ti8168_evm_init(void)
 			ARRAY_SIZE(ti816x_nand_partitions), 0, bw);
 	} else
 		board_nand_init(ti816x_nand_partitions,
-		ARRAY_SIZE(ti816x_nand_partitions), 0, NAND_BUSWIDTH_16);
+		ARRAY_SIZE(ti816x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	omap2_hsmmc_init(mmc);
 	board_nor_init(ti816x_evm_norflash_partitions,

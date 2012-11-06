@@ -96,7 +96,7 @@ static struct mtd_partition omap3touchbook_nand_partitions[] = {
 };
 
 static struct omap_nand_platform_data omap3touchbook_nand_data = {
-	.options	= NAND_BUSWIDTH_16,
+	.options	= NAND_OMAP_BUS_16,
 	.parts		= omap3touchbook_nand_partitions,
 	.nr_parts	= ARRAY_SIZE(omap3touchbook_nand_partitions),
 	.dma_channel	= -1,		/* disable DMA in OMAP NAND driver */

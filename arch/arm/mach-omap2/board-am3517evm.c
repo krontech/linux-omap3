@@ -928,7 +928,7 @@ static void __init am3517_evm_init(void)
 	/* NAND */
 	board_nand_init(am3517evm_nand_partitions,
 				ARRAY_SIZE(am3517evm_nand_partitions),
-				0, NAND_BUSWIDTH_16);
+				0, NAND_OMAP_BUS_16);
 
 	/* RTC - S35390A */
 	am3517_evm_rtc_init();
