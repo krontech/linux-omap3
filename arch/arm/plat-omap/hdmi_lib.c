@@ -713,25 +713,25 @@ int hdmi_core_audio_config(u32 name,
 	int ret = 0;
 	u32 SD3_EN = 0, SD2_EN = 0, SD1_EN = 0 , SD0_EN = 0;
 	u8 DBYTE1, DBYTE2, DBYTE4, CHSUM;
-	u8 size1, sample;
+	u8 size1;
 	u16 size0;
+	u32 r;
 
-	/* CTS_MODE */
-	WR_REG_32(name, HDMI_CORE_AV__ACR_CTRL,
-		/* MCLK_EN (0: Mclk is not used) */
-		((!audio_cfg->cts_mode) << 2) |
-		/* CTS Request Enable (1:Packet Enable, 0:Disable) */
-		(0x1 << 1) |
-		/* CTS Source Select (1:SW, 0:HW) */
-		(audio_cfg->cts_mode << 0));
-
-	/* 128 * Fs */
-	REG_FLD_MOD(name, HDMI_CORE_AV__FREQ_SVAL, 0, 2, 0);
+	/* Parameters for audio clock recovery packets */
 	REG_FLD_MOD(name, HDMI_CORE_AV__N_SVAL1, audio_cfg->n, 7, 0);
 	REG_FLD_MOD(name, HDMI_CORE_AV__N_SVAL2, audio_cfg->n >> 8, 7, 0);
 	REG_FLD_MOD(name, HDMI_CORE_AV__N_SVAL3, audio_cfg->n >> 16, 7, 0);
+
 	/*program the CTS values only in SW mode 1:SW, 0:HW */
-	if (audio_cfg->cts_mode) {
+	if (CTS_MODE_HW == audio_cfg->cts_mode) {
+		REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_1,
+					audio_cfg->aud_par_busclk, 7, 0);
+		REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_2,
+					(audio_cfg->aud_par_busclk >> 8), 7, 0);
+		REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_3,
+					(audio_cfg->aud_par_busclk >> 16), 7, 0);
+	} else {
+		/* Software mode */
 		REG_FLD_MOD(name, HDMI_CORE_AV__CTS_SVAL1,
 					 audio_cfg->cts, 7, 0);
 		REG_FLD_MOD(name, HDMI_CORE_AV__CTS_SVAL2,
@@ -739,19 +739,79 @@ int hdmi_core_audio_config(u32 name,
 		REG_FLD_MOD(name, HDMI_CORE_AV__CTS_SVAL3,
 					 audio_cfg->cts >> 16, 7, 0);
 	}
+	/* Update ACR clock divider - 128 FS */
+	REG_FLD_MOD(name, HDMI_CORE_AV__FREQ_SVAL, 0, 2, 0);
 
-	/* number of channel */
-	REG_FLD_MOD(name, HDMI_CORE_AV__HDMI_CTRL, audio_cfg->layout, 2, 1);
-	REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_1,
-				audio_cfg->aud_par_busclk, 7, 0);
-	REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_2,
-				(audio_cfg->aud_par_busclk >> 8), 7, 0);
-	REG_FLD_MOD(name, HDMI_CORE_AV__AUD_PAR_BUSCLK_3,
-				(audio_cfg->aud_par_busclk >> 16), 7, 0);
-	/* FS_OVERRIDE = 1 because input is used */
+	/* CTS_MODE */
+	r = RD_REG_32(name, HDMI_CORE_AV__ACR_CTRL);
+
+	/*
+	 * Use TMDS clock for ACR packets. For devices that use
+	 * the MCLK, this is the first part of the MCLK initialization.
+	 */
+	r = FLD_MOD(r, 0, 2, 2);
+
+	/* Enable the CTS request enable always */
+	r = FLD_MOD(r, 1, 1, 1);
+	if (CTS_MODE_HW == audio_cfg->cts_mode) {
+		r = FLD_MOD(r, 0, 0, 0);
+	} else {
+		r = FLD_MOD(r, 1, 0, 0);
+	}
+	WR_REG_32(name, HDMI_CORE_AV__ACR_CTRL, r);
+
+	/* For devices using MCLK, this completes its initialization. */
+	/* Please that this enable of MCLK should be done sperately */
+	if (CTS_MODE_HW == audio_cfg->cts_mode)
+		REG_FLD_MOD(name, HDMI_CORE_AV__ACR_CTRL, 1, 2, 2);
+
+	/* Use sample frequency from channel status word  */
 	WR_REG_32(name, HDMI_CORE_AV__SPDIF_CTRL, 0x1);
-	 /* refer to table209 p192 in func core spec */
-	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST4, audio_cfg->fs);
+
+	/* Update IEC-60958-3 Channel status bits - hard coded for now */
+	r = 0;
+	r = 0 |			/* Bit 0 - consumer */
+		(0 << 1) |	/* Bit 1 - Audio data */
+		(1 << 2);	/* Bit 2 - No copyright asserted ? */
+
+	/* Bit 3, 4,  5 - No pre-emphasis 2 channel audio  */
+	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST0, r);
+	/* Category code - not specified */
+	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST1, 0);
+	/* Source & channel numbers are zero ? */
+	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST2, 0);
+	/* Refer IEC 60958 - 3 */
+	switch (audio_cfg->if_fs) {
+	case IF_FS_32000:
+		r = 3;
+		break;
+	case IF_FS_44100:
+		r = 0;
+		break;
+	case IF_FS_48000:
+		r = 2;
+		break;
+	case IF_FS_96000:
+		r = 10;
+		break;
+	case IF_FS_192000:
+		r = 14;
+		break;
+	default:
+		r = 3;
+		break;
+	}
+
+	/* r should also have parts per million PPM, its 0, which is 1000 */
+	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST4, r);
+
+	r = 0;
+	if (IF_16BIT_PER_SAMPLE == audio_cfg->if_sample_size) {
+		r = 1 << 1;
+	} else {
+		r = (1 << 1) | (1 << 0);
+	}
+	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST5, r);
 
 	/*
 	 * audio config is mainly due to wrapper hardware connection
@@ -767,17 +827,26 @@ int hdmi_core_audio_config(u32 name,
 		(1 << 6) |	/* SCK_EDGE Sample clock is rising */
 		(0 << 5) |	/* CBIT_ORDER */
 		(0 << 4) |	/* VBit, 0x0=PCM, 0x1=compressed */
-		(0 << 3) |	/* I2S_WS, 0xdon't care */
-		(0 << 2) |	/* I2S_JUST, 0=left- 1=right-justified */
-		(0 << 1) |	/* I2S_DIR, 0xdon't care */
-		(0));		/* I2S_SHIFT, 0x0 don't care */
+		(0 << 3) |	/* I2S_WS, Left channel on WS low */
+		(audio_cfg->justify << 2) |	/* I2S_JUST, 0=left- 1=right */
+		(0 << 1) |	/* I2S_DIR, MSB first */
+		(0));		/* I2S_SHIFT, First bit shift */
 
-	WR_REG_32(name, HDMI_CORE_AV__I2S_CHST5, /* mode only */
-		(0 << 4) |			/* FS_ORIG */
-		(audio_cfg->if_sample_size));	/* I2S lenght 16 /24 bit */
+	/*
+	 * The I2S input word length is twice the lenght given in
+	 * the IEC-60958 status word. If the word size is greater
+	 * than 20 bits, increment by one.
+	 */
+	if (IF_16BIT_PER_SAMPLE == audio_cfg->if_sample_size) {
+		r = (1<<1);	/* 20-bit or 16-bit */
+	} else {
+		r = (5<<1);	/* 24-bit or 20-bit */
+		r++;		/* increment by one */
+	}
+	WR_REG_32(name, HDMI_CORE_AV__I2S_IN_LEN, r);
 
-	WR_REG_32(name, HDMI_CORE_AV__I2S_IN_LEN, /* mode only */
-		(0xb));		/* In length b=>24bits i2s hardware */
+	/* Audio channel parameters */
+	REG_FLD_MOD(name, HDMI_CORE_AV__HDMI_CTRL, audio_cfg->layout, 2, 1);
 
 	/* channel enable depend of the layout */
 	if (audio_cfg->layout == LAYOUT_2CH) {
@@ -792,6 +861,11 @@ int hdmi_core_audio_config(u32 name,
 		SD0_EN = 0x1;
 	}
 
+	/*
+	 * When ever audio FIFO is used, we would require to
+	 * use parallel interface only. Furthre serial
+	 * interface is not available on TI814x, TI813x, etc.
+	 */
 	WR_REG_32(name, HDMI_CORE_AV__AUD_MODE,
 		(SD3_EN << 7) |	/* SD3_EN */
 		(SD2_EN << 6) |	/* SD2_EN */
@@ -799,26 +873,28 @@ int hdmi_core_audio_config(u32 name,
 		(SD0_EN << 4) |	/* SD0_EN */
 		(0 << 3) |	/* DSD_EN */
 		(1 << 2) |	/* AUD_PAR_EN */
-		(0 << 1) |	/* SPDIF_EN */
-		(0));		/* AUD_EN */
+		(0 << 1) |	/* SPDIF_EN - disabled not supported by HW.*/
+		(0));		/* AUD_EN - Required only in case of SPDIF input. */
 
-	/* Audio info frame setting refer to CEA-861-d spec p75 */
-	/* 0x0 because on HDMI CT must be = 0 / -1 because 1 is for 2 channel */
-	sample =  (audio_cfg->if_sample_size & 0x1);
-	sample = (sample == HDMI_SAMPLE_16BITS) ? 0x1 : 0x3;
+	/* Number of channels */
+	DBYTE1 = audio_cfg->if_channel_number - 1;
+	/* We support L-PCM 60958 format only */
+	DBYTE1 |= 0x10;
 
-	DBYTE1 = 0x10 + (audio_cfg->if_channel_number - 1);
-	DBYTE2 = (audio_cfg->if_fs << 2) + sample;
+	/*
+	 * Audio info frame setting refer to CEA-861-d spec
+	 * Table 18 Audio InfoFrame Data Byte 2
+	 */
+	DBYTE2 = (audio_cfg->if_sample_size == IF_16BIT_PER_SAMPLE) ? 0x1 : 0x3;
+	DBYTE2 |= (audio_cfg->if_fs << 2);
+
 	/* channel location according to CEA spec */
 	DBYTE4 = audio_cfg->if_audio_channel_location;
 
-	CHSUM = 0x100-0x84-0x01-0x0A-DBYTE1-DBYTE2-DBYTE4;
-
+	/* HDMI Spec 1.3a, 0x80+InfoFrame Type = 0x04 */
 	WR_REG_32(name, HDMI_CORE_AV__AUDIO_TYPE, 0x084);
 	WR_REG_32(name, HDMI_CORE_AV__AUDIO_VERS, 0x001);
 	WR_REG_32(name, HDMI_CORE_AV__AUDIO_LEN, 0x00A);
-	/* don't care on VMP */
-	WR_REG_32(name, HDMI_CORE_AV__AUDIO_CHSUM, CHSUM);
 
 	size0 = HDMI_CORE_AV__AUDIO_DBYTE;
 	size1 = HDMI_CORE_AV__AUDIO_DBYTE__ELSIZE;
@@ -833,16 +909,9 @@ int hdmi_core_audio_config(u32 name,
 	hdmi_write_reg(name, (size0 + 8 * size1), 0x000);
 	hdmi_write_reg(name, (size0 + 9 * size1), 0x000);
 
-	/* ISCR1 and ACP setting */
-	WR_REG_32(name, HDMI_CORE_AV__SPD_TYPE, 0x04);
-	WR_REG_32(name, HDMI_CORE_AV__SPD_VERS, 0x0);
-	WR_REG_32(name, HDMI_CORE_AV__SPD_LEN, 0x0);
-	WR_REG_32(name, HDMI_CORE_AV__SPD_CHSUM, 0x0);
-
-	WR_REG_32(name, HDMI_CORE_AV__MPEG_TYPE, 0x05);
-	WR_REG_32(name, HDMI_CORE_AV__MPEG_VERS, 0x0);
-	WR_REG_32(name, HDMI_CORE_AV__MPEG_LEN, 0x0);
-	WR_REG_32(name, HDMI_CORE_AV__MPEG_CHSUM, 0x0);
+	/* write the check sum last, no perticular reason. Just convention */
+	CHSUM = 0x100 - (0x84 + 0x01 + 0x0A + DBYTE1 + DBYTE2 + DBYTE4);
+	WR_REG_32(name, HDMI_CORE_AV__AUDIO_CHSUM, CHSUM);
 
 	return ret;
 }
@@ -1299,8 +1368,11 @@ int hdmi_w1_audio_config_format(u32 name,
 {
 	int ret = 0;
 	u32 value = 0;
-
+	/* Differs from OMAP code, this function explictly disable audio wrapper.
+		In our case, we ensure caller of this function disables audio wrapper */
 	value = hdmi_read_reg(name, HDMI_WP_AUDIO_CFG);
+	value &= 0xffffffef;
+	value |= ((audio_fmt->iec) << 4);
 	value &= 0xfffffff7;
 	value |= ((audio_fmt->justify) << 3);;
 	value &= 0xfffffffb;
@@ -1313,8 +1385,8 @@ int hdmi_w1_audio_config_format(u32 name,
 	value |= ((audio_fmt->stereo_channel_enable) << 24);
 	value &= 0xff00ffff;
 	value |= ((audio_fmt->audio_channel_location) << 16);
-	value &= 0xffffffef;
-	value |= ((audio_fmt->iec) << 4);
+	value &= 0xffffffdf;
+	value |= (audio_fmt->block_start_end << 5);
 
 	/* Wakeup value = 0x1030022; */
 
@@ -1374,33 +1446,6 @@ static void hdmi_w1_audio_stop(void)
 	REG_FLD_MOD(HDMI_WP, HDMI_WP_AUDIO_CTRL, 0, 30, 30);
 }
 
-static int hdmi_w1_audio_config(void)
-{
-	int ret;
-
-	struct hdmi_audio_format audio_fmt;
-	struct hdmi_audio_dma audio_dma;
-
-	audio_fmt.justify = HDMI_AUDIO_JUSTIFY_LEFT;
-	audio_fmt.sample_number = HDMI_ONEWORD_TWO_SAMPLES;
-	audio_fmt.sample_size = HDMI_SAMPLE_16BITS;
-	audio_fmt.stereo_channel_enable = HDMI_STEREO_ONECHANNELS;
-	audio_fmt.audio_channel_location = HDMI_CEA_CODE_03;
-	audio_fmt.iec = HDMI_AUDIO_FORMAT_LPCM;
-	audio_fmt.left_before = HDMI_SAMPLE_LEFT_FIRST;
-
-	ret = hdmi_w1_audio_config_format(HDMI_WP, &audio_fmt);
-
-	audio_dma.dma_transfer = 0x20;
-	audio_dma.block_size = 0xC0;
-	audio_dma.threshold_value = 0x20;
-	audio_dma.dma_or_irq = HDMI_THRESHOLD_DMA;
-	audio_dma.block_start_end = HDMI_BLOCK_STARTEND_ON;
-
-	ret = hdmi_w1_audio_config_dma(HDMI_WP, &audio_dma);
-
-	return ret;
-}
 static void hdmi_core_extract_sync_config(struct hdmi_video_format *f_p,
 		struct hdmi_video_timing *t_p)
 {
@@ -1549,7 +1594,6 @@ int hdmi_lib_enable(struct hdmi_config *cfg)
 	if ( cpu_is_ti814x())
 		VideoInterfaceParam.timingMode = 1;
 	hdmi_w1_video_config_interface(&VideoInterfaceParam);
-	hdmi_w1_audio_config();
 
 	/****************************** CORE *******************************/
 	/************* configure core video part ********************************/
@@ -1655,12 +1699,13 @@ int hdmi_lib_enable(struct hdmi_config *cfg)
 	/* wakeup */
 	repeat_param.AudioPacketED = PACKETENABLE;
 	repeat_param.AudioPacketRepeat = PACKETREPEATON;
-	/* ISCR1 transmission */
-	repeat_param.MPEGInfoFrameED = PACKETENABLE;
-	repeat_param.MPEGInfoFrameRepeat = PACKETREPEATON;
-	/* ACP transmission */
-	repeat_param.SPDInfoFrameED = PACKETENABLE;
-	repeat_param.SPDInfoFrameRepeat = PACKETREPEATON;
+
+	/* ISCR1 transmission - Disabled */
+	repeat_param.MPEGInfoFrameED = PACKETDISABLE;
+	repeat_param.MPEGInfoFrameRepeat = PACKETREPEATOFF;
+	/* ACP transmission - Disabled */
+	repeat_param.SPDInfoFrameED = PACKETDISABLE;
+	repeat_param.SPDInfoFrameRepeat = PACKETREPEATOFF;
 
 	r = hdmi_core_av_packet_config(av_name, repeat_param);
 
@@ -2025,12 +2070,14 @@ void hdmi_core_software_reset(void)
 	return;
 }
 
-/* TODO : This func will return the current video clock  */
+/* This function will return the current video clock  */
 int hdmi_lib_get_pixel_clock()
 {
 	return hdmi.hdmi_cfg.pixel_clock;
 
 }
+
+/* TODO - Check if this function can be deprecated */
 int hdmi_get_video_timing()
  {
        int ret = 0;
@@ -2370,7 +2417,6 @@ int hdmi_lib_cec_read_msg(struct ti81xxhdmi_cec_received_msg *msg)
 exit_this_func:
 	return r;
 }
-
 
 
 EXPORT_SYMBOL(hdmi_lib_enable);

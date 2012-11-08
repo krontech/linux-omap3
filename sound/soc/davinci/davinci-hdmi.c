@@ -80,6 +80,7 @@ static int hdmi_acr_mode(void)
 #ifdef HDMI_FORCE_SW_ACR
 	return CTS_MODE_SW;
 #else
+	/* only TI8168 PG2.0 or higher support auto mode*/
 	if (cpu_is_ti816x() && TI8168_REV_ES2_0 > omap_rev())
 		return CTS_MODE_SW;
 	else
@@ -149,6 +150,12 @@ static int davinci_hdmi_dai_hw_params(struct snd_pcm_substream *substream,
 	u64 tmp_cts = 0;
 	u32 tmp_fs = 0 ;
 
+	/*
+	 * Currently, the deep color is not supported. Hence the
+	 * N/CTS values computations do not consider the same
+	 */
+	hdmi_w1_wrapper_disable(HDMI_WP);
+
 	/* TODO Modify the N/CTS value selection based on the Video clkc */
 	tmds = hdmi_lib_get_pixel_clock();
 	rate = params_rate(params);
@@ -195,29 +202,37 @@ static int davinci_hdmi_dai_hw_params(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_FORMAT_S16_LE:
 		audio_fmt.sample_number = HDMI_ONEWORD_TWO_SAMPLES;
 		audio_fmt.sample_size = HDMI_SAMPLE_16BITS;
-		audio_cfg.if_sample_size = (IF_16BIT_PER_SAMPLE << 1) |
-						 HDMI_SAMPLE_16BITS;
+		audio_fmt.justify = HDMI_AUDIO_JUSTIFY_LEFT;
+		audio_cfg.justify = HDMI_AUDIO_JUSTIFY_LEFT;
+		audio_cfg.if_sample_size = IF_16BIT_PER_SAMPLE;
+		audio_dma.dma_transfer = 0x10;
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
 		audio_fmt.sample_number = HDMI_ONEWORD_ONE_SAMPLE;
 		audio_fmt.sample_size = HDMI_SAMPLE_24BITS;
-		audio_cfg.if_sample_size = (IF_24BIT_PER_SAMPLE << 1) |
-						HDMI_SAMPLE_24BITS;
+		audio_fmt.justify = HDMI_AUDIO_JUSTIFY_RIGHT;
+		audio_cfg.justify = HDMI_AUDIO_JUSTIFY_RIGHT;
+		audio_cfg.if_sample_size = IF_24BIT_PER_SAMPLE;
+		audio_dma.dma_transfer = 0x20;
 		break;
 	default:
 		err = -EINVAL;
 	}
 
 	/* HDMI Wrapper config */
-	audio_fmt.justify = HDMI_AUDIO_JUSTIFY_LEFT;
 	audio_fmt.stereo_channel_enable = HDMI_STEREO_ONECHANNELS;
 	audio_fmt.audio_channel_location = HDMI_CEA_CODE_03;
 	audio_fmt.iec = HDMI_AUDIO_FORMAT_LPCM;
+	/* As per spec, we support left first only */
 	audio_fmt.left_before = HDMI_SAMPLE_LEFT_FIRST;
+	/*
+	 * The HDMI audio (L-PCM) is encoded in IEC 60958
+	 * format require block start and stop
+	 */
+	audio_fmt.block_start_end = HDMI_BLOCK_STARTEND_ON;
 
 	ret = hdmi_w1_audio_config_format(HDMI_WP, &audio_fmt);
 
-	audio_dma.dma_transfer = 0x20;
 	audio_dma.block_size = 0xC0;
 	audio_dma.threshold_value = 0x20;
 	audio_dma.dma_or_irq = HDMI_THRESHOLD_DMA;
@@ -232,14 +247,13 @@ static int davinci_hdmi_dai_hw_params(struct snd_pcm_substream *substream,
 	audio_cfg.if_channel_number = HDMI_STEREO_TWOCHANNELS;
 	audio_cfg.if_audio_channel_location = HDMI_CEA_CODE_00;
 
-	/* TODO: Is this configuration correct? */
-	audio_cfg.aud_par_busclk = 0;
-
 	if (CTS_MODE_HW == hdmi_acr_mode()) {
 		audio_cfg.cts_mode = CTS_MODE_HW;
+		audio_cfg.aud_par_busclk = (((128 * 31) - 1) << 8);
 		DBG("CTS mode is HW\n");
 	} else {
 		audio_cfg.cts_mode = CTS_MODE_SW;
+		audio_cfg.aud_par_busclk = 0;
 		DBG("CTS mode is SW\n");
 	}
 

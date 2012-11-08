@@ -313,6 +313,11 @@ enum hdmi_sample_size {
 	HDMI_SAMPLE_24BITS = 1
 };
 
+enum hdmi_block_start_end {
+	HDMI_BLOCK_STARTEND_ON = 0,
+	HDMI_BLOCK_STARTEND_OFF = 1
+};
+
 struct hdmi_audio_format {
 	enum hdmi_stereo_channel	stereo_channel_enable;
 	enum hdmi_cea_code		audio_channel_location;
@@ -321,6 +326,7 @@ struct hdmi_audio_format {
 	enum hdmi_sample_order		left_before;
 	enum hdmi_sample_perword	sample_number;
 	enum hdmi_sample_size		sample_size;
+	enum hdmi_block_start_end	block_start_end;
 };
 
 enum hdmi_dma_irq {
@@ -328,10 +334,6 @@ enum hdmi_dma_irq {
 	HDMI_THRESHOLD_IRQ = 1
 };
 
-enum hdmi_block_start_end {
-	HDMI_BLOCK_STARTEND_ON = 0,
-	HDMI_BLOCK_STARTEND_OFF = 1
-};
 enum hdmi_data_format {
 	HDMI_DF_YUV422 = 0,
 	HDMI_DF_YUV444 = 1,
@@ -464,6 +466,7 @@ struct hdmi_core_audio_config {
 	u32				if_channel_number;
 	enum hdmi_core_if_sample_size	if_sample_size;
 	enum hdmi_cea_code		if_audio_channel_location;
+	enum hdmi_audio_justify         justify;
  };
 struct hdmi_notifier {
 	void (*hpd_notifier)(int state, void *data);
