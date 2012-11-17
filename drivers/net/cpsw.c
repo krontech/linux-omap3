@@ -2416,28 +2416,63 @@ static void cpsw_ndo_set_multicast_list(struct net_device *ndev)
 {
 	struct cpsw_priv *priv = netdev_priv(ndev);
 
-	if (ndev->flags & IFF_PROMISC) {
-		/* Enable promiscuous mode */
-	} else {
-		if (!netdev_mc_empty(ndev)) {
-			struct netdev_hw_addr *ha;
+	if (!netdev_mc_empty(ndev)) {
+		struct netdev_hw_addr *ha;
 
-			/* Clear all mcast from ALE */
-			cpsw_ale_flush_multicast(priv->ale,
-					ALE_ALL_PORTS << priv->host_port);
+		/* Clear all mcast from ALE */
+		cpsw_ale_flush_multicast(priv->ale,
+				ALE_ALL_PORTS << priv->host_port);
 
-			/* program multicast address list into ALE register */
-			netdev_for_each_mc_addr(ha, ndev) {
-				cpsw_ale_add_mcast(priv->ale, (u8 *)ha->addr,
-					ALE_ALL_PORTS << priv->host_port, 0, 0);
-			}
-		} else {
-			/* Clear all mcast from ALE */
-			cpsw_ale_flush_multicast(priv->ale,
-					ALE_ALL_PORTS << priv->host_port);
+		/* program multicast address list into ALE register */
+		netdev_for_each_mc_addr(ha, ndev) {
+			cpsw_ale_add_mcast(priv->ale, (u8 *)ha->addr,
+				ALE_ALL_PORTS << priv->host_port, 0, 0);
 		}
+	} else {
+		/* Clear all mcast from ALE */
+		cpsw_ale_flush_multicast(priv->ale,
+				ALE_ALL_PORTS << priv->host_port);
 	}
 }
+
+#ifdef CONFIG_TI_CPSW_DUAL_EMAC
+
+static void cpsw_ndo_change_rx_flags(struct net_device *ndev, int flags)
+{
+	struct cpsw_priv *priv = netdev_priv(ndev);
+	struct cpsw_ale *ale = priv->ale;
+
+	if (flags & IFF_PROMISC) {
+		if ((priv->slaves[0].ndev->flags & IFF_PROMISC) ||
+				(priv->slaves[1].ndev->flags & IFF_PROMISC)) {
+			/*
+			 * Enabling promiscuous mode for one interface will be
+			 * common for both the interface as the interface
+			 * shares the same hardware resource.
+			 */
+
+			/* Enable Bypass */
+			cpsw_ale_control_set(ale, 0, ALE_BYPASS, 1);
+
+			dev_err(&ndev->dev, "promiscuity enabled\n");
+		} else {
+			/* Disable Bypass */
+			cpsw_ale_control_set(ale, 0, ALE_BYPASS, 0);
+			dev_err(&ndev->dev, "promiscuity disabled\n");
+		}
+	}
+
+	/*
+	 * The switch cannot filter multicast traffic unless it is configured
+	 * in "VLAN Aware" mode.  Unfortunately, VLAN awareness requires a
+	 * whole bunch of additional logic that this driver does not implement
+	 * at present.
+	 */
+	if ((flags & IFF_ALLMULTI) && !(ndev->flags & IFF_ALLMULTI))
+		dev_err(&ndev->dev, "multicast traffic cannot be filtered!\n");
+}
+
+#else
 
 static void cpsw_ndo_change_rx_flags(struct net_device *ndev, int flags)
 {
@@ -2461,6 +2496,8 @@ static void cpsw_ndo_change_rx_flags(struct net_device *ndev, int flags)
 	if ((flags & IFF_ALLMULTI) && !(ndev->flags & IFF_ALLMULTI))
 		dev_err(&ndev->dev, "multicast traffic cannot be filtered!\n");
 }
+
+#endif
 
 static int cpsw_ndo_set_mac_address(struct net_device *ndev, void *p)
 {
