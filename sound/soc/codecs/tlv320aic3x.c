@@ -991,7 +991,22 @@ static int aic3x_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	struct snd_soc_codec *codec = codec_dai->codec;
 	struct aic3x_priv *aic3x = snd_soc_codec_get_drvdata(codec);
 	u8 iface_areg, iface_breg;
-	int delay = 0;
+	int delay = 0, i = 0;
+	u8 *cache = codec->reg_cache;
+
+	/*
+	 * Register cache sync issue faced while running
+	 * audio in a tight loop for long time(TI811X).
+	 * The actual root cause is unknow.
+	 *
+	 * Workaround:
+	 * forcing the reg cache sync always in the startup
+	 *
+	 */
+
+	for (i = 0; i < ARRAY_SIZE(aic3x_reg); i++)
+		snd_soc_write(codec, i, cache[i]);
+	codec->cache_sync = 0;
 
 	iface_areg = snd_soc_read(codec, AIC3X_ASD_INTF_CTRLA) & 0x3f;
 	iface_breg = snd_soc_read(codec, AIC3X_ASD_INTF_CTRLB) & 0x3f;
