@@ -1573,13 +1573,13 @@ static int nand_do_read_ops(struct mtd_info *mtd, loff_t from,
 	if (oob)
 		ops->oobretlen = ops->ooblen - oobreadlen;
 
-	if (ret)
-		return ret;
-
 	if (mtd->ecc_stats.failed - stats.failed)
 		return -EBADMSG;
 
-	return  mtd->ecc_stats.corrected - stats.corrected ? -EUCLEAN : 0;
+	if (mtd->ecc_stats.corrected - stats.corrected)
+		return -EUCLEAN;
+
+	return ret;
 }
 
 /**

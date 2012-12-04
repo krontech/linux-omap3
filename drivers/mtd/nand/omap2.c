@@ -821,6 +821,7 @@ static int omap_read_page_bch(struct mtd_info *mtd, struct nand_chip *chip,
 	uint8_t *oob = &chip->oob_poi[eccpos[0]];
 	uint32_t data_pos;
 	uint32_t oob_pos;
+	int stat = 0;
 
 	data_pos = 0;
 	/* oob area start */
@@ -851,7 +852,6 @@ static int omap_read_page_bch(struct mtd_info *mtd, struct nand_chip *chip,
 	p = buf;
 
 	for (i = 0 ; eccsteps; eccsteps--, i += eccbytes, p += eccsize) {
-		int stat;
 
 		stat = chip->ecc.correct(mtd, p, &ecc_code[i], &ecc_calc[i]);
 
@@ -860,7 +860,7 @@ static int omap_read_page_bch(struct mtd_info *mtd, struct nand_chip *chip,
 		else
 			mtd->ecc_stats.corrected += stat;
 	}
-	return 0;
+	return stat;
 }
 
 /**
@@ -969,6 +969,8 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
 			if (eccflag == 1)
 				count  = elm_decode_bch_error(0, calc_ecc,
 						err_loc);
+			if (count < 0)
+				return -EBADMSG;
 
 			for (j = 0; j < count; j++) {
 				u32 bit_pos, byte_pos;
