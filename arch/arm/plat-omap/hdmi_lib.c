@@ -1486,6 +1486,7 @@ static void hdmi_core_extract_sync_config(struct hdmi_video_format *f_p,
 	hdmi_write_reg(HDMI_CORE_SYS, HDMI_CORE_SYS__VBIT_TO_VSYNC, vbit2_vsync);
 	hdmi_write_reg(HDMI_CORE_SYS, HDMI_CORE_SYS__VWIDTH, vwidth);
 }
+
 int hdmi_lib_enable(struct hdmi_config *cfg)
 {
 	u32 r;
@@ -1709,7 +1710,8 @@ int hdmi_lib_enable(struct hdmi_config *cfg)
 
 	r = hdmi_core_av_packet_config(av_name, repeat_param);
 
-	REG_FLD_MOD(av_name, HDMI_CORE_AV__HDMI_CTRL, cfg->hdmi_dvi, 0, 0);
+	REG_FLD_MOD(av_name, HDMI_CORE_AV__HDMI_CTRL,
+			v_core_cfg.CoreHdmiDvi, 0, 0);
 	memcpy(&hdmi.hdmi_cfg, cfg, sizeof(struct hdmi_config));
 	return r;
 }

@@ -266,7 +266,7 @@ __u32 hdmi_get_image_format(__u8 *edid, struct image_format *format)
 		else
 			format->length = length;
 
-		for (j = 1 ; j < length ; j++) {
+		for (j = 1 ; j <= format->length ; j++) {
 			current_byte = edid[offset+j];
 			format->fmt[j-1].code = current_byte & 0x7F;
 			format->fmt[j-1].pref = current_byte & 0x80;
@@ -287,13 +287,13 @@ __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format)
 		current_byte = edid[offset];
 		length = current_byte & HDMI_EDID_EX_DATABLOCK_LEN_MASK;
 
-		if (length >= HDMI_AUDIO_FORMAT_MAX_LENGTH)
-			format->length = HDMI_AUDIO_FORMAT_MAX_LENGTH;
+		if (length >= HDMI_AUDIO_FORMAT_MAX_LENGTH * 3)
+			format->length = HDMI_AUDIO_FORMAT_MAX_LENGTH * 3;
 		else
 			format->length = length;
 
 		i = 0;
-		for (j = 1 ; j < length ; j++) {
+		for (j = 1 ; j <= format->length ; j++) {
 			if (j%3 == 1) {
 				current_byte = edid[offset + j];
 				format->fmt[i].format =
@@ -309,7 +309,7 @@ __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format)
 				/* Get the Bit Rate -
 					CEA861 - PG 154 - Table 84 / 34 */
 				current_byte = edid[offset + j];
-				format->fmt[i].width = current_byte;
+				format->fmt[i].width = current_byte & 0x7;
 				i++;
 			}
 		}
@@ -360,6 +360,7 @@ __u32 hdmi_tv_yuv_supported(__u8 *edid)
 		return (edid[0x83] & 0x30) >> 4;
 	return 0;
 }
+
 _Bool hdmi_tv_hdmi_supported(__u8 *edid)
 {
 	/*check with TV suppport HDMI or not

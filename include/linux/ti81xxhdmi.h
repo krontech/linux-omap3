@@ -165,6 +165,19 @@ struct ti81xxhdmi_status {
 };
 
 struct ti81xxhdmi_sink_edid_parsed {
+
+	/* Specifies the sinks EDID version */
+	__u8 version;
+	/* Specifies the sinks EDID revision */
+	__u8 revision;
+
+	/* Specifies if the connected sink supports HDMI or DVI interface.
+		0 - Indicates DVI interface
+		1 - Indicates HDMI interface
+		In case of DVI mode num_dt, supported_cea_vic, audio_support &
+			is_yuv_supported of this strucutre is in-valid. */
+	__u8 is_hdmi_supported;
+
 	/* Estabilished Video Timings.
 			VESA ENHANCED EXTENDED DISPLAY
 			IDENTIFICATION DATA STANDARD

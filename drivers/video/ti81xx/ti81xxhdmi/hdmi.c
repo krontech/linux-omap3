@@ -682,12 +682,13 @@ static struct hdmi_cm hdmi_get_code(struct TI81xx_video_timings *timing)
 static int hdmi_get_edid(void)
 {
 	u8 i = 0, *e;
-	int offset, addr;
+	int offset, addr, r;
 	struct HDMI_EDID *edid_st = (struct HDMI_EDID *)edid;
 	struct deep_color *vsdb_format;
 	struct latency *lat;
 	struct ti81xxhdmi_sink_edid_parsed *edid_p = &parsed_edid;
 
+	r = 0;
 	vsdb_format = kzalloc(sizeof(*vsdb_format), GFP_KERNEL);
 	lat = kzalloc(sizeof(*lat), GFP_KERNEL);
 
@@ -696,14 +697,16 @@ static int hdmi_get_edid(void)
 
 	if (HDMI_CORE_DDC_READEDID(HDMI_CORE_SYS, edid,	HDMI_EDID_MAX_LENGTH)
 	    != 0) {
-		THDMIDBG("HDMI failed to read E-EDID\n");
-		return -1;
-	}
-	edid_set = !memcmp(edid, header, sizeof(header));
-	if (memcmp(edid, header, sizeof(header))) {
-		THDMIDBG("Header mismatch\n");
+		printk(KERN_INFO "HDMI failed to read E-EDID\n");
+		r = -1;
 		goto exit;
 	}
+	if (0 != memcmp(edid, header, sizeof(header))) {
+		printk(KERN_INFO "Header mismatch\n");
+		r = -1;
+		goto exit;
+	}
+	edid_set = true;
 	e = edid;
 	 THDMIDBG(KERN_INFO "\nHeader:\n%02x\t%02x\t%02x\t%02x\t%02x\t%02x\t"
 		"%02x\t%02x\n", e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7]);
@@ -714,6 +717,8 @@ static int hdmi_get_edid(void)
 	e += 10;
 	 THDMIDBG(KERN_INFO "EDID Structure:\n%02x\t%02x\n",
 		e[0], e[1]);
+	edid_p->version = e[0];
+	edid_p->revision = e[1];
 	e += 2;
 	THDMIDBG(KERN_INFO
 		 "Basic Display Parameter:\n%02x\t%02x\t%02x\t%02x\t%02x\n",
@@ -776,28 +781,32 @@ static int hdmi_get_edid(void)
 			}
 		}
 	}
+	edid_p->is_hdmi_supported = hdmi_tv_hdmi_supported(edid);
 
-	hdmi_get_image_format(edid, &edid_p->supported_cea_vic);
+	if (0x0 != edid_p->is_hdmi_supported) {
+		hdmi_get_image_format(edid, &edid_p->supported_cea_vic);
 
-	hdmi_get_audio_format(edid, &edid_p->audio_support);
+		hdmi_get_audio_format(edid, &edid_p->audio_support);
 
-	hdmi_deep_color_support_info(edid, vsdb_format);
-	/* THDMIDBG(KERN_INFO "%d deep color bit 30 %d  deep color 36 bit "
-		"%d max tmds freq", vsdb_format->bit_30, vsdb_format->bit_36,
-		vsdb_format->max_tmds_freq); */
+		hdmi_deep_color_support_info(edid, vsdb_format);
+		/* THDMIDBG(KERN_INFO "%d deep color bit 30 %d "
+			"deep color 36 bit %d max tmds freq",
+			vsdb_format->bit_30, vsdb_format->bit_36,
+			vsdb_format->max_tmds_freq); */
 
-	hdmi_get_av_delay(edid, lat);
-	/* THDMIDBG(KERN_INFO "%d vid_latency %d aud_latency "
-		"%d interlaced vid latency %d interlaced aud latency",
-		lat->vid_latency, lat->aud_latency,
-		lat->int_vid_latency, lat->int_aud_latency); */
+		hdmi_get_av_delay(edid, lat);
+		/* THDMIDBG(KERN_INFO "%d vid_latency %d aud_latency "
+			"%d interlaced vid latency %d interlaced aud latency",
+			lat->vid_latency, lat->aud_latency,
+			lat->int_vid_latency, lat->int_aud_latency); */
 
-	edid_p->is_yuv_supported = hdmi_tv_yuv_supported(edid);
+		edid_p->is_yuv_supported = hdmi_tv_yuv_supported(edid);
+	}
 
 exit:
 	kfree(vsdb_format);
 	kfree(lat);
-	return 0;
+	return r;
 }
 
 #ifdef ENABLE_VENC_COLORBAR_TEST
@@ -921,9 +930,17 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case TI81XXHDMI_READ_EDID:
 		THDMIDBG("ioctl TI81XXHDMI_READ_EDID\n");
-		mutex_lock(&hdmi.lock);
+		if (false == edid_set) {
+			mutex_lock(&hdmi.lock);
 
-		r = hdmi_get_edid();
+			r = hdmi_get_edid();
+
+			mutex_unlock(&hdmi.lock);
+		} else {
+			THDMIDBG("Sinks EDID was already read-skip re-read\n");
+			THDMIDBG("Copying previously read EDID\n");
+			r = 0;
+		}
 
 		/*make sure arg is not NULL*/
 		if ((r == 0) && (arg)) {
@@ -934,7 +951,6 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				r = -EFAULT;
 			}
 		}
-		mutex_unlock(&hdmi.lock);
 		break;
 	case TI81XXHDMI_GET_PARSED_EDID_INFO:
 		THDMIDBG("ioctl TI81XXHDMI_GET_PARSED_EDID_INFO\n");
@@ -1191,10 +1207,12 @@ static int hdmi_power_on(void)
 	 * function caller has already ensured the same.
 	 * i.e. hdmi.lock has been acquired 
 	 */
-	if (hdmi_get_edid())
+	/* If the EDID read fails, we fall back to supplied HDMI mode
+	 * HDMI / DVI 1/0 */
+	if (0 != hdmi_get_edid())
 		hdmi.cfg.hdmi_dvi   = hdmi.mode;
 	else
-		hdmi.cfg.hdmi_dvi = (u16)hdmi_tv_hdmi_supported(edid);
+		hdmi.cfg.hdmi_dvi = (u16)parsed_edid.is_hdmi_supported;
 	THDMIDBG("Interface is %d [0:DVI, 1:HDMI]\n", hdmi.cfg.hdmi_dvi);
 	/* Start HDMI library */
 	hdmi_lib_enable(&hdmi.cfg);
@@ -1234,7 +1252,6 @@ static int hdmi_set_power(void)
 	return r;
 }
 
-#if 1
 static void hdmi_work_queue(struct work_struct *ws)
 {
 	struct hdmi_work_struct *work =
@@ -1249,6 +1266,8 @@ static void hdmi_work_queue(struct work_struct *ws)
 		if (hdmi.cec_state != HDMI_CEC_BYPASS)
 			hdmi.cec_state = HDMI_CEC_BYPASS;
 
+		edid_set = false;
+
 #ifdef DISABLE_ENABLE_ON_HPD
 		hdmi_disable_display();
 		hdmi_enable_display();
@@ -1258,7 +1277,8 @@ static void hdmi_work_queue(struct work_struct *ws)
 
 	kfree(work);
 }
-#endif
+
+
 static inline void hdmi_handle_irq_work(int r)
 {
 	struct hdmi_work_struct *work;
@@ -1274,6 +1294,7 @@ static inline void hdmi_handle_irq_work(int r)
 		}
 	}
 }
+
 static bool hdmi_connected;
 static irqreturn_t hdmi_irq_handler(int irq, void *arg)
 {
@@ -1296,9 +1317,9 @@ static irqreturn_t hdmi_irq_handler(int irq, void *arg)
 		hdmi_connected = false;
 
 	spin_unlock_irqrestore(&irqstatus_lock, flags);
-#if 1
+
 	hdmi_handle_irq_work(r);
-#endif
+
 	return IRQ_HANDLED;
 }
 
@@ -1327,14 +1348,17 @@ static void hdmi_disable_display(void)
 	/* Free irq befor disabling the hardware else it will generate continous
 	   interrupts.
 	 */
+	if (TI81xx_EXT_ENCODER_DISABLED != hdmi.status) {
+		free_irq(TI81XX_IRQ_HDMIINT, NULL);
 
-	free_irq(TI81XX_IRQ_HDMIINT, NULL);
+		hdmi_stop_display();
+		/*setting to default only in case of disable and not suspend*/
+		hdmi.mode = 1 ; /* HDMI */
 
-	hdmi_stop_display();
-	/*setting to default only in case of disable and not suspend*/
-	hdmi.mode = 1 ; /* HDMI */
+		hdmi.status = TI81xx_EXT_ENCODER_DISABLED;
+		edid_set = false;
+	}
 
-	hdmi.status = TI81xx_EXT_ENCODER_DISABLED;
 	mutex_unlock(&hdmi.lock);
 }
 
@@ -1652,7 +1676,7 @@ static int hdmi_get_panel_edid(char *inbuf, void *data)
 	mutex_lock(&hdmi.lock);
 
 
-	if (hdmi_get_edid() != 0) {
+	if (0 != hdmi_get_edid()) {
 		mutex_unlock(&hdmi.lock);
 		return -1;
 	}

@@ -48,8 +48,8 @@
 #define HDMI_EDID_H_SYNC_PW_OFFSET		9
 #define HDMI_EDID_V_SYNC_OFFSET			10
 #define HDMI_EDID_V_SYNC_PW_OFFSET		11
-#define HDMI_EDID_H_IMAGE_SIZE_OFFSET		12
-#define HDMI_EDID_V_IMAGE_SIZE_OFFSET		13
+#define HDMI_EDID_H_IMAGE_SIZE_OFFSET	12
+#define HDMI_EDID_V_IMAGE_SIZE_OFFSET	13
 #define HDMI_EDID_H_BORDER_OFFSET		15
 #define HDMI_EDID_V_BORDER_OFFSET		16
 #define HDMI_EDID_FLAGS_OFFSET			17
@@ -60,20 +60,24 @@
 #define HDMI_STATE_ON		2 /* HDMI monitor connected and powered on*/
 
 /* HDMI EDID Length */
-#define HDMI_EDID_MAX_LENGTH			512
+#define HDMI_EDID_MAX_LENGTH	512
 
 /* HDMI EDID DTDs */
-#define HDMI_EDID_MAX_DTDS			4
+#define HDMI_EDID_MAX_DTDS		4
 
 /* HDMI EDID DTD Tags */
-#define HDMI_EDID_DTD_TAG_MONITOR_NAME		0xFC
-#define HDMI_EDID_DTD_TAG_MONITOR_SERIALNUM	0xFF
-#define HDMI_EDID_DTD_TAG_MONITOR_LIMITS	0xFD
+#define HDMI_EDID_DTD_TAG_MONITOR_NAME			0xFC
+#define HDMI_EDID_DTD_TAG_MONITOR_SERIALNUM		0xFF
+#define HDMI_EDID_DTD_TAG_MONITOR_LIMITS		0xFD
 #define HDMI_EDID_DTD_TAG_STANDARD_TIMING_DATA	0xFA
-#define HDMI_EDID_DTD_TAG_COLOR_POINT_DATA	0xFB
-#define HDMI_EDID_DTD_TAG_ASCII_STRING		0xFE
+#define HDMI_EDID_DTD_TAG_COLOR_POINT_DATA		0xFB
+#define HDMI_EDID_DTD_TAG_ASCII_STRING			0xFE
 
-#define HDMI_IMG_FORMAT_MAX_LENGTH		20
+/* 5 bits describe the length, which is 32 bytes.
+	1 byte for each Video Data Block */
+#define HDMI_IMG_FORMAT_MAX_LENGTH			0x20
+/* 5 Bits describe the length, which is 32 bytes, we would require 3 bytes per
+	audio data block */
 #define HDMI_AUDIO_FORMAT_MAX_LENGTH		10
 
 /* HDMI EDID Extenion Data Block Values: Video */
