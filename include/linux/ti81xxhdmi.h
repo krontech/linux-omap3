@@ -25,7 +25,7 @@
 #ifndef __TI81XXHDMI_H__
 #define __TI81XXHDMI_H__
 
-
+#include <linux/types.h>
 #include <linux/ioctl.h>
 #include <linux/edid.h>
 
