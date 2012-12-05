@@ -907,18 +907,20 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case TI81XXHDMI_READ_EDID:
 		THDMIDBG("ioctl TI81XXHDMI_READ_EDID\n");
-		if (hdmi_get_edid() != 0)
-			return  -EFAULT;
-/*		if (copy_to_user((void __user *)arg, &edid,
-		    sizeof(struct HDMI_EDID)))*/
+		mutex_lock(&hdmi.lock);
+
+		r = hdmi_get_edid();
+
 		/*make sure arg is not NULL*/
-		if (arg)
+		if ((r == 0) && (arg)) {
 			r = copy_to_user((void __user *)arg, &edid,
 					 sizeof(struct HDMI_EDID));
-		if (r) {
-			THDMIDBG("Error : copy_to_user, r = %d ", r);
-			r = -EFAULT;
+			if (r) {
+				THDMIDBG("Error : copy_to_user, r = %d ", r);
+				r = -EFAULT;
+			}
 		}
+		mutex_unlock(&hdmi.lock);
 		break;
 	case TI81XXHDMI_CEC_ACTIVATE:
 		mutex_lock(&hdmi.lock);
@@ -1156,6 +1158,10 @@ static int hdmi_power_on(void)
 	hdmi.cfg.deep_color = HDMI_DEEP_COLOR_24BIT;
 	/*force HDMI output DVI if the TV does not support HDMI
 	  or TV connected*/
+	/* Note that, we need not wait for exclusive access, as the
+	 * function caller has already ensured the same.
+	 * i.e. hdmi.lock has been acquired 
+	 */
 	if (hdmi_get_edid())
 		hdmi.cfg.hdmi_dvi   = hdmi.mode;
 	else
@@ -1329,7 +1335,7 @@ int __init hdmi_init(void)
 	hdmi.base_pll = 0;
 	hdmi.base_phy = 0;
 	hdmi.base_prcm = 0;
-	
+
 	hdmi.isr_cb = 0;
 	hdmi.frame_start_event = 0;
 	hdmi.done_ctl = 0;
@@ -1606,8 +1612,15 @@ static int hdmi_get_panel_edid(char *inbuf, void *data)
 		return -1;
 	hpd_state = hdmi_get_hpd_pin_state();
 
-	if (hdmi_get_edid() != 0)
+	mutex_lock(&hdmi.lock);
+
+
+	if (hdmi_get_edid() != 0) {
+		mutex_unlock(&hdmi.lock);
 		return -1;
+	}
+
+	mutex_unlock(&hdmi.lock);
 
 	memcpy(inbuf, edid, HDMI_EDID_MAX_LENGTH);
 	return HDMI_EDID_MAX_LENGTH;
