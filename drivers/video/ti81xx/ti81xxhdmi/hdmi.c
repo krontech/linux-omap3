@@ -714,12 +714,14 @@ static int hdmi_get_edid(void)
 		"%02x\t%02x\t%02x\t%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8], e[9]);
 	e += 10;
-	THDMIDBG(KERN_INFO "Established timings:\n%02x\t%02x\t%02x\n",
+	THDMIDBG(KERN_INFO "Established timings - VESA:\n%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2]);
 	e += 3;
-	 THDMIDBG(KERN_INFO "Standard timings:\n%02x\t%02x\t%02x\t%02x\t%02x\t"
-			 "%02x\t%02x\t%02x\n",
+	THDMIDBG(KERN_INFO "Refer VESA E-EDID Standard to interpret above\n");
+	THDMIDBG(KERN_INFO "Standard timings - VESA :\n%02x\t%02x\t%02x\t%02x\t"
+			 "%02x\t%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7]);
+	THDMIDBG(KERN_INFO "Refer VESA E-EDID Standard to interpret above\n");
 	e += 8;
 	 THDMIDBG(KERN_INFO "%02x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7]);

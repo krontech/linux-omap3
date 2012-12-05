@@ -261,7 +261,22 @@ struct HDMI_EDID {
 	__u8	timing_1;		/* 35 */
 	__u8	timing_2;		/* 36 */
 	__u8	timing_3;		/* 37 */
+/* Refer
+ *	VESA ENHANCED EXTENDED DISPLAY
+ *	IDENTIFICATION DATA STANDARD
+ *	(Defines EDID Structure Version 1, Revision 4)
+ *	To decode values present in timing_1, timing_2 & timing_3
+ *	Table 3.18 - Established Timings I & II
+ */
+
 	__u8	std_timings[16];	/* 38-53 */
+/* Refer
+ *	VESA ENHANCED EXTENDED DISPLAY
+ *	IDENTIFICATION DATA STANDARD
+ *	(Defines EDID Structure Version 1, Revision 4)
+ *	To decode values present in std_timings
+ *	Table 3.19 - Standard Timings 
+ */
 
 	union HDMI_EDID_DTD DTD[4];	/* 54-125 */
 
