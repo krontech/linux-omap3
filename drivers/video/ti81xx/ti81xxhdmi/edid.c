@@ -238,13 +238,8 @@ __u32 hdmi_get_datablock_offset(__u8 *edid, enum extension_edid_db datablock,
 	printk(KERN_DEBUG "%x\n", i);
 	while (i < (0x80 + disp)) {
 		current_byte = edid[i];
-		/* printk(KERN_INFO "i = %x cur_byte = %x (cur_byte & EX_DATABLOCK_TAG_MASK) = %d\n",
-			i, current_byte,
-			(current_byte & HDMI_EDID_EX_DATABLOCK_TAG_MASK)); */
 		if ((current_byte >> 5)	== datablock) {
 			*offset = i;
-			/* printk(KERN_INFO "datablock %d %d\n",
-							datablock, *offset); */
 			return 0;
 		} else {
 			length = (current_byte &
@@ -282,7 +277,7 @@ __u32 hdmi_get_image_format(__u8 *edid, struct image_format *format)
 
 __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format)
 {
-	int offset, current_byte, j = 0, length = 0;
+	int offset, current_byte, i, j = 0, length = 0;
 	enum extension_edid_db vsdb =  DATABLOCK_AUDIO;
 
 	format->length = 0;
@@ -297,12 +292,25 @@ __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format)
 		else
 			format->length = length;
 
+		i = 0;
 		for (j = 1 ; j < length ; j++) {
 			if (j%3 == 1) {
 				current_byte = edid[offset + j];
-				format->fmt[j-1].format = current_byte & 0x78;
-				format->fmt[j-1].num_of_ch =
+				format->fmt[i].format =
+						(current_byte & 0x78) >> 3;
+				format->fmt[i].num_of_ch =
 						(current_byte & 0x07) + 1;
+			} else if (j%3 == 2) {
+				/* Get the Frequency -
+					CEA861 - PG 154 - Table 84 / 34 */
+				current_byte = edid[offset + j];
+				format->fmt[i].freq = current_byte;
+			} else if (j%3 == 0) {
+				/* Get the Bit Rate -
+					CEA861 - PG 154 - Table 84 / 34 */
+				current_byte = edid[offset + j];
+				format->fmt[i].width = current_byte;
+				i++;
 			}
 		}
 	}
@@ -348,13 +356,11 @@ void hdmi_deep_color_support_info(u8 *edid, struct deep_color *format)
 
 __u32 hdmi_tv_yuv_supported(__u8 *edid)
 {
-	if (edid[0x7e] != 0x00 && edid[0x83] & 0x30) {
-		printk(KERN_INFO "YUV supported");
-		return 1;
-	}
+	if (edid[0x7e] != 0x00)
+		return (edid[0x83] & 0x30) >> 4;
 	return 0;
 }
-bool hdmi_tv_hdmi_supported(__u8 *edid)
+_Bool hdmi_tv_hdmi_supported(__u8 *edid)
 {
 	/*check with TV suppport HDMI or not
 	if no externsion block, HDMI is not supported*/
@@ -388,7 +394,7 @@ bool hdmi_tv_hdmi_supported(__u8 *edid)
 
 }
 
-bool hdmi_tv_cec_get_pa(__u8 *edid, __u8 *pa)
+_Bool hdmi_tv_cec_get_pa(__u8 *edid, __u8 *pa)
 {
 	/*check with TV suppport HDMI or not
 	if no externsion block, HDMI is not supported*/

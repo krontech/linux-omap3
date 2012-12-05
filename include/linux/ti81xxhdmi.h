@@ -27,6 +27,7 @@
 
 
 #include <linux/ioctl.h>
+#include <linux/edid.h>
 
 /* HDCP state
 	When application query status of HDCP using IOCTL
@@ -53,10 +54,14 @@
 #define TI81XXHDMI_STOP			TI81XXHDMI_IO(1)
 #define TI81XXHDMI_GET_STATUS		TI81XXHDMI_IOR(2, unsigned char *)
 #define TI81XXHDMI_READ_EDID		TI81XXHDMI_IOR(3, unsigned char *)
-/*#define
- * TI81XXHDMI_READ_EDID TI81XXHDMI_IOR(3, struct ti81xxdhmi_edid_params)
- */
 
+/* Used get the parsed EDID information of the connected sink.
+ * Takes in a argument of type struct ti81xxhdmi_sink_edid_parsed.
+ *
+ * Ensure the sink EDID is explictly read by calling IOCTL TI81XXHDMI_READ_EDID
+ */
+#define TI81XXHDMI_GET_PARSED_EDID_INFO		TI81XXHDMI_IOWR(4, \
+					struct ti81xxhdmi_sink_edid_parsed *)
 /*
  * Used to enable the CEC block of HDMI.
  * Before CEC messages could be read / written OR registered, CEC block has to
@@ -151,11 +156,72 @@
 #define TI81XXHDMI_HDCP_EVENT_STEP2		(1 << 0x1)
 #define TI81XXHDMI_HDCP_EVENT_EXIT		(1 << 0x2)
 
-
+/*Local Macros */
+#define HDMI_MAX_DETAILED_TIMINGS	(EDID_SIZE_BLOCK0_TIMING_DESCRIPTOR + \
+					EDID_SIZE_BLOCK1_TIMING_DESCRIPTOR)
 struct ti81xxhdmi_status {
 	unsigned int is_hpd_detected;
 	unsigned int is_hdmi_streaming;
 };
+
+struct ti81xxhdmi_sink_edid_parsed {
+	/* Estabilished Video Timings.
+			VESA ENHANCED EXTENDED DISPLAY
+			IDENTIFICATION DATA STANDARD
+			(Defines EDID Structure Version 1, Revision 4)
+			To decode values present in timing_1, timing_2 &
+			timing_3
+		Table 3.18 - Established Timings I & II
+	 */
+	__u8 established_timings[3];
+
+	/* Estabilished Video Timings.
+			VESA ENHANCED EXTENDED DISPLAY
+			IDENTIFICATION DATA STANDARD
+			(Defines EDID Structure Version 1, Revision 4)
+			To decode values present in timing_1, timing_2 &
+			timing_3
+		Table 3.18 - Established Timings I & II
+	 */
+	__u8 standard_timings[8];
+
+	/* Detailed Video Timings
+	 * 0 location is the preffered timing as declared by sink in block 0
+	 * 1 location is the next timing as declared by sink in block 0
+	 * 2 - 10 location - defined by detailed timings descriptor - defined in
+	 *			extended blocks
+	 *	EDID_SIZE_BLOCK0_TIMING_DESCRIPTOR + 8,
+	 *  EDID_SIZE_BLOCK0_TIMING_DESCRIPTOR = 4 detailed timings in block 0,
+	 *	2 are mandatory.
+	 *
+	 *	EDID_SIZE_BLOCK1_TIMING_DESCRIPTOR = maximum timings descriptors
+	 *	in block 1
+	 *
+	 *	video_timings is defined in \include\linux\edid.h
+	 */
+	struct video_timings detailed_timings[HDMI_MAX_DETAILED_TIMINGS];
+
+	/* Number of detailed timings descriptors parsed and number of valid
+		detailed_timings entries */
+	__u8 num_dt;
+
+	/* Specifies the video resolutions supported, identified by
+		Video Identification Code as defined in CEA 861 spec.
+
+		struct image_format is defined in \include\linux\edid.h
+	*/
+	struct image_format supported_cea_vic;
+
+	/* Specifies the various audio configurations supported
+		struct audio_format is defined in \include\linux\edid.h */
+	struct audio_format audio_support;
+
+	/* YCbCr is supported is this is non-zero.
+		A value of 1 - indicates YCbCr 422
+		A value of 2 - indicates YCbCr 444 */
+	__u32 is_yuv_supported;
+};
+
 
 /* The following lists the valid device types & logical address on the CEC n/w
 	0 = Logical Address for TV

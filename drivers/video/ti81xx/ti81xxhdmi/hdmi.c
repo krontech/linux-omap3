@@ -77,6 +77,14 @@ MODULE_PARM_DESC(ti81xxhdmi_debug, "debug on/off");
 #undef ENABLE_VENC_COLORBAR_TEST
 /* Comment above line to see venc color bar pattern*/
 
+/* This MACRO controls video / audio streaming when HDMI cable is disconnected.
+ *	When defined, on HDMI cable un-plug, both video / audio streaming is
+ *		stopped.
+ *	When undefined, on HDMI cable un-plug, video / audio streaming is NOT
+ *		stopped
+ */
+/* #define DISABLE_ENABLE_ON_HPD */
+
 static int hdmi_open(struct inode *inode, struct file *filp);
 static int hdmi_release(struct inode *inode, struct file *filp);
 static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
@@ -189,6 +197,8 @@ struct hdmi_work_struct {
 };
 #endif
 static __u8 cec_pa[2] = {0, 0};
+
+struct ti81xxhdmi_sink_edid_parsed parsed_edid;
 
 /*S*******************************  Driver structure *********************/
 
@@ -674,16 +684,15 @@ static int hdmi_get_edid(void)
 	u8 i = 0, *e;
 	int offset, addr;
 	struct HDMI_EDID *edid_st = (struct HDMI_EDID *)edid;
-	struct image_format *img_format;
-	struct audio_format *aud_format;
 	struct deep_color *vsdb_format;
 	struct latency *lat;
-	struct video_timings timings;
+	struct ti81xxhdmi_sink_edid_parsed *edid_p = &parsed_edid;
 
-	img_format = kzalloc(sizeof(*img_format), GFP_KERNEL);
-	aud_format = kzalloc(sizeof(*aud_format), GFP_KERNEL);
 	vsdb_format = kzalloc(sizeof(*vsdb_format), GFP_KERNEL);
 	lat = kzalloc(sizeof(*lat), GFP_KERNEL);
+
+	memset(&parsed_edid, 0, sizeof(struct ti81xxhdmi_sink_edid_parsed));
+	edid_p->num_dt = 0;
 
 	if (HDMI_CORE_DDC_READEDID(HDMI_CORE_SYS, edid,	HDMI_EDID_MAX_LENGTH)
 	    != 0) {
@@ -716,12 +725,24 @@ static int hdmi_get_edid(void)
 	e += 10;
 	THDMIDBG(KERN_INFO "Established timings - VESA:\n%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2]);
+	edid_p->established_timings[0] = e[0];
+	edid_p->established_timings[1] = e[1];
+	edid_p->established_timings[2] = e[2];
 	e += 3;
+
 	THDMIDBG(KERN_INFO "Refer VESA E-EDID Standard to interpret above\n");
 	THDMIDBG(KERN_INFO "Standard timings - VESA :\n%02x\t%02x\t%02x\t%02x\t"
 			 "%02x\t%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7]);
 	THDMIDBG(KERN_INFO "Refer VESA E-EDID Standard to interpret above\n");
+	edid_p->standard_timings[0] = e[0];
+	edid_p->standard_timings[1] = e[1];
+	edid_p->standard_timings[2] = e[2];
+	edid_p->standard_timings[3] = e[3];
+	edid_p->standard_timings[4] = e[4];
+	edid_p->standard_timings[5] = e[5];
+	edid_p->standard_timings[6] = e[6];
+	edid_p->standard_timings[7] = e[7];
 	e += 8;
 	 THDMIDBG(KERN_INFO "%02x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\n",
 		e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7]);
@@ -729,12 +750,14 @@ static int hdmi_get_edid(void)
 
 	for (i = 0; i < EDID_SIZE_BLOCK0_TIMING_DESCRIPTOR; i++) {
 		THDMIDBG(KERN_INFO "Extension 0 Block %d\n", i);
-		get_edid_timing_info(&edid_st->DTD[i], &timings);
-/*		mark = dss_debug;
-		dss_debug = 1;
-		print_omap_video_timings(&timings);
-		dss_debug = mark; */
+		get_edid_timing_info(&edid_st->DTD[i],
+			&(edid_p->detailed_timings[edid_p->num_dt]));
+
+		/*	print_omap_video_timings(&timings); */
+		if (edid_p->detailed_timings[edid_p->num_dt].pixel_clock != 0)
+			edid_p->num_dt++;
 	}
+
 	if (edid[0x7e] != 0x00) {
 		offset = edid[EDID_DESCRIPTOR_BLOCK1_ADDRESS + 2];
 		/* THDMIDBG(KERN_INFO "offset %x\n", offset); */
@@ -744,27 +767,19 @@ static int hdmi_get_edid(void)
 			for (i = 0; i < EDID_SIZE_BLOCK1_TIMING_DESCRIPTOR;
 									i++) {
 				THDMIDBG(KERN_INFO "Extension 1 Block %d", i);
-				get_eedid_timing_info(addr, edid, &timings);
+				get_eedid_timing_info(addr, edid,
+				   &(edid_p->detailed_timings[edid_p->num_dt]));
 				addr += EDID_TIMING_DESCRIPTOR_SIZE;
-/*				mark = dss_debug;
-				dss_debug = 1;
-				print_omap_video_timings(&timings);
-				dss_debug = mark; */
+				/* print_omap_video_timings(&timings); */
+		if (edid_p->detailed_timings[edid_p->num_dt].pixel_clock != 0)
+			edid_p->num_dt++;
 			}
 		}
 	}
-	hdmi_get_image_format(edid, img_format);
-	/* THDMIDBG(KERN_INFO "%d audio length\n", img_format->length); */
-	/*for (i = 0 ; i < img_format->length ; i++)
-		 THDMIDBG(KERN_INFO "%d %d pref code\n",
-			img_format->fmt[i].pref, img_format->fmt[i].code); */
 
-	hdmi_get_audio_format(edid, aud_format);
-	/* THDMIDBG(KERN_INFO "%d audio length\n", aud_format->length); */
-	/* for (i = 0 ; i < aud_format->length ; i++)
-		 THDMIDBG(KERN_INFO "%d %d format num_of_channels\n",
-			aud_format->fmt[i].format,
-			aud_format->fmt[i].num_of_ch); */
+	hdmi_get_image_format(edid, &edid_p->supported_cea_vic);
+
+	hdmi_get_audio_format(edid, &edid_p->audio_support);
 
 	hdmi_deep_color_support_info(edid, vsdb_format);
 	/* THDMIDBG(KERN_INFO "%d deep color bit 30 %d  deep color 36 bit "
@@ -777,12 +792,9 @@ static int hdmi_get_edid(void)
 		lat->vid_latency, lat->aud_latency,
 		lat->int_vid_latency, lat->int_aud_latency); */
 
-	/* THDMIDBG(KERN_INFO "YUV supported %d",
-		    hdmi_tv_yuv_supported(edid)); */
+	edid_p->is_yuv_supported = hdmi_tv_yuv_supported(edid);
 
 exit:
-	kfree(img_format);
-	kfree(aud_format);
 	kfree(vsdb_format);
 	kfree(lat);
 	return 0;
@@ -922,6 +934,21 @@ static long hdmi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				r = -EFAULT;
 			}
 		}
+		mutex_unlock(&hdmi.lock);
+		break;
+	case TI81XXHDMI_GET_PARSED_EDID_INFO:
+		THDMIDBG("ioctl TI81XXHDMI_GET_PARSED_EDID_INFO\n");
+		mutex_lock(&hdmi.lock);
+
+		if (arg) {
+			r = copy_to_user((void __user *)arg, &parsed_edid,
+				 sizeof(struct ti81xxhdmi_sink_edid_parsed));
+			if (r) {
+				THDMIDBG("Error : copy_to_user, r = %d ", r);
+				r = -EFAULT;
+			}
+		}
+
 		mutex_unlock(&hdmi.lock);
 		break;
 	case TI81XXHDMI_CEC_ACTIVATE:
@@ -1187,6 +1214,7 @@ static int hdmi_power_on(void)
 	HDMI_W1_StartVideoFrame(TI81xx_HDMI_WP);
 
 	hdmi_set_irqs(0);
+
 	if (cpu_is_ti814x())
 		ti814x_set_clksrc_mux(1);
 
@@ -1221,8 +1249,11 @@ static void hdmi_work_queue(struct work_struct *ws)
 		if (hdmi.cec_state != HDMI_CEC_BYPASS)
 			hdmi.cec_state = HDMI_CEC_BYPASS;
 
+#ifdef DISABLE_ENABLE_ON_HPD
 		hdmi_disable_display();
 		hdmi_enable_display();
+#endif
+
 	}
 
 	kfree(work);
@@ -1277,8 +1308,10 @@ static int hdmi_enable_display(void)
 	mutex_lock(&hdmi.lock);
 
 	r = hdmi_start_display();
+
 	r = request_irq(TI81XX_IRQ_HDMIINT, hdmi_irq_handler, 0,
 			"HDMI", (void *)0);
+
 	hdmi.status = TI81xx_EXT_ENCODER_ENABLED;
 	if (hdmi.frame_start_event != 0){
 		hdmi.frame_start_event();
@@ -1294,7 +1327,9 @@ static void hdmi_disable_display(void)
 	/* Free irq befor disabling the hardware else it will generate continous
 	   interrupts.
 	 */
+
 	free_irq(TI81XX_IRQ_HDMIINT, NULL);
+
 	hdmi_stop_display();
 	/*setting to default only in case of disable and not suspend*/
 	hdmi.mode = 1 ; /* HDMI */

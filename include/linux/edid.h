@@ -148,6 +148,13 @@ enum extension_edid_db {
 	DATABLOCK_SPEAKERS = 4,
 };
 
+/* Short Video Descriptor - Refer CEA 861 Spec
+ *	code indicates the Video Identification Code, that defines the
+ *	resolution.
+ *	pref - when set indicates resolution specified in code is native to the
+ *		sink. A native format is one, that a sink can support with any
+ *		processing. 
+ */
 struct img_edid {
 	__u8 pref;
 	__u32 code;
@@ -159,8 +166,13 @@ struct image_format {
 };
 
 struct audio_edid {
-	__u32 num_of_ch;
-	__u32 format;
+	__u32 num_of_ch; /* Number of channels */
+	__u32 format;	/* 1 - Linear PCM (IEC 60985) */
+	__u32 freq; /* Frequency / Sample rate
+			1 - 32 KHz, 2 - 44.1 KHz, 4 - 48 KHz,
+			8 - 88.2 KHz, 16 - 96 KHz, 32 - 176.4 KHz,
+			64 - 192 KHz */
+	__u32 width; /* Sample width 1 - 16 bits, 2 - 20 bits, 4 - 24 bits */
 };
 
 struct audio_format {
@@ -304,6 +316,6 @@ __u32 hdmi_get_audio_format(__u8 *edid, struct audio_format *format);
 void hdmi_get_av_delay(__u8 *edid, struct latency *lat);
 void hdmi_deep_color_support_info(__u8 *edid, struct deep_color *format);
 __u32 hdmi_tv_yuv_supported(__u8 *edid);
-bool hdmi_tv_hdmi_supported(__u8 *edid);
-bool hdmi_tv_cec_get_pa(__u8 *edid, __u8 *pa);
+_Bool hdmi_tv_hdmi_supported(__u8 *edid);
+_Bool hdmi_tv_cec_get_pa(__u8 *edid, __u8 *pa);
 #endif
