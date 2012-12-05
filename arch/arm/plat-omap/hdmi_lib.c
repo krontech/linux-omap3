@@ -1650,7 +1650,7 @@ int hdmi_lib_enable(struct hdmi_config *cfg)
 	hdmi.avi_param.db1a_active_format_off_on =
 		INFOFRAME_AVI_DB1A_ACTIVE_FORMAT_OFF;
 	hdmi.avi_param.db1b_no_vert_hori_verthori = INFOFRAME_AVI_DB1B_NO;
-	hdmi.avi_param.db1s_0_1_2 = INFOFRAME_AVI_DB1S_0;
+	hdmi.avi_param.db1s_0_1_2 = INFOFRAME_AVI_DB1S_2;
 	hdmi.avi_param.db2c_no_itu601_itu709_extented = INFOFRAME_AVI_DB2C_NO;
 
 	/* Support AR in AVI infoframe */
