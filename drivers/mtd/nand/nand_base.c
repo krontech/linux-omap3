@@ -2840,25 +2840,24 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
  * Check if the NAND chip is ONFI compliant, returns 1 if it is, 0 otherwise
  */
 static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
-					int busw)
+					int *busw)
 {
 	struct nand_onfi_params *p = &chip->onfi_params;
 	int i;
 	int val;
 
-	/* try ONFI for unknow chip or LP */
+	/* Try ONFI for unknown chip or LP */
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0x20, -1);
 	if (chip->read_byte(mtd) != 'O' || chip->read_byte(mtd) != 'N' ||
 		chip->read_byte(mtd) != 'F' || chip->read_byte(mtd) != 'I')
 		return 0;
 
-	printk(KERN_INFO "ONFI flash detected\n");
 	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
 	for (i = 0; i < 3; i++) {
 		chip->read_buf(mtd, (uint8_t *)p, sizeof(*p));
 		if (onfi_crc16(ONFI_CRC_BASE, (uint8_t *)p, 254) ==
 				le16_to_cpu(p->crc)) {
-			printk(KERN_INFO "ONFI param page %d valid\n", i);
+			pr_info("ONFI param page %d valid\n", i);
 			break;
 		}
 	}
@@ -2866,22 +2865,25 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 	if (i == 3)
 		return 0;
 
-	/* check version */
+	/* Check version */
 	val = le16_to_cpu(p->revision);
-	if (val == 1 || val > (1 << 4)) {
-		printk(KERN_INFO "%s: unsupported ONFI version: %d\n",
-								__func__, val);
-		return 0;
-	}
-
-	if (val & (1 << 4))
+	if (val & (1 << 5))
+		chip->onfi_version = 23;
+	else if (val & (1 << 4))
 		chip->onfi_version = 22;
 	else if (val & (1 << 3))
 		chip->onfi_version = 21;
 	else if (val & (1 << 2))
 		chip->onfi_version = 20;
-	else
+	else if (val & (1 << 1))
 		chip->onfi_version = 10;
+	else
+		chip->onfi_version = 0;
+
+	if (!chip->onfi_version) {
+		pr_info("%s: unsupported ONFI version: %d\n", __func__, val);
+		return 0;
+	}
 
 	sanitize_string(p->manufacturer, sizeof(p->manufacturer));
 	sanitize_string(p->model, sizeof(p->model));
@@ -2890,15 +2892,16 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 	mtd->writesize = le32_to_cpu(p->byte_per_page);
 	mtd->erasesize = le32_to_cpu(p->pages_per_block) * mtd->writesize;
 	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
-	chip->chipsize = le32_to_cpu(p->blocks_per_lun) * mtd->erasesize;
-	busw = 0;
+	chip->chipsize = le32_to_cpu(p->blocks_per_lun);
+	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+	*busw = 0;
 	if (le16_to_cpu(p->features) & 1)
-		busw = NAND_BUSWIDTH_16;
+		*busw = NAND_BUSWIDTH_16;
 
 	chip->options &= ~NAND_CHIPOPTIONS_MSK;
-	chip->options |= (NAND_NO_READRDY |
-			NAND_NO_AUTOINCR) & NAND_CHIPOPTIONS_MSK;
+	chip->options |= NAND_NO_READRDY & NAND_CHIPOPTIONS_MSK;
 
+	pr_info("ONFI flash detected\n");
 	return 1;
 }
 
@@ -2943,9 +2946,9 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		id_data[i] = chip->read_byte(mtd);
 
 	if (id_data[0] != *maf_id || id_data[1] != *dev_id) {
-		printk(KERN_INFO "%s: second ID read did not match "
-		       "%02x,%02x against %02x,%02x\n", __func__,
-		       *maf_id, *dev_id, id_data[0], id_data[1]);
+		pr_info("%s: second ID read did not match "
+			"%02x,%02x against %02x,%02x\n", __func__,
+			*maf_id, *dev_id, id_data[0], id_data[1]);
 		return ERR_PTR(-ENODEV);
 	}
 
@@ -2959,7 +2962,7 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 	chip->onfi_version = 0;
 	if (!type->name || !type->pagesize) {
 		/* Check is chip is ONFI compliant */
-		ret = nand_flash_detect_onfi(mtd, chip, busw);
+		ret = nand_flash_detect_onfi(mtd, chip, &busw);
 		if (ret)
 			goto ident_done;
 	}
