@@ -1177,7 +1177,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 	}
 
 
-	/* selsect the ecc type */
+	/* select the ecc type */
 	if (pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_DEFAULT)
 		info->nand.ecc.mode = NAND_ECC_SOFT;
 	else {
@@ -1213,7 +1213,8 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 			(info->nand.options & NAND_BUSWIDTH_16) ? "x16" : "x8");
 	if (info->nand.options & NAND_BUSWIDTH_16) {
 		if (!(pdata->bussize & NAND_OMAP_BUS_16)) {
-			dev_err(&pdev->dev,"Error: detected x16 flash, but board supports x8 only");
+			dev_err(&pdev->dev,"Error: detected x16 flash,"
+						"but board supports x8 only");
 			err = -ENXIO;
 			goto out_release_mem_region;
 		}
@@ -1280,7 +1281,7 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 
 
 
-	/* select ecc lyout */
+	/* select ecc layout */
 	if (info->nand.ecc.mode != NAND_ECC_SOFT) {
 
 		if (info->nand.options & NAND_BUSWIDTH_16)
@@ -1290,11 +1291,8 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 			info->nand.badblock_pattern = &bb_descrip_flashbased;
 		}
 
-		if (info->mtd.oobsize == 64)
-			omap_oobinfo.eccbytes = info->nand.ecc.bytes *
-						2048/info->nand.ecc.size;
-		else
-			omap_oobinfo.eccbytes = info->nand.ecc.bytes;
+		omap_oobinfo.eccbytes = info->nand.ecc.bytes *
+					info->mtd.writesize/info->nand.ecc.size;
 
 		if (pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_HW_ROMCODE) {
 			for (i = 0; i < omap_oobinfo.eccbytes; i++)
