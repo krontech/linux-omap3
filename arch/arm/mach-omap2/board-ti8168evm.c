@@ -914,18 +914,8 @@ static void __init ti8168_evm_init(void)
 	usb_musb_init(&musb_board_data);
 
 	/* nand initialisation */
-	if (cpu_is_ti81xx()) {
-		u32 *control_status = TI81XX_CTRL_REGADDR(0x40);
-		if (*control_status & (1<<16))
-			bw = 2;	/*16-bit nand if BTMODE BW pin on board is ON*/
-		else
-			bw = 0;	/*8-bit nand if BTMODE BW pin on board is OFF*/
-
-		board_nand_init(ti816x_nand_partitions,
-			ARRAY_SIZE(ti816x_nand_partitions), 0, bw);
-	} else
-		board_nand_init(ti816x_nand_partitions,
-		ARRAY_SIZE(ti816x_nand_partitions), 0, NAND_OMAP_BUS_16);
+	board_nand_init(ti816x_nand_partitions,
+	ARRAY_SIZE(ti816x_nand_partitions), 0, NAND_OMAP_BUS_16);
 
 	omap2_hsmmc_init(mmc);
 	board_nor_init(ti816x_evm_norflash_partitions,

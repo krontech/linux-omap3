@@ -1175,6 +1175,52 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		info->nand.waitfunc = omap_wait;
 		info->nand.chip_delay = 50;
 	}
+
+
+	/* selsect the ecc type */
+	if (pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_DEFAULT)
+		info->nand.ecc.mode = NAND_ECC_SOFT;
+	else {
+		if (pdata->ecc_opt == OMAP_ECC_BCH4_CODE_HW) {
+			info->nand.ecc.bytes    = 4*7;
+			info->nand.ecc.size     = 4*512;
+		} else if (pdata->ecc_opt == OMAP_ECC_BCH8_CODE_HW) {
+			info->nand.ecc.bytes     = 14;
+			info->nand.ecc.size      = 512;
+			info->nand.ecc.read_page = omap_read_page_bch;
+		} else {
+			info->nand.ecc.bytes    = 3;
+			info->nand.ecc.size     = 512;
+		}
+		info->nand.ecc.calculate        = omap_calculate_ecc;
+		info->nand.ecc.hwctl            = omap_enable_hwecc;
+		info->nand.ecc.correct          = omap_correct_data;
+		info->nand.ecc.mode             = NAND_ECC_HW;
+	}
+
+	info->nand.verify_buf = omap_verify_buf;
+
+
+	/* detect flash buswidth */ 
+	info->nand.read_buf   = omap_read_buf8;
+	info->nand.write_buf  = omap_write_buf8;
+	gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 0);
+	if (nand_scan_ident(&info->mtd, 1, NULL)) {
+		err = -ENXIO;
+		goto out_release_mem_region;
+	}
+	pr_info("%s: detected %s NAND flash \n", DRIVER_NAME,
+			(info->nand.options & NAND_BUSWIDTH_16) ? "x16" : "x8");
+	if (info->nand.options & NAND_BUSWIDTH_16) {
+		if (!(pdata->bussize & NAND_OMAP_BUS_16)) {
+			dev_err(&pdev->dev,"Error: detected x16 flash, but board supports x8 only");
+			err = -ENXIO;
+			goto out_release_mem_region;
+		}
+		gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 1);
+	}
+
+	/* configure xfer_type */
 	switch (pdata->xfer_type) {
 	case NAND_OMAP_PREFETCH_POLLED:
 		info->nand.read_buf   = omap_read_buf_pref;
@@ -1182,8 +1228,13 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		break;
 
 	case NAND_OMAP_POLLED:
-		info->nand.read_buf   = omap_read_buf8;
-		info->nand.write_buf  = omap_write_buf8;
+		if (info->nand.options & NAND_BUSWIDTH_16) {
+			info->nand.read_buf   = omap_read_buf16;
+			info->nand.write_buf  = omap_write_buf16;
+		} else {
+			info->nand.read_buf   = omap_read_buf8;
+			info->nand.write_buf  = omap_write_buf8;
+		}
 		break;
 
 	case NAND_OMAP_PREFETCH_DMA:
@@ -1225,50 +1276,9 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		goto out_release_mem_region;
 	}
 
-	info->nand.verify_buf = omap_verify_buf;
 
-	/* selsect the ecc type */
-	if (pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_DEFAULT)
-		info->nand.ecc.mode = NAND_ECC_SOFT;
-	else {
-		if (pdata->ecc_opt == OMAP_ECC_BCH4_CODE_HW) {
-			info->nand.ecc.bytes    = 4*7;
-			info->nand.ecc.size     = 4*512;
-		} else if (pdata->ecc_opt == OMAP_ECC_BCH8_CODE_HW) {
-			info->nand.ecc.bytes     = 14;
-			info->nand.ecc.size      = 512;
-			info->nand.ecc.read_page = omap_read_page_bch;
-		} else {
-			info->nand.ecc.bytes    = 3;
-			info->nand.ecc.size     = 512;
-		}
-		info->nand.ecc.calculate        = omap_calculate_ecc;
-		info->nand.ecc.hwctl            = omap_enable_hwecc;
-		info->nand.ecc.correct          = omap_correct_data;
-		info->nand.ecc.mode             = NAND_ECC_HW;
-	}
 
-	gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 0);
-	if (nand_scan_ident(&info->mtd, 1, NULL)) {
-		err = -ENXIO;
-		goto out_release_mem_region;
-	}
-	/* update for 16 bits device */
-	pr_info("%s: detected %s flash \n", DRIVER_NAME,
-			(info->nand.options & NAND_OMAP_BUS_16) ? "x16" : "x8");
-	if (info->nand.options & NAND_BUSWIDTH_16) {
-		if (!(pdata->bussize & NAND_OMAP_BUS_16)) {
-			dev_err(&pdev->dev, "%s: detected x16 flash, but board "
-					"supports x8 flash", DRIVER_NAME);
-			err = -ENXIO;
-			goto out_release_mem_region;
-		}
-		gpmc_cs_configure(info->gpmc_cs, GPMC_CONFIG_DEV_SIZE, 1);
-		if (pdata->xfer_type == NAND_OMAP_POLLED) {
-			info->nand.read_buf   = omap_read_buf16;
-			info->nand.write_buf  = omap_write_buf16;
-		}
-	}
+
 
 	/* select ecc lyout */
 	if (info->nand.ecc.mode != NAND_ECC_SOFT) {
