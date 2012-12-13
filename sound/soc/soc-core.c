@@ -889,22 +889,45 @@ static int soc_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	int ret;
 
-	if (codec_dai->driver->ops->trigger) {
-		ret = codec_dai->driver->ops->trigger(substream, cmd, codec_dai);
-		if (ret < 0)
-			return ret;
-	}
+	if (cmd == SNDRV_PCM_TRIGGER_START
+		|| cmd == SNDRV_PCM_TRIGGER_RESUME
+		|| cmd == SNDRV_PCM_TRIGGER_PAUSE_RELEASE) {
 
-	if (platform->driver->ops->trigger) {
-		ret = platform->driver->ops->trigger(substream, cmd);
-		if (ret < 0)
-			return ret;
-	}
+		if (codec_dai->driver->ops->trigger) {
+			ret = codec_dai->driver->ops->trigger(substream, cmd, codec_dai);
+			if (ret < 0)
+				return ret;
+		}
 
-	if (cpu_dai->driver->ops->trigger) {
-		ret = cpu_dai->driver->ops->trigger(substream, cmd, cpu_dai);
-		if (ret < 0)
-			return ret;
+		if (platform->driver->ops->trigger) {
+			ret = platform->driver->ops->trigger(substream, cmd);
+			if (ret < 0)
+				return ret;
+		}
+
+		if (cpu_dai->driver->ops->trigger) {
+			ret = cpu_dai->driver->ops->trigger(substream, cmd, cpu_dai);
+			if (ret < 0)
+				return ret;
+		}
+	} else {
+		if (codec_dai->driver->ops->trigger) {
+			ret = codec_dai->driver->ops->trigger(substream, cmd, codec_dai);
+			if (ret < 0)
+				return ret;
+		}
+
+		if (cpu_dai->driver->ops->trigger) {
+			ret = cpu_dai->driver->ops->trigger(substream, cmd, cpu_dai);
+			if (ret < 0)
+				return ret;
+		}
+
+		if (platform->driver->ops->trigger) {
+			ret = platform->driver->ops->trigger(substream, cmd);
+			if (ret < 0)
+				return ret;
+		}
 	}
 	return 0;
 }
