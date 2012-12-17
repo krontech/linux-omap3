@@ -797,8 +797,8 @@ static int davinci_mcasp_trigger(struct snd_pcm_substream *substream,
 		break;
 
 	case SNDRV_PCM_TRIGGER_SUSPEND:
-		davinci_mcasp_stop(dev, substream->stream);
 		if (dev->clk_active) {
+			davinci_mcasp_stop(dev, substream->stream);
 			clk_disable(dev->clk);
 			dev->clk_active = 0;
 		}
