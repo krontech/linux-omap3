@@ -316,6 +316,7 @@ static __devinit int davinci_hdmi_probe(struct platform_device *pdev)
 
 		dma_data->dma_addr = (pdata->dma_addr);
 		dma_data->channel = (pdata->channel);
+		dma_data->asp_chan_q = (pdata->dma_chan_q);
 		dma_data->data_type = (pdata->data_type);
 		dma_data->acnt = (pdata->acnt);
 		dma_data->fifo_level = (pdata->fifo_level);

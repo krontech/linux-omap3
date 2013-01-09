@@ -777,6 +777,7 @@ static void __init ti8148_evm_init_irq(void)
 static struct snd_hdmi_platform_data ti8148_snd_hdmi_pdata = {
 	.dma_addr = TI81xx_HDMI_WP + HDMI_WP_AUDIO_DATA,
 	.channel = 53,
+	.dma_chan_q = EVENTQ_0,
 	.data_type = 4,
 	.acnt = 4,
 	.fifo_level = 0x20,

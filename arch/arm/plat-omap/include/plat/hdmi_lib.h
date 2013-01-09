@@ -485,6 +485,7 @@ struct audio_fs_n {
 struct snd_hdmi_platform_data {
 	u32 dma_addr;
 	u32 channel;
+	u32 dma_chan_q;
 	u32 data_type;
 	u32 acnt;
 	u32 fifo_level;
