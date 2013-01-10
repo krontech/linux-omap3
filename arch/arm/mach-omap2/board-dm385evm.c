@@ -545,8 +545,8 @@ static struct snd_platform_data dm385_evm_snd_data = {
 	.serial_dir	= dm385_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_2,
 	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+	.txnumevt	= 64,
+	.rxnumevt	= 64,
 };
 
 /* NOR Flash partitions */

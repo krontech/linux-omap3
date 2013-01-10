@@ -794,8 +794,8 @@ static struct snd_platform_data ti8168_evm_snd_data = {
 	.serial_dir	= ti8168_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_2,
 	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+	.txnumevt	= 64,
+	.rxnumevt	= 64,
 };
 
 static struct omap_musb_board_data musb_board_data = {
