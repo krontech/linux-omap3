@@ -1076,12 +1076,17 @@ void __init omap2_init_mmc(struct omap_mmc_platform_data **mmc_data,
 				irq = TI81XX_IRQ_SD;
 			} else if (cpu_is_ti814x()) {
 				base = TI814X_MMC1_BASE;
-				irq = TI814X_IRQ_SD1;
+				irq = TI81XX_IRQ_SD;
 			}
 			break;
 		case 1:
-			base = OMAP2_MMC2_BASE;
-			irq = INT_24XX_MMC2_IRQ;
+			if (cpu_is_ti814x()) {
+				base = TI814X_MMC2_BASE;
+				irq = TI814X_IRQ_SD1;
+			} else {
+				base = OMAP2_MMC2_BASE;
+				irq = INT_24XX_MMC2_IRQ;
+			}
 			break;
 		case 2:
 			if (!cpu_is_omap44xx() && !cpu_is_omap34xx())
