@@ -70,7 +70,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc		= 1,
 		.caps		= MMC_CAP_4_BIT_DATA | MMC_CAP_NEEDS_POLL,
-		.gpio_cd	= GPIO_TO_PIN(1, 6), /* Dedicated pins for CD and WP */
+		.gpio_cd        = -EINVAL, /* check setup_mmc2_pin_mux() */
 		.gpio_wp	= -EINVAL,
 		.ocr_mask	= MMC_VDD_33_34,
 	},
@@ -757,6 +757,13 @@ void __init ti813x_hdmi_clk_init(void)
 }
 #endif
 
+static int setup_mmc2_pin_mux(void)
+{
+	return omap_mux_init_signal("spi0_cs1.gpio1_6",
+				TI814X_PIN_INPUT_PULL_UP);
+}
+
+
 static void __init dm385_evm_init(void)
 {
 	int bw; /* bus-width */
@@ -767,6 +774,7 @@ static void __init dm385_evm_init(void)
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
 
+	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);
 
 	/* nand initialisation */

@@ -73,7 +73,7 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc		= 2,
 		.caps		= MMC_CAP_4_BIT_DATA,
-		.gpio_cd	= GPIO_TO_PIN(1, 6), /* Dedicated pins for CD and WP */
+		.gpio_cd        = -EINVAL, /* check setup_mmc2_pin_mux() */
 		.gpio_wp	= -EINVAL,
 		.ocr_mask	= MMC_VDD_33_34,
 	},
@@ -847,6 +847,12 @@ static int ti8148_evm_lsi_phy_fixup(struct phy_device *phydev)
 	return 0;
 }
 
+static int setup_mmc2_pin_mux(void)
+{
+	return omap_mux_init_signal("spi0_cs1.gpio1_6",
+				TI814X_PIN_INPUT_PULL_UP);
+}
+
 static void __init ti8148_evm_init(void)
 {
 
@@ -856,6 +862,7 @@ static void __init ti8148_evm_init(void)
 	ti814x_evm_i2c_init();
 	ti81xx_register_mcasp(0, &ti8148_evm_snd_data);
 
+	setup_mmc2_pin_mux();
 	omap2_hsmmc_init(mmc);
 
 	/* nand initialisation */
