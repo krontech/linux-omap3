@@ -101,7 +101,7 @@
 
 #define MAX_HWECC_BYTES_OOB_64 24
 
-#define BCH_ECC_POS						0x2
+#define BADBLOCK_MARKER_LENGTH				0x2
 #define BCH_JFFS2_CLEAN_MARKER_OFFSET	0x3a
 
 #ifdef CONFIG_MTD_PARTITIONS
@@ -1278,9 +1278,6 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 	}
 
 
-
-
-
 	/* select ecc layout */
 	if (info->nand.ecc.mode != NAND_ECC_SOFT) {
 
@@ -1295,18 +1292,15 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 					info->mtd.writesize/info->nand.ecc.size;
 
 		if (pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_HW_ROMCODE) {
-			for (i = 0; i < omap_oobinfo.eccbytes; i++)
-				omap_oobinfo.eccpos[i] = i + offset;
 			omap_oobinfo.oobfree->offset =
 						offset + omap_oobinfo.eccbytes;
 			omap_oobinfo.oobfree->length = info->mtd.oobsize -
 						offset - omap_oobinfo.eccbytes;
 		} else if (pdata->ecc_opt == OMAP_ECC_BCH8_CODE_HW) {
-			offset = BCH_ECC_POS; /* Synchronize with U-boot */
 			omap_oobinfo.oobfree->offset =
-				BCH_JFFS2_CLEAN_MARKER_OFFSET;
+				BADBLOCK_MARKER_LENGTH + omap_oobinfo.eccbytes;
 			omap_oobinfo.oobfree->length = info->mtd.oobsize -
-					offset - omap_oobinfo.eccbytes;
+				BADBLOCK_MARKER_LENGTH - omap_oobinfo.eccbytes;
 		} else {
 
 			omap_oobinfo.oobfree->offset = offset;
