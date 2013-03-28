@@ -1297,15 +1297,16 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 			omap_oobinfo.oobfree->length = info->mtd.oobsize -
 						offset - omap_oobinfo.eccbytes;
 		} else if (pdata->ecc_opt == OMAP_ECC_BCH8_CODE_HW) {
+			offset = BADBLOCK_MARKER_LENGTH;
 			omap_oobinfo.oobfree->offset =
-				BADBLOCK_MARKER_LENGTH + omap_oobinfo.eccbytes;
+				offset + omap_oobinfo.eccbytes;
 			omap_oobinfo.oobfree->length = info->mtd.oobsize -
-				BADBLOCK_MARKER_LENGTH - omap_oobinfo.eccbytes;
+					offset - omap_oobinfo.eccbytes;
 		} else {
 
-			omap_oobinfo.oobfree->offset = offset;
+			omap_oobinfo.oobfree->offset = BADBLOCK_MARKER_LENGTH;
 			omap_oobinfo.oobfree->length = info->mtd.oobsize -
-						offset - omap_oobinfo.eccbytes;
+				BADBLOCK_MARKER_LENGTH - omap_oobinfo.eccbytes;
 			/*
 			offset is calculated considering the following :
 			1) 12 bytes and 24 bytes ECC for OOB_64 can be supported
