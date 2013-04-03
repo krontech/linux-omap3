@@ -105,6 +105,42 @@ config MTD_NAND_OMAP2
 	help
          Support for NAND flash on Texas Instruments OMAP2/3 and TI81XX
          platforms.
+choice
+	prompt "Select the ECC scheme for OMAP NAND driver"
+	depends on MTD_NAND_OMAP2
+	default MTD_NAND_OMAP_ECC_BCH8_CODE_HW
+
+config MTD_NAND_OMAP_ECC_BCH8_CODE_HW
+	bool "OMAP_ECC_BCH8_CODE_HW (recommended)"
+	help
+	 Support correcting up to 8 bitflips per 512-byte block.
+	 Requires 14 bytes of spare area for every 512 bytes of main area.
+	 This is the recommended mode, as 4-bit mode does not work
+	 on some OMAP3 revisions, due to a hardware bug.
+
+config MTD_NAND_OMAP_ECC_BCH4_CODE_HW
+	bool "OMAP_ECC_BCH4_CODE_HW"
+	help
+	 Support correcting up to 4 bitflips per 512-byte block.
+	 Requires 7-bytes of spare area for every 512 bytes of main area.
+	 Note that this mode does not work on some OMAP3 revisions, due to a
+	 hardware bug. Please check your OMAP datasheet before selecting this
+	 mode.
+
+config MTD_NAND_OMAP_ECC_HAMMING_CODE_HW
+	bool "OMAP_ECC_HAMMING_CODE_HW"
+	help
+	 Supports correction upto 1 bitflip per 512-byte sector, using built-in
+	 hardware controller. Not recommended for large page NANDs.
+	 Requires 6-bytes of spare area for every 512 bytes of main area.
+
+config MTD_NAND_OMAP_ECC_HAMMING_CODE_SW
+	bool "OMAP_ECC_HAMMING_CODE_SW"
+	help
+	 Supports correction upto 1 bitflip per 512-byte sector, using S/W 
+	 running on CPU. Not recommended for large page NANDs.
+	 Requires 6-bytes of spare area for every 512 bytes of main area.
+endchoice
 
 config MTD_NAND_IDS
 	tristate

@@ -180,7 +180,18 @@ __init board_nand_init(struct mtd_partition *nand_parts,
 		board_nand_data.gpmc_t = NULL;
 
 	if (cpu_is_ti81xx()) {
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH8_CODE_HW
 		board_nand_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
+/* (not supported) #elif  defined(CONFIG_MTD_NAND_OMAP_ECC_BCH4_CODE_HW) */
+/* 			board_nand_data.ecc_opt = OMAP_ECC_BCH4_CODE_HW; */
+#elif  defined(CONFIG_MTD_NAND_OMAP_ECC_HAMMING_CODE_HW)
+		board_nand_data.ecc_opt = OMAP_ECC_HAMMING_CODE_HW;
+#elif  defined(CONFIG_MTD_NAND_OMAP_ECC_HAMMING_CODE_SW)
+		board_nand_data.ecc_opt = OMAP_ECC_HAMMING_CODE_DEFAULT;
+#else
+		board_nand_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
+#endif
+
 		board_nand_data.xfer_type = NAND_OMAP_PREFETCH_POLLED;
 
 		/*
