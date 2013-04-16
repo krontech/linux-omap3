@@ -28,9 +28,6 @@
 #define	DRIVER_NAME	"omap2-nand"
 #define	OMAP_NAND_TIMEOUT_MS	5000
 
-#define BCH8_ECC_BYTES		(512)
-#define BCH8_ECC_OOB_BYTES	(13)
-#define BCH8_ECC_MAX		((BCH8_ECC_BYTES + BCH8_ECC_OOB_BYTES) * 8)
 
 #define NAND_Ecc_P1e		(1 << 0)
 #define NAND_Ecc_P2e		(1 << 1)
@@ -882,15 +879,17 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
 {
 	struct omap_nand_info *info = container_of(mtd, struct omap_nand_info,
 							mtd);
+	struct nand_chip *chip = mtd->priv;
+	int eccsize = chip->ecc.size;
+	int eccbytes = chip->ecc.bytes;
 	int blockCnt = 0, i = 0, ret = 0;
 	int stat = 0;
-	int j, eccsize, eccflag, count;
-	unsigned int err_loc[8];
+	int j, eccflag, count;
+	unsigned int err_loc[16];
 
 	/* Ex NAND_ECC_HW12_2048 */
-	if ((info->nand.ecc.mode == NAND_ECC_HW) &&
-			(info->nand.ecc.size  == 2048))
-		blockCnt = 4;
+	if (info->nand.ecc.mode == NAND_ECC_HW)
+		blockCnt =  eccsize / 512;
 	else
 		blockCnt = 1;
 
@@ -912,18 +911,18 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
 		break;
 
 	case OMAP_ECC_BCH4_CODE_HW:
-		eccsize = 7;
-		gpmc_calculate_ecc(info->ecc_opt, info->gpmc_cs, dat, calc_ecc);
+		eccsize = 512;
+		eccbytes = 7;
 		for (i = 0; i < blockCnt; i++) {
 			/* check if any ecc error */
 			eccflag = 0;
-			for (j = 0; (j < eccsize) && (eccflag == 0); j++)
+			for (j = 0; (j < eccbytes) && (eccflag == 0); j++)
 				if (calc_ecc[j] != 0)
 					eccflag = 1;
 
 			if (eccflag == 1) {
 				eccflag = 0;
-				for (j = 0; (j < eccsize) &&
+				for (j = 0; (j < eccbytes) &&
 						(eccflag == 0); j++)
 					if (read_ecc[j] != 0xFF)
 						eccflag = 1;
@@ -934,32 +933,35 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
 				count = decode_bch(0, calc_ecc, err_loc);
 
 			for (j = 0; j < count; j++) {
-				if (err_loc[j] < 4096)
+				if (err_loc[j] < eccsize)
 					dat[err_loc[j] >> 3] ^=
 							1 << (err_loc[j] & 7);
 				/* else, not interested to correct ecc */
 			}
 
-			calc_ecc = calc_ecc + eccsize;
-			read_ecc = read_ecc + eccsize;
-			dat += 512;
+			calc_ecc += eccbytes;
+			read_ecc += eccbytes;
+			dat += eccsize;
 		}
 		break;
 
 	case OMAP_ECC_BCH8_CODE_HW:
-		eccsize = BCH8_ECC_OOB_BYTES;
-
+		eccsize = 512;
+		/* 14th byte of ECC_BCH8 is padded with 0x0 for */
+		/* compatibility with ROM-code */
+		/* Actual ECC_BCH8 syndrome length is 13 bytes */
+		eccbytes = 13;
 		for (i = 0; i < blockCnt; i++) {
 			eccflag = 0;
 			/* check if area is flashed */
-			for (j = 0; (j < eccsize) && (eccflag == 0); j++)
+			for (j = 0; (j < eccbytes) && (eccflag == 0); j++)
 				if (read_ecc[j] != 0xFF)
 					eccflag = 1;
 
 			if (eccflag == 1) {
 				eccflag = 0;
 				/* check if any ecc error */
-				for (j = 0; (j < eccsize) && (eccflag == 0);
+				for (j = 0; (j < eccbytes) && (eccflag == 0);
 						j++)
 					if (calc_ecc[j] != 0)
 						eccflag = 1;
@@ -967,37 +969,40 @@ static int omap_correct_data(struct mtd_info *mtd, u_char *dat,
 
 			count = 0;
 			if (eccflag == 1)
-				count  = elm_decode_bch_error(0, calc_ecc,
-						err_loc);
+				count  = elm_decode_bch_error(0x1,
+						calc_ecc, err_loc);
 			if (count < 0)
 				return -EBADMSG;
 
 			for (j = 0; j < count; j++) {
 				u32 bit_pos, byte_pos;
-
 				bit_pos   = err_loc[j] % 8;
-				byte_pos  = (BCH8_ECC_MAX - err_loc[j] - 1) / 8;
-				if (err_loc[j] < BCH8_ECC_MAX) {
-					/*
-					 * Check bit flip error reported in data
-					 * area, if yes correct bit flip, else
-					 * bit flip in OOB area.
-					 */
-					if (byte_pos < 512)
-						dat[byte_pos] ^= 1 << bit_pos;
-					else
-						read_ecc[byte_pos - 512] ^=
+				byte_pos  = (eccsize + eccbytes - 1) -
+						(err_loc[j] / 8);
+				/*
+				 * Check bit flip error reported in data
+				 * area, if yes correct bit flip, else
+				 * bit flip in OOB area.
+				 */
+				if (byte_pos < eccsize)
+					dat[byte_pos] ^= 1 << bit_pos;
+				else if (byte_pos < (eccsize + eccbytes))
+					read_ecc[byte_pos - eccsize] ^=
 							1 << bit_pos;
-				}
-				/* else, not interested to correct ecc */
+				else
+					return -EBADMSG;
 			}
 
 			stat     += count;
-			calc_ecc  = calc_ecc + 14;
-			read_ecc  = read_ecc + 14;
-			dat      += BCH8_ECC_BYTES;
+			calc_ecc += (eccbytes + 1);
+			read_ecc += (eccbytes + 1);
+			dat      += eccsize;
 		}
 		break;
+
+	/* ECC scheme not supported */
+	default:
+		return -EINVAL;
 	}
 
 	return stat;
