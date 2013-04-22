@@ -110,10 +110,19 @@ choice
 	depends on MTD_NAND_OMAP2
 	default MTD_NAND_OMAP_ECC_BCH8_CODE_HW
 
+config MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+	bool "OMAP_ECC_BCH16_CODE_HW (new)"
+	help
+	 Support up to 16 bit-flip corrections for every 512-byte data, using
+	 built-in H/W controller.
+	 Recommended for NAND with page-size >= 4K.
+	 Requires 26 bytes of spare area for every 512 bytes of main area.
+
 config MTD_NAND_OMAP_ECC_BCH8_CODE_HW
 	bool "OMAP_ECC_BCH8_CODE_HW (recommended)"
 	help
-	 Support correcting up to 8 bitflips per 512-byte block.
+	 Support up to 8 bit-flip corrections for every 512-byte block, using
+	 built-in H/W controller.
 	 Requires 14 bytes of spare area for every 512 bytes of main area.
 	 This is the recommended mode, as 4-bit mode does not work
 	 on some OMAP3 revisions, due to a hardware bug.
@@ -121,7 +130,9 @@ config MTD_NAND_OMAP_ECC_BCH8_CODE_HW
 config MTD_NAND_OMAP_ECC_BCH4_CODE_HW
 	bool "OMAP_ECC_BCH4_CODE_HW"
 	help
-	 Support correcting up to 4 bitflips per 512-byte block.
+	 Support up to 4 bit-flip corrections for every 512-byte block.
+	 Bit-flip detection is done via H/W but correction is done via
+	 software algorithm.
 	 Requires 7-bytes of spare area for every 512 bytes of main area.
 	 Note that this mode does not work on some OMAP3 revisions, due to a
 	 hardware bug. Please check your OMAP datasheet before selecting this
@@ -133,12 +144,13 @@ config MTD_NAND_OMAP_ECC_HAMMING_CODE_HW
 	 Supports correction upto 1 bitflip per 512-byte sector, using built-in
 	 hardware controller. Not recommended for large page NANDs.
 	 Requires 6-bytes of spare area for every 512 bytes of main area.
+	 Kept for legacy support where other ECC schemes cannot be used.
 
 config MTD_NAND_OMAP_ECC_HAMMING_CODE_SW
 	bool "OMAP_ECC_HAMMING_CODE_SW"
 	help
-	 Supports correction upto 1 bitflip per 512-byte sector, using S/W 
-	 running on CPU. Not recommended for large page NANDs.
+	 Supports correction upto 1 bitflip per 512-byte sector, using S/W
+	 algorithm running on CPU. Not recommended for large page NANDs.
 	 Requires 6-bytes of spare area for every 512 bytes of main area.
 endchoice
 

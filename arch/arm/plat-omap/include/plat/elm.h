@@ -13,6 +13,8 @@
  * GNU General Public License for more details.
  */
 
+#include <plat/gpmc.h>
+
 #ifndef TI81_ELM_H
 #define TI81_ELM_H
 
@@ -80,9 +82,9 @@
 /* ELM Location Configuration Register */
 #define ECC_SIZE_MASK                (0x7ff << 16)
 #define ECC_BCH_LEVEL_MASK           (0x3 << 0)
-#define ECC_BCH4_LEVEL               (0x0 << 0)
-#define ECC_BCH8_LEVEL               (0x1 << 0)
-#define ECC_BCH16_LEVEL              (0x2 << 0)
+#define ECC_TYPE_BCH4                (0x0 << 0)
+#define ECC_TYPE_BCH8                (0x1 << 0)
+#define ECC_TYPE_BCH16               (0x2 << 0)
 
 /* ELM Page Definition Register */
 #define PAGE_MODE_SECTOR_7           (1 << 7)
@@ -103,6 +105,15 @@
 
 /*  ELM_ERROR_LOCATION_0-15 Registers */
 #define ECC_ERROR_LOCATION_MASK      (0x1fff << 0)
+
+/* Number of bytes of ECC syndrome generated */
+#define ECC_BYTES_BCH16			26
+#define ECC_BYTES_BCH8			13
+#define ECC_BYTES_BCH4			8
+
+struct omap_elm_platform_data {
+	enum omap_ecc           ecc_opt;
+};
 
 extern int elm_decode_bch_error(int bch_type, char *ecc_calc,
 		unsigned int *err_loc);

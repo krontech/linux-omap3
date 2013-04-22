@@ -44,7 +44,7 @@
 #include "pcie-ti81xx.h"
 
 #include "devices.h"
-
+#include "plat/elm.h"
 #if defined(CONFIG_VIDEO_OMAP2) || defined(CONFIG_VIDEO_OMAP2_MODULE)
 
 static struct resource omap2cam_resources[] = {
@@ -631,7 +631,10 @@ static inline void omap_init_mcspi(void) {}
 #endif
 
 #ifdef CONFIG_ARCH_TI81XX
-static int omap_elm_init(struct omap_hwmod *oh, void *unused)
+
+struct omap_elm_platform_data  elm_platform_data;
+
+static int omap_elm_init(struct omap_hwmod *oh, void *platform_data)
 {
 	struct omap_device *pdev;
 	char *name = "omap2_elm";
@@ -639,14 +642,25 @@ static int omap_elm_init(struct omap_hwmod *oh, void *unused)
 
 	elm_num++;
 
-	pdev = omap_device_build(name, elm_num, oh, NULL,
-			0, NULL, 0, 0);
+	pdev = omap_device_build(name, elm_num, oh, platform_data,
+			sizeof(struct omap_elm_platform_data), NULL, 0, 0);
 	return 0;
 }
 
 static void omap_init_elm(void)
 {
-	omap_hwmod_for_each_by_class("elm", omap_elm_init, NULL);
+	/* configure ELM also with same ecc mode as GPMC */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+	elm_platform_data.ecc_opt = OMAP_ECC_BCH16_CODE_HW;
+#elif defined(CONFIG_MTD_NAND_OMAP_ECC_BCH8_CODE_HW)
+	elm_platform_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
+/* (not supported) #elif  defined(CONFIG_MTD_NAND_OMAP_ECC_BCH4_CODE_HW) */
+/*			elm_platform_data.ecc_opt = OMAP_ECC_BCH4_CODE_HW; */
+#else
+	elm_platform_data.ecc_opt = OMAP_ECC_BCH8_CODE_HW;
+#endif
+
+	omap_hwmod_for_each_by_class("elm", omap_elm_init, &elm_platform_data);
 }
 #else
 static void omap_init_elm(void) {}
