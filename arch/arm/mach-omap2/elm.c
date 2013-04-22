@@ -18,7 +18,6 @@
 #include <plat/elm.h>
 
 #define	DRIVER_NAME	"omap2_elm"
-#define BCH8_ECC_BYTES  13
 
 static void  __iomem *elm_base;
 static struct completion elm_completion;
@@ -75,45 +74,57 @@ void elm_config(int bch_type)
 	elm_write_reg(ELM_PAGE_CTRL, reg_val);
 }
 
-void elm_load_syndrome(int bch_type, char *syndrome)
+void elm_load_syndrome(unsigned int ecc_bytes, char *syndrome)
 {
 	int reg_val;
 	int i;
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < ecc_bytes; i += 4) {
 		reg_val = syndrome[0] | syndrome[1] << 8 |
 			syndrome[2] << 16 | syndrome[3] << 24;
-		elm_write_reg(ELM_SYNDROME_FRAGMENT_0 + i * 4, reg_val);
+		elm_write_reg(ELM_SYNDROME_FRAGMENT_0 + i, reg_val);
 		syndrome += 4;
 	}
 }
 
-void elm_start_processing(void)
-{
-	u32 reg_val;
-
-	reg_val = elm_read_reg(ELM_SYNDROME_FRAGMENT_6);
-	reg_val |= ELM_SYNDROME_VALID;
-	elm_write_reg(ELM_SYNDROME_FRAGMENT_6, reg_val);
-}
-
-void rotate_ecc_bytes(u8 *src, u8 *dst)
+void rotate_ecc_bytes(unsigned int ecc_bytes, u8 *src, u8 *dst)
 {
 	int i;
 
-	for (i = 0; i < BCH8_ECC_BYTES; i++)
-		dst[BCH8_ECC_BYTES - 1 - i] = src[i];
+	for (i = 0; i < ecc_bytes; i++)
+		dst[ecc_bytes - 1 - i] = src[i];
 }
 
-int elm_decode_bch_error(int bch_type, char *ecc_calc, unsigned int *err_loc)
+int elm_decode_bch_error(int bch_type,
+				char *ecc_calc, unsigned int *err_loc)
 {
 	u8 ecc_data[28] = {0};
 	u32 reg_val;
 	int i, err_no;
 
-	rotate_ecc_bytes(ecc_calc, ecc_data);
-	elm_load_syndrome(bch_type, ecc_data);
-	elm_start_processing();
+	/* input calculated ECC syndrome to ELM engine */
+	switch (bch_type) {
+	case ECC_TYPE_BCH16:
+		rotate_ecc_bytes(ECC_BYTES_BCH16, ecc_calc, ecc_data);
+		elm_load_syndrome(ECC_BYTES_BCH16, ecc_data);
+		break;
+	case ECC_TYPE_BCH8:
+		rotate_ecc_bytes(ECC_BYTES_BCH8, ecc_calc, ecc_data);
+		elm_load_syndrome(ECC_BYTES_BCH8, ecc_data);
+		break;
+	case ECC_TYPE_BCH4:
+		rotate_ecc_bytes(ECC_BYTES_BCH4, ecc_calc, ecc_data);
+		elm_load_syndrome(ECC_BYTES_BCH4, ecc_data);
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	/* start elm processing */
+	reg_val = elm_read_reg(ELM_SYNDROME_FRAGMENT_6);
+	reg_val |= ELM_SYNDROME_VALID;
+	elm_write_reg(ELM_SYNDROME_FRAGMENT_6, reg_val);
+
 	wait_for_completion(&elm_completion);
 	reg_val = elm_read_reg(ELM_LOCATION_STATUS);
 
@@ -152,6 +163,7 @@ static int __devinit omap_elm_probe(struct platform_device *pdev)
 	struct resource *res = NULL, *irq = NULL;
 	int             ret_status = 0;
 	static struct clk *elm_clk;
+	struct omap_elm_platform_data *platform_data = pdev->dev.platform_data;
 
 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 
@@ -198,7 +210,20 @@ static int __devinit omap_elm_probe(struct platform_device *pdev)
 
 	clk_enable(elm_clk);
 	elm_reset();
-	elm_config(1);
+	/* configure ELM module for handling various BCHx ECC schemes */
+	if (platform_data == NULL) {
+		printk(KERN_NOTICE  "%s: Error: missing platform data"
+				"cannot initialize ELM", DRIVER_NAME);
+		return -EINVAL;
+	}
+
+	if (platform_data->ecc_opt == OMAP_ECC_BCH16_CODE_HW)
+		elm_config(ECC_TYPE_BCH16);
+	else if (platform_data->ecc_opt == OMAP_ECC_BCH8_CODE_HW)
+		elm_config(ECC_TYPE_BCH8);
+	else
+		elm_config(ECC_TYPE_BCH4);
+
 	init_completion(&elm_completion);
 	return ret_status;
 
