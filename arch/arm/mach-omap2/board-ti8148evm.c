@@ -666,27 +666,47 @@ static struct mtd_partition ti814x_nand_partitions[] = {
 	{
 		.name           = "U-Boot-min",
 		.offset         = 0,    /* Offset = 0x0 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 1 * SZ_256K,
+#else
 		.size           = SZ_128K,
+#endif
 	},
 	{
 		.name           = "U-Boot",
 		.offset         = MTDPART_OFS_APPEND,/* Offset = 0x0 + 128K */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 8 * SZ_256K,
+#else
 		.size           = 18 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "U-Boot Env",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x260000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 1 * SZ_256K,
+#else
 		.size           = 1 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "Kernel",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x280000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 17 * SZ_256K,
+#else
 		.size           = 34 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "File System",
 		.offset         = MTDPART_OFS_APPEND,   /* Offset = 0x6C0000 */
+#ifdef CONFIG_MTD_NAND_OMAP_ECC_BCH16_CODE_HW
+		.size           = 800 * SZ_256K,
+#else
 		.size           = 1601 * SZ_128K,
+#endif
 	},
 	{
 		.name           = "Reserved",
