@@ -92,8 +92,9 @@ enum omap_ecc {
 	OMAP_ECC_HAMMING_CODE_HW, /* gpmc to detect the error */
 		/* 1-bit ecc: stored at begining of spare area as romcode */
 	OMAP_ECC_HAMMING_CODE_HW_ROMCODE, /* gpmc method & romcode layout */
-	OMAP_ECC_BCH4_CODE_HW, /* gpmc bch detection & s/w method correction */
-	OMAP_ECC_BCH8_CODE_HW, /* gpmc bch detection & s/w method correction */
+	OMAP_ECC_BCH4_CODE_HW, /* 4-bit  error detection & correction by H/W */
+	OMAP_ECC_BCH8_CODE_HW, /* 8-bit  error detection & correction by H/W */
+	OMAP_ECC_BCH16_CODE_HW /* 16-bit error detection & correction by H/W */
 };
 
 /*

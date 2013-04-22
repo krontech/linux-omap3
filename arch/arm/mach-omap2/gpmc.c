@@ -48,7 +48,13 @@
 #define GPMC_ECC_CONTROL	0x1f8
 #define GPMC_ECC_SIZE_CONFIG	0x1fc
 #define GPMC_ECC1_RESULT        0x200
-#define GPMC_ECC_BCH_RESULT_0	0x240
+#define GPMC_ECC_BCH_RESULT_0(cs)	(0x240 + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_1(cs)	(0x244 + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_2(cs)	(0x248 + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_3(cs)	(0x24C + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_4(cs)	(0x300 + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_5(cs)	(0x304 + 0x10 * cs)
+#define GPMC_ECC_BCH_RESULT_6(cs)	(0x308 + 0x10 * cs)
 
 #define GPMC_CS0_OFFSET		0x60
 #define GPMC_CS_SIZE		0x30
@@ -844,21 +850,27 @@ void omap3_gpmc_restore_context(void)
 int gpmc_enable_hwecc(int ecc_type, int cs, int mode,
 			int dev_width, int ecc_size)
 {
-	unsigned int bch_mod = 0, bch_wrapmode = 0, eccsize1 = 0, eccsize0 = 0;
+	unsigned int bch_wrapmode = 0, eccsize1 = 0, eccsize0 = 0;
 	unsigned int ecc_conf_val = 0, ecc_size_conf_val = 0;
 
 	switch (mode) {
 	case GPMC_ECC_READ:
 		if (ecc_type == OMAP_ECC_BCH4_CODE_HW) {
 			eccsize1 = 0xD; eccsize0 = 0x48;
-			bch_mod = 0;
 			bch_wrapmode = 0x09;
 		} else if (ecc_type == OMAP_ECC_BCH8_CODE_HW) {
 			eccsize1 = 0x2; eccsize0 = 0x1A;
-			bch_mod = 1;
 			bch_wrapmode = 0x01;
-		} else
+		} else if (ecc_type == OMAP_ECC_BCH16_CODE_HW) {
+			/* eccsize0 & eccsize1 configured in nibbles */
+			eccsize0 = 0x34;
+			eccsize1 = 0x00;
+			bch_wrapmode = 0x1;
+		} else {
+			eccsize0 = 0x00;
 			eccsize1 = ((ecc_size >> 1) - 1);
+			bch_wrapmode = 0x0;
+		}
 		break;
 
 	case GPMC_ECC_READSYN:
@@ -867,38 +879,94 @@ int gpmc_enable_hwecc(int ecc_type, int cs, int mode,
 	case GPMC_ECC_WRITE:
 		if (ecc_type == OMAP_ECC_BCH4_CODE_HW) {
 			eccsize1 = 0x1c; eccsize0 = 0x00;
-			bch_mod = 0;
 			bch_wrapmode = 0x06;
 		} else if (ecc_type == OMAP_ECC_BCH8_CODE_HW) {
 			eccsize1 = 0x1c; eccsize0 = 0x00;
-			bch_mod = 1;
 			bch_wrapmode = 0x01;
-		} else
+		} else if (ecc_type == OMAP_ECC_BCH16_CODE_HW) {
+			/* eccsize0 & eccsize1 configured in nibbles */
+			eccsize0 = 0x00;
+			eccsize1 = 0x34;
+			bch_wrapmode = 0x1;
+		} else {
+			eccsize0 = 0x0;
 			eccsize1 = ((ecc_size >> 1) - 1);
+			bch_wrapmode = 0x0;
+		}
 		break;
 
 	default:
 		printk(KERN_INFO "Error: Unrecognized Mode[%d]!\n", mode);
+		return -EINVAL;
 		break;
 	}
 
-	/* clear ecc and enable bits */
-	if ((ecc_type == OMAP_ECC_BCH4_CODE_HW) ||
-		(ecc_type == OMAP_ECC_BCH8_CODE_HW)) {
-		gpmc_write_reg(GPMC_ECC_CONTROL, 0x00000001);
+	if (ecc_type == OMAP_ECC_BCH4_CODE_HW) {
+		/* clear ECC result registers */
 		ecc_size_conf_val = (eccsize1 << 22) | (eccsize0 << 12);
-		ecc_conf_val = ((0x01 << 16) | (bch_mod << 12)
-			| (bch_wrapmode << 8) | (dev_width << 7)
-			| (0x00 << 4) | (cs << 1) | (0x1));
+		ecc_conf_val = (
+			/* ECC algorithm HAMMING | BCH */
+			(0x1 << 16) |
+			/* BCH algo type (BCH4/BCH8/BCH16) */
+			(0x0 << 12) |
+			/* wrap-mode */
+			(bch_wrapmode << 8) |
+			/* column-width x8 | x16 */
+			(dev_width << 7) |
+			/* number of sector (512B) to process for BCH algo */
+			(0x00 << 4) |
+			/* chip-select for which ECC is calculated */
+			(cs << 1));
+
+	} else if (ecc_type == OMAP_ECC_BCH8_CODE_HW) {
+		/* clear ECC result registers */
+		ecc_size_conf_val = (eccsize1 << 22) | (eccsize0 << 12);
+		ecc_conf_val = (
+			/* ECC algorithm HAMMING | BCH */
+			(0x1 << 16) |
+			/* BCH algo type (BCH4/BCH8/BCH16) */
+			(0x1 << 12) |
+			/* wrap-mode */
+			(bch_wrapmode << 8) |
+			/* column-width x8 | x16 */
+			(dev_width << 7) |
+			/* number of sector (512B) to process for BCH algo */
+			(0x00 << 4) |
+			/* chip-select for which ECC is calculated */
+			(cs << 1));
+
+	} else if (ecc_type == OMAP_ECC_BCH16_CODE_HW) {
+		/* clear ECC result registers */
+		ecc_size_conf_val = (eccsize1 << 22) | (eccsize0 << 12);
+		ecc_conf_val = (
+			/* ECC algorithm HAMMING | BCH */
+			(0x1 << 16) |
+			/* BCH algo type (BCH4/BCH8/BCH16) */
+			(0x2 << 12) |
+			/* wrap-mode */
+			(bch_wrapmode << 8) |
+			/* column-width x8 | x16 */
+			(dev_width << 7) |
+			/* number of sector (512B) to process for BCH algo */
+			(((ecc_size >> 9) - 1) << 4) |
+			/* chip-select for which ECC is calculated */
+			(cs << 1));
+
 	} else {
-		gpmc_write_reg(GPMC_ECC_CONTROL, 0x00000101);
+		/* clear ecc and enable bits */
 		ecc_size_conf_val = (eccsize1 << 22) | 0x0000000F;
-		ecc_conf_val = (dev_width << 7) | (cs << 1) | (0x1);
+		ecc_conf_val = (
+			/* column-width x8 | x16 */
+			(dev_width << 7) |
+			/* chip-select for which ECC is calculated */
+			(cs << 1));
 	}
 
+	gpmc_write_reg(GPMC_ECC_CONTROL, 0x00000101);
 	gpmc_write_reg(GPMC_ECC_SIZE_CONFIG, ecc_size_conf_val);
 	gpmc_write_reg(GPMC_ECC_CONFIG, ecc_conf_val);
-	gpmc_write_reg(GPMC_ECC_CONTROL, 0x00000101);
+	/* enable ECC: should be last command after all configurations */
+	gpmc_write_reg(GPMC_ECC_CONFIG, ecc_conf_val | 0x1);
 
 	return 0;
 }
@@ -920,47 +988,70 @@ EXPORT_SYMBOL(gpmc_enable_hwecc);
 int gpmc_calculate_ecc(int ecc_type, int cs,
 			const u_char *dat, u_char *ecc_code)
 {
-	unsigned int reg;
-	unsigned int val1 = 0x0, val2 = 0x0;
-	unsigned int val3 = 0x0, val4 = 0x0;
+	unsigned int val = 0x0;
 	int i;
 
 	if ((ecc_type == OMAP_ECC_BCH4_CODE_HW) ||
-		(ecc_type == OMAP_ECC_BCH8_CODE_HW)) {
+		(ecc_type == OMAP_ECC_BCH8_CODE_HW) ||
+		(ecc_type == OMAP_ECC_BCH16_CODE_HW)) {
 		for (i = 0; i < 1; i++) {
 			/*
 			 * Reading HW ECC_BCH_Results
 			 * 0x240-0x24C, 0x250-0x25C, 0x260-0x26C, 0x270-0x27C
 			 */
-			reg =  GPMC_ECC_BCH_RESULT_0 + (0x10 * i);
-			val1 = gpmc_read_reg(reg);
-			val2 = gpmc_read_reg(reg + 4);
-			if (ecc_type == OMAP_ECC_BCH8_CODE_HW) {
-				val3 = gpmc_read_reg(reg + 8);
-				val4 = gpmc_read_reg(reg + 12);
-
-				*ecc_code++ = (val4 & 0xFF);
-				*ecc_code++ = ((val3 >> 24) & 0xFF);
-				*ecc_code++ = ((val3 >> 16) & 0xFF);
-				*ecc_code++ = ((val3 >> 8) & 0xFF);
-				*ecc_code++ = (val3 & 0xFF);
-				*ecc_code++ = ((val2 >> 24) & 0xFF);
+			/* for BCH16 */
+			if (ecc_type == OMAP_ECC_BCH16_CODE_HW) {
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_6(i));
+				*ecc_code++ = ((val >> 8) & 0xFF);
+				*ecc_code++ = (val & 0xFF);
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_5(i));
+				*ecc_code++ = ((val >> 24) & 0xFF);
+				*ecc_code++ = ((val >> 16) & 0xFF);
+				*ecc_code++ = ((val >> 8) & 0xFF);
+				*ecc_code++ = (val & 0xFF);
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_4(i));
+				*ecc_code++ = ((val >> 24) & 0xFF);
+				*ecc_code++ = ((val >> 16) & 0xFF);
+				*ecc_code++ = ((val >> 8) & 0xFF);
+				*ecc_code++ = (val & 0xFF);
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_3(i));
+				*ecc_code++ = ((val >> 24) & 0xFF);
+				*ecc_code++ = ((val >> 16) & 0xFF);
+				*ecc_code++ = ((val >> 8) & 0xFF);
 			}
-			*ecc_code++ = ((val2 >> 16) & 0xFF);
-			*ecc_code++ = ((val2 >> 8) & 0xFF);
-			*ecc_code++ = (val2 & 0xFF);
-			*ecc_code++ = ((val1 >> 24) & 0xFF);
-			*ecc_code++ = ((val1 >> 16) & 0xFF);
-			*ecc_code++ = ((val1 >> 8) & 0xFF);
-			*ecc_code++ = (val1 & 0xFF);
+
+			/* common for BCH8, BCH16 */
+			if (ecc_type == OMAP_ECC_BCH8_CODE_HW ||
+				ecc_type == OMAP_ECC_BCH16_CODE_HW) {
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_3(i));
+				*ecc_code++ = (val & 0xFF);
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_2(i));
+				*ecc_code++ = ((val >> 24) & 0xFF);
+				*ecc_code++ = ((val >> 16) & 0xFF);
+				*ecc_code++ = ((val >> 8) & 0xFF);
+				*ecc_code++ = (val & 0xFF);
+				val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_1(i));
+				*ecc_code++ = ((val >> 24) & 0xFF);
+			}
+
+			/* common for BCH4, BCH8, BCH16 */
+			val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_1(i));
+			*ecc_code++ = ((val >> 16) & 0xFF);
+			*ecc_code++ = ((val >> 8) & 0xFF);
+			*ecc_code++ = (val & 0xFF);
+			val = gpmc_read_reg(GPMC_ECC_BCH_RESULT_0(i));
+			*ecc_code++ = ((val >> 24) & 0xFF);
+			*ecc_code++ = ((val >> 16) & 0xFF);
+			*ecc_code++ = ((val >> 8) & 0xFF);
+			*ecc_code++ = (val & 0xFF);
 		}
 	} else {
 		/* read ecc result */
-		val1 = gpmc_read_reg(GPMC_ECC1_RESULT);
-		*ecc_code++ = val1;          /* P128e, ..., P1e */
-		*ecc_code++ = val1 >> 16;    /* P128o, ..., P1o */
+		val = gpmc_read_reg(GPMC_ECC1_RESULT);
+		*ecc_code++ = val;          /* P128e, ..., P1e */
+		*ecc_code++ = val >> 16;    /* P128o, ..., P1o */
 		/* P2048o, P1024o, P512o, P256o, P2048e, P1024e, P512e, P256e */
-		*ecc_code++ = ((val1 >> 8) & 0x0f) | ((val1 >> 20) & 0xf0);
+		*ecc_code++ = ((val >> 8) & 0x0f) | ((val >> 20) & 0xf0);
 	}
 
 	return 0;
