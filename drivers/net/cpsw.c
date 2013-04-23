@@ -736,28 +736,34 @@ void cpsw_rx_handler(void *token, int len, int status)
 static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
 {
 	struct cpsw_priv *priv = dev_id;
+	u32 rx, tx, rx_thresh;
 
 #if (defined(CONFIG_PTP_1588_CLOCK_CPTS) ||		\
 		defined(CONFIG_PTP_1588_CLOCK_CPTS_MODULE))
 	cpts_isr(priv);
 #endif /* CONFIG_PTP_1588_CLOCK_CPTS */
+	rx_thresh = __raw_readl(&priv->ss_regs->rx_thresh_stat);
+	rx = __raw_readl(&priv->ss_regs->rx_stat);
+	tx = __raw_readl(&priv->ss_regs->tx_stat);
+	if( !rx_thresh && !rx && !tx)
+		return IRQ_NONE;
+
+	cpsw_intr_disable(priv);
+	cpsw_disable_irq(priv);
 
 	if (likely(netif_running(priv->ndev))) {
-		cpsw_intr_disable(priv);
-		cpsw_disable_irq(priv);
 		napi_schedule(&priv->napi);
+		return IRQ_HANDLED;
 	}
-
 #ifdef CONFIG_TI_CPSW_DUAL_EMAC
 	else if (likely(netif_running(priv->slaves[1].ndev))) {
 		struct cpsw_priv *priv_sl2 = netdev_priv(priv->slaves[1].ndev);
-		cpsw_intr_disable(priv_sl2);
-		cpsw_disable_irq(priv_sl2);
 		napi_schedule(&priv_sl2->napi);
+		return IRQ_HANDLED;
 	}
 #endif /* CONFIG_TI_CPSW_DUAL_EMAC */
 
-	return IRQ_HANDLED;
+	return IRQ_NONE;
 }
 
 static int cpsw_poll(struct napi_struct *napi, int budget)
