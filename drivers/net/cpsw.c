@@ -737,6 +737,7 @@ static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
 {
 	struct cpsw_priv *priv = dev_id;
 	u32 rx, tx, rx_thresh;
+	int running = 0;
 
 #if (defined(CONFIG_PTP_1588_CLOCK_CPTS) ||		\
 		defined(CONFIG_PTP_1588_CLOCK_CPTS_MODULE))
@@ -745,8 +746,24 @@ static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
 	rx_thresh = __raw_readl(&priv->ss_regs->rx_thresh_stat);
 	rx = __raw_readl(&priv->ss_regs->rx_stat);
 	tx = __raw_readl(&priv->ss_regs->tx_stat);
-	if( !rx_thresh && !rx && !tx)
-		return IRQ_NONE;
+
+	if( !rx_thresh && !rx && !tx) {
+		/* we do not share interrupt lines, this condition
+		   means-the last interrupt was not acked correctly
+		   or we are in the middle of shutting down the device */
+		   cpdma_ctlr_eoi(priv->dma);
+
+		   if(netif_running(priv->ndev))
+			running = 1;
+#ifdef CONFIG_TI_CPSW_DUAL_EMAC
+		   if(netif_running(priv->slaves[1].ndev))
+			running = 1;
+#endif
+		   if (!running)
+			cpsw_intr_disable(priv);
+
+		   return IRQ_HANDLED;
+	}
 
 	cpsw_intr_disable(priv);
 	cpsw_disable_irq(priv);
@@ -763,7 +780,8 @@ static irqreturn_t cpsw_interrupt(int irq, void *dev_id)
 	}
 #endif /* CONFIG_TI_CPSW_DUAL_EMAC */
 
-	return IRQ_NONE;
+	return IRQ_HANDLED;
+
 }
 
 static int cpsw_poll(struct napi_struct *napi, int budget)
