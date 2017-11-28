@@ -43,6 +43,8 @@
 
 
 
+#define TI814x_HDMI_MUX_ADDR (0x481C52C8)
+
 #ifdef DEBUG
 unsigned int vpss_debug;
 module_param_named(debug, vpss_debug, bool, S_IRUGO);
@@ -147,7 +149,18 @@ static struct platform_driver vps_driver = {
 
 static int __init vps_init(void)
 {
+        u32 reg_value;
+        u32 reg_base;
+	
 	VPSSDBG("core init\n");
+
+        /* This mux is for configuring the pixel clock to Venc through HDMI or PLL*/
+        reg_base = (u32)ioremap(TI814x_HDMI_MUX_ADDR, 0x10);
+        reg_value = __raw_readl(reg_base);
+        reg_value &= 0xFFFFFFFE;
+
+        __raw_writel(reg_value, reg_base);
+        iounmap((u32 *)TI814x_HDMI_MUX_ADDR);
 
 	if (platform_driver_probe(&vps_driver, vps_probe)) {
 		VPSSERR("failed to register ti81xx-vpss driver\n");
