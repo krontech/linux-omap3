@@ -336,6 +336,11 @@ config MACH_TI8168EVM
 	default y
 	depends on ARCH_TI816X
 
+config MACH_CHRONOS14
+	bool "Chronos 1.4 High Speed Camera"
+	default y
+	depends on ARCH_TI814X
+
 config OMAP3_EMU
 	bool "OMAP3 debugging peripherals"
 	depends on ARCH_OMAP3

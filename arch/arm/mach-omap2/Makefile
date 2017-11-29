@@ -261,6 +261,10 @@ obj-$(CONFIG_MACH_DM385EVM)		+= board-dm385evm.o \
 obj-$(CONFIG_MACH_TI8168EVM)		+= board-ti8168evm.o \
 					   hsmmc.o \
 					   board-flash.o
+obj-$(CONFIG_MACH_CHRONOS14)		+= board-chronos14.o \
+					   hsmmc.o \
+					   board-flash.o
+
 # Platform specific device init code
 usbfs-$(CONFIG_ARCH_OMAP_OTG)		:= usb-fs.o
 obj-y					+= $(usbfs-m) $(usbfs-y)

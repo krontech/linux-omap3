@@ -1862,7 +1862,9 @@ static void __init ti81xx_video_mux(void)
 
 	} else if (cpu_is_ti814x())	{
 		/*VOUT0 DVO2 configuration*/
-		omap_mux_init_signal("vout0_fid_mux1", OMAP_MUX_MODE0);
+		if (!machine_is_chronos14()) {
+			omap_mux_init_signal("vout0_fid_mux1", OMAP_MUX_MODE0);
+		}
 		omap_mux_init_signal("vout0_clk", OMAP_MUX_MODE0);
 		omap_mux_init_signal("vout0_hsync", OMAP_MUX_MODE0);
 		omap_mux_init_signal("vout0_vsync", OMAP_MUX_MODE0);
@@ -1901,87 +1903,92 @@ static void __init ti81xx_video_mux(void)
 			TI814X_PULL_UP | TI814X_INPUT_EN);
 		omap_mux_init_signal("hdmi_hpd_mux0",
 			TI814X_INPUT_EN);
-		/*I2C2 configuration functon 6*/
-		omap_mux_init_signal("i2c2_scl_mux0",
-			TI814X_PULL_UP | TI814X_INPUT_EN);
-		omap_mux_init_signal("i2c2_sda_mux0",
-			TI814X_PULL_UP | TI814X_INPUT_EN);
 
-		/*VIN0 configuraiton*/
-		omap_mux_init_signal("vin0_clk1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_de0_mux0", OMAP_MUX_MODE0);
-		/* force pin pad of  vin0_de0_mux0 to 0*/
-		omap_writel(0, 0x48140A18);
-		omap_mux_init_signal("vin0_fld0_mux0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_clk0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_hsync0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_vsync0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d2",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d3",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d4",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d5",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d6",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d7",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d8",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d9",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d10",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d11",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d12",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d13",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d14",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d15",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d16",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d17",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d18",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d19",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d20",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d21",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d22",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_d23",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_de0_mux1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_de1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_fld0_mux1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin0_fld1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		if (!machine_is_chronos14()) {
+			/*I2C2 configuration functon 6*/
+			omap_mux_init_signal("i2c2_scl_mux0",
+				TI814X_PULL_UP | TI814X_INPUT_EN);
+			omap_mux_init_signal("i2c2_sda_mux0",
+				TI814X_PULL_UP | TI814X_INPUT_EN);
+
+			/*VIN0 configuraiton*/
+			omap_mux_init_signal("vin0_clk1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de0_mux0", OMAP_MUX_MODE0);
+			/* force pin pad of  vin0_de0_mux0 to 0*/
+			omap_writel(0, 0x48140A18);
+			omap_mux_init_signal("vin0_fld0_mux0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_clk0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_hsync0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_vsync0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d2",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d3",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d4",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d5",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d6",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d7",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d8",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d9",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d10",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d11",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d12",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d13",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d14",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d15",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d16",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d17",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d18",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d19",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d20",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d21",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d22",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d23",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de0_mux1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_fld0_mux1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_fld1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+		}
 
 		/*VIN1 Configuration*/
+		if (!machine_is_chronos14()) {
+			omap_mux_init_signal("vin1_clk1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+		}
 		omap_mux_init_signal("vin1_hsync0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1_clk1",
 				TI814X_PULL_DIS | TI814X_INPUT_EN);
 		omap_mux_init_signal("vin1_vsync0",
 				TI814X_PULL_DIS | TI814X_INPUT_EN);
@@ -2056,6 +2063,9 @@ static inline void ti81xx_register_edma(void) {}
 static void ti814x_nor_init(void)
 {
 	int error = 0;
+
+	if (machine_is_chronos14())
+		return;
 
 	omap_mux_init_signal("gpmc_ad0", TI814X_PULL_DIS | TI814X_INPUT_EN);
 	omap_mux_init_signal("gpmc_ad1", TI814X_PULL_DIS | TI814X_INPUT_EN);
@@ -2314,7 +2324,37 @@ static inline void ti814x_sata_pllcfg(void)
 	if (!cpu_is_ti814x())
 		return;
 
-	if ((cpu_is_ti814x()) && (!cpu_is_dm385())) {
+	if (machine_is_chronos14()) {
+		/* Configure 100Mhz clock source on DM814x */
+
+		/* Configure SATA0 PLL -applies for TI814x*/
+		omap_ctrl_writel(0x80000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 20 MHz Operation) */
+		omap_ctrl_writel(0xC12C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x80000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x80000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0x400000016 to 0xC0000016 for 20MHz
+		* Usage instead of 100MHz
+		*/
+		omap_ctrl_writel(0xC0000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+
+		/* cfgpll0 Replaced 0x40007077 with 0xC0007077 for
+		* 20MHz Usage instead of 100MHz
+		*/
+		omap_ctrl_writel(0xC0007077, TI814X_CONTROL_SATA_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+	else if ((cpu_is_ti814x()) && (!cpu_is_dm385())) {
 		/* Configure 100Mhz clock source on DM814x */
 
 		/* Configure SATA0 PLL -applies for TI814x*/
@@ -2914,7 +2954,9 @@ static int __init omap2_init_devices(void)
 #ifdef CONFIG_ARCH_TI81XX
 	if (cpu_is_ti814x()) {
 		/* Init PCIe,SATA PLL here, before invoking respective init*/
-		ti814x_pcie_pllcfg();
+		if (!machine_is_chronos14()) {
+			ti814x_pcie_pllcfg();
+		}
 		ti814x_sata_pllcfg();
 	 }
 
@@ -2926,7 +2968,9 @@ static int __init omap2_init_devices(void)
 	ti81xx_video_mux();
 #ifdef CONFIG_ARCH_TI814X
 	ti814x_enable_i2c2();
-	ti814x_d_can_init(0);
+	if (machine_is_ti8148evm()) {
+		ti814x_d_can_init(0);
+	}
 #endif
 #ifdef CONFIG_MTD_CFI
 	ti814x_nor_init();
