@@ -64,6 +64,7 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
 				machine_is_davinci_da850_evm() ||
 				machine_is_ti8168evm() ||
 				machine_is_ti8148evm() ||
+				machine_is_chronos14() ||
 				machine_is_dm385evm())
 		sysclk = 24576000;
 
@@ -308,7 +309,7 @@ static struct snd_soc_card ti81xx_snd_soc_card = {
 
 static void ti81xx_evm_dai_fixup(void)
 {
-	if (machine_is_ti8168evm() || machine_is_ti8148evm()) {
+	if (machine_is_ti8168evm() || machine_is_ti8148evm() || machine_is_chronos14()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.2";
 	} else if (machine_is_dm385evm()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.1";
@@ -343,7 +344,7 @@ static int __init evm_init(void)
 		evm_snd_dev_data = &da850_snd_soc_card;
 		index = 0;
 	} else if (machine_is_ti8168evm() || machine_is_ti8148evm()
-					|| machine_is_dm385evm()) {
+					|| machine_is_chronos14() || machine_is_dm385evm()) {
 		ti81xx_evm_dai_fixup();
 		evm_snd_dev_data = &ti81xx_snd_soc_card;
 		index = 0;
