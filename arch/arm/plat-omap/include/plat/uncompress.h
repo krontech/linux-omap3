@@ -103,6 +103,10 @@ static inline void flush(void)
 	_DEBUG_LL_ENTRY(mach, TI81XX_UART##p##_BASE, OMAP_PORT_SHIFT,	\
 		TI81XXUART##p)
 
+#define DEBUG_LL_TI814X(p, mach)					\
+	_DEBUG_LL_ENTRY(mach, TI814X_UART##p##_BASE, OMAP_PORT_SHIFT,	\
+		TI814XUART##p)
+
 static inline void __arch_decomp_setup(unsigned long arch_id)
 {
 	int port = 0;
@@ -181,6 +185,7 @@ static inline void __arch_decomp_setup(unsigned long arch_id)
 
 		/* TI8148 base boards using UART1 */
 		DEBUG_LL_TI81XX(1, ti8148evm);
+		DEBUG_LL_TI814X(5, chronos14);
 
 		/* DM385 base boards using UART1 */
 		DEBUG_LL_TI81XX(1, dm385evm);

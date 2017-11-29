@@ -72,6 +72,12 @@ omap_uart_lsr:	.word	0
 		beq	82f			@ configure UART2
 		cmp	\rp, #TI81XXUART3	@ ti81xx UART offsets different
 		beq	83f			@ configure UART3
+		cmp	\rp, #TI814XUART4	@ ti814x UART offsets different
+		beq	84f			@ configure UART4
+		cmp	\rp, #TI814XUART5	@ ti814x UART offsets different
+		beq	85f			@ configure UART5
+		cmp	\rp, #TI814XUART6	@ ti814x UART offsets different
+		beq	86f			@ configure UART6
 		cmp	\rp, #ZOOM_UART		@ only on zoom2/3
 		beq	95f			@ configure ZOOM_UART
 
@@ -99,6 +105,12 @@ omap_uart_lsr:	.word	0
 82:		mov	\rp, #UART_OFFSET(TI81XX_UART2_BASE)
 		b	98f
 83:		mov	\rp, #UART_OFFSET(TI81XX_UART3_BASE)
+		b	98f
+84:		ldr	\rp, =UART_OFFSET(TI814X_UART4_BASE)
+		b	98f
+85:		ldr	\rp, =UART_OFFSET(TI814X_UART5_BASE)
+		b	98f
+86:		ldr	\rp, =UART_OFFSET(TI814X_UART6_BASE)
 		b	98f
 
 95:		ldr	\rp, =ZOOM_UART_BASE

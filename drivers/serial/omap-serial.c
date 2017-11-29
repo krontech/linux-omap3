@@ -869,7 +869,7 @@ serial_omap_type(struct uart_port *port)
 
 #ifdef CONFIG_SERIAL_OMAP_CONSOLE
 
-static struct uart_omap_port *serial_omap_console_ports[4];
+static struct uart_omap_port *serial_omap_console_ports[6];
 
 static struct uart_driver serial_omap_reg;
 
