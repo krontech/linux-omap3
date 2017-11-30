@@ -1050,23 +1050,18 @@ static inline void omap2_mmc_mux(struct omap_mmc_platform_data *mmc_controller,
 	}
 }
 
-void __init omap2_init_mmc(struct omap_mmc_platform_data **mmc_data,
-			int nr_controllers)
+void __init omap2_init_mmc(struct omap_mmc_platform_data *mmc_data, int id)
 {
-	int i;
 	char *name;
 
-	for (i = 0; i < nr_controllers; i++) {
+	if (mmc_data) {
 		unsigned long base = 0;
 		unsigned long size;
 		unsigned int irq = 0;
 
-		if (!mmc_data[i])
-			continue;
+		omap2_mmc_mux(mmc_data, id);
 
-		omap2_mmc_mux(mmc_data[i], i);
-
-		switch (i) {
+		switch (id) {
 		case 0:
 			if (!cpu_is_ti81xx()) {
 				base = OMAP2_MMC1_BASE;
@@ -1107,14 +1102,14 @@ void __init omap2_init_mmc(struct omap_mmc_platform_data **mmc_data,
 			irq = OMAP44XX_IRQ_MMC5;
 			break;
 		default:
-			continue;
+			return;
 		}
 
 		if (cpu_is_omap2420()) {
 			size = OMAP2420_MMC_SIZE;
 			name = "mmci-omap";
 		} else if (cpu_is_omap44xx()) {
-			if (i < 3)
+			if (id < 3)
 				irq += OMAP44XX_IRQ_GIC_START;
 			size = OMAP4_HSMMC_SIZE;
 			name = "mmci-omap-hs";
@@ -1125,7 +1120,7 @@ void __init omap2_init_mmc(struct omap_mmc_platform_data **mmc_data,
 			size = OMAP3_HSMMC_SIZE;
 			name = "mmci-omap-hs";
 		}
-		omap_mmc_add(name, i, base, size, irq, mmc_data[i]);
+		omap_mmc_add(name, id, base, size, irq, mmc_data);
 	};
 }
 

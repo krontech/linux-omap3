@@ -493,8 +493,6 @@ static struct omap_mmc_platform_data mmc1_data = {
 	},
 };
 
-static struct omap_mmc_platform_data *mmc_data[OMAP24XX_NR_MMC];
-
 static void __init n8x0_mmc_init(void)
 
 {
@@ -536,8 +534,7 @@ static void __init n8x0_mmc_init(void)
 		gpio_direction_output(N810_EMMC_VIO_GPIO, 0);
 	}
 
-	mmc_data[0] = &mmc1_data;
-	omap2_init_mmc(mmc_data, OMAP24XX_NR_MMC);
+	omap2_init_mmc(&mmc1_data, 0);
 }
 #else
 

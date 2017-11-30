@@ -68,17 +68,17 @@ static struct omap_board_mux board_mux[] __initdata = {
 
 static struct omap2_hsmmc_info mmc[] = {
 	{
-		.mmc		= 1,
-		.caps		= MMC_CAP_4_BIT_DATA,
-		.gpio_cd	= 14,
-		.gpio_wp	= 13,
-		.ocr_mask	= MMC_VDD_33_34,
-	},
-	{
 		.mmc		= 2,
 		.caps		= MMC_CAP_4_BIT_DATA,
 		.gpio_cd	= -EINVAL, /* Dedicated pins for CD and WP */
 		.gpio_wp	= -EINVAL,
+		.ocr_mask	= MMC_VDD_33_34,
+	},
+	{
+		.mmc		= 1,
+		.caps		= MMC_CAP_4_BIT_DATA,
+		.gpio_cd	= 14,
+		.gpio_wp	= 13,
 		.ocr_mask	= MMC_VDD_33_34,
 	},
 	{}	/* Terminator */
