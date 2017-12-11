@@ -790,7 +790,7 @@ static void camera_power_off(void)
                 printk(KERN_ALERT "Recieved error %u when attempting to write to TTY!\n", ret);
 		set_fs(oldfs);
 		return;
-    }
+        }
 
 	set_fs(oldfs);
 }
@@ -834,7 +834,7 @@ static void __init chronos14_map_io(void)
 	ti81xx_map_common_io();
 }
 
-MACHINE_START(CHRONOS14, "chrons1.4")
+MACHINE_START(CHRONOS14, "chronos1.4")
 	/* Maintainer: Kron Technologies */
 	.boot_params	= 0x80000100,
 	.map_io		= chronos14_map_io,
@@ -843,3 +843,23 @@ MACHINE_START(CHRONOS14, "chrons1.4")
 	.init_machine	= chronos14_init,
 	.timer		= &omap_timer,
 MACHINE_END
+
+#ifndef CONFIG_MACH_TI8148EVM
+static void __init
+chronos14_evm_fixup(struct machine_desc *desc, struct tag *tags,
+		 char **cmdline, struct meminfo *mi)
+{
+	desc->nr = MACH_TYPE_CHRONOS14;
+}
+
+MACHINE_START(TI8148EVM, "chronos1.4-evm")
+	/* Maintainer: Kron Technologies */
+	.boot_params	= 0x80000100,
+	.fixup		= chronos14_evm_fixup,
+	.map_io		= chronos14_map_io,
+	.reserve	= ti81xx_reserve,
+	.init_irq	= chronos14_init_irq,
+	.init_machine	= chronos14_init,
+	.timer		= &omap_timer,
+MACHINE_END
+#endif

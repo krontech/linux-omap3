@@ -2049,7 +2049,7 @@ static void __init ti81xx_video_mux(void)
 		/*FIXME move to right place
 		    set divider for SYSCLK10*/
 		omap_writel(3, 0x48180324);
-}
+	}
 }
 
 #else
