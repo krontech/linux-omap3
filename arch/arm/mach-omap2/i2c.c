@@ -23,6 +23,7 @@
 #include <plat/i2c.h>
 #include <plat/common.h>
 #include <plat/omap_hwmod.h>
+#include <asm/mach-types.h>
 
 #include "mux.h"
 
@@ -42,7 +43,13 @@ void __init omap2_i2c_mux_pins(int bus_id)
 	if (bus_id == 1)
 		return;
 
-	if (cpu_is_ti814x() && bus_id == 3) {
+	if (machine_is_chronos14() && bus_id == 3) {
+		sprintf(mux_name, "vin0_fld0_mux0.i2c2_scl_mux3");
+		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+		sprintf(mux_name, "vin0_de0_mux0.i2c2_sda_mux1");
+		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+	}
+	else if (cpu_is_ti814x() && bus_id == 3) {
 		sprintf(mux_name, "uart0_dcdn.i2c2_scl_mux0");
 		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
 		sprintf(mux_name, "uart0_dsrn.i2c2_sda_mux0");
