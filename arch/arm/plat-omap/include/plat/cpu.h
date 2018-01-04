@@ -70,6 +70,8 @@ unsigned int omap_rev(void);
  * cpu_is_omap443x():	True for OMAP4430
  * cpu_is_omap446x():	True for OMAP4460
  * cpu_is_omap447x():	True for OMAP4470
+ * cpu_is_ti814x():	True for TI8148, DM385
+ * cpu_is_ti816x():	True for TI8168
  */
 #define GET_OMAP_CLASS	(omap_rev() & 0xff)
 
@@ -148,6 +150,7 @@ IS_AM_SUBCLASS(335x, 0x335)
 #define cpu_is_ti81xx()			0
 #define cpu_is_ti816x()			0
 #define cpu_is_ti814x()			0
+#define cpu_is_dm385()			0
 #define cpu_is_am33xx()			0
 #define cpu_is_am335x()			0
 #define cpu_is_omap44xx()		0
@@ -359,6 +362,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 # undef cpu_is_ti81xx
 # undef cpu_is_ti816x
 # undef cpu_is_ti814x
+# undef cpu_is_dm385
 # undef cpu_is_am33xx
 # undef cpu_is_am335x
 # define cpu_is_omap3430()		is_omap3430()
@@ -380,6 +384,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 # define cpu_is_ti81xx()		is_ti81xx()
 # define cpu_is_ti816x()		is_ti816x()
 # define cpu_is_ti814x()		is_ti814x()
+# define cpu_is_dm385()			(cpu_is_ti814x() && !omap3_has_dsp())
 # define cpu_is_am33xx()		is_am33xx()
 # define cpu_is_am335x()		is_am335x()
 #endif
@@ -399,7 +404,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define cpu_class_is_omap1()	(cpu_is_omap7xx() || cpu_is_omap15xx() || \
 				cpu_is_omap16xx())
 #define cpu_class_is_omap2()	(cpu_is_omap24xx() || cpu_is_omap34xx() || \
-				cpu_is_omap44xx())
+				cpu_is_omap44xx() || cpu_is_ti81xx())
 
 /* Various silicon revisions for omap2 */
 #define OMAP242X_CLASS		0x24200024
@@ -429,11 +434,13 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define TI816X_CLASS		0x81600034
 #define TI8168_REV_ES1_0	TI816X_CLASS
 #define TI8168_REV_ES1_1	(TI816X_CLASS | (0x1 << 8))
+#define TI8168_REV_ES2_0	(TI816X_CLASS | (0x2 << 8))
 
 #define TI814X_CLASS		0x81400034
 #define TI8148_REV_ES1_0	TI814X_CLASS
 #define TI8148_REV_ES2_0	(TI814X_CLASS | (0x1 << 8))
 #define TI8148_REV_ES2_1	(TI814X_CLASS | (0x2 << 8))
+#define TI8148_REV_ES3_0	(TI814X_CLASS | (0x3 << 8))
 
 #define AM335X_CLASS		0x33500034
 #define AM335X_REV_ES1_0	AM335X_CLASS
@@ -485,7 +492,7 @@ extern u32 omap_features;
 #define OMAP4_HAS_MPU_1GHZ		BIT(9)
 #define OMAP4_HAS_MPU_1_2GHZ		BIT(10)
 #define OMAP4_HAS_MPU_1_5GHZ		BIT(11)
-
+#define OMAP3_HAS_DSP			BIT(12)
 
 #define OMAP3_HAS_FEATURE(feat,flag)			\
 static inline unsigned int omap3_has_ ##feat(void)	\
@@ -502,6 +509,7 @@ OMAP3_HAS_FEATURE(192mhz_clk, 192MHZ_CLK)
 OMAP3_HAS_FEATURE(io_wakeup, IO_WAKEUP)
 OMAP3_HAS_FEATURE(sdrc, SDRC)
 OMAP3_HAS_FEATURE(io_chain_ctrl, IO_CHAIN_CTRL)
+OMAP3_HAS_FEATURE(dsp, DSP)
 
 /*
  * Runtime detection of OMAP4 features

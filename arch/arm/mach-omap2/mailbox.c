@@ -39,10 +39,12 @@
 #define OMAP4_MBOX_REG_SIZE		0x130
 
 #define AM33XX_MBOX_REG_SIZE		0x140
+#define TI81XX_MBOX_REG_SIZE		0x144
 
 #define MBOX_NR_REGS			(MBOX_REG_SIZE / sizeof(u32))
 #define OMAP4_MBOX_NR_REGS		(OMAP4_MBOX_REG_SIZE / sizeof(u32))
 #define AM33XX_MBOX_NR_REGS		(AM33XX_MBOX_REG_SIZE / sizeof(u32))
+#define TI81XX_MBOX_NR_REGS		(TI81XX_MBOX_REG_SIZE / sizeof(u32))
 
 static void __iomem *mbox_base;
 
@@ -59,7 +61,7 @@ struct omap_mbox2_priv {
 	unsigned long irqstatus;
 	u32 newmsg_bit;
 	u32 notfull_bit;
-	u32 ctx[OMAP4_MBOX_NR_REGS];
+	u32 ctx[TI81XX_MBOX_NR_REGS];
 	unsigned long irqdisable;
 };
 
@@ -149,7 +151,10 @@ static void omap2_mbox_enable_irq(struct omap_mbox *mbox,
 	u32 l, bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
 
 	l = mbox_read_reg(p->irqenable);
-	l |= bit;
+	if (cpu_is_ti81xx())
+		l = bit;
+	else
+		l |= bit;
 	mbox_write_reg(l, p->irqenable);
 }
 
@@ -159,7 +164,7 @@ static void omap2_mbox_disable_irq(struct omap_mbox *mbox,
 	struct omap_mbox2_priv *p = mbox->priv;
 	u32 bit = (irq == IRQ_TX) ? p->notfull_bit : p->newmsg_bit;
 
-	if (!cpu_is_omap44xx() && !cpu_is_am33xx())
+	if (!cpu_is_omap44xx() && !cpu_is_am33xx() && !cpu_is_ti81xx())
 		bit = mbox_read_reg(p->irqdisable) & ~bit;
 
 	mbox_write_reg(bit, p->irqdisable);
@@ -193,8 +198,11 @@ static void omap2_mbox_save_ctx(struct omap_mbox *mbox)
 	int i;
 	struct omap_mbox2_priv *p = mbox->priv;
 	int nr_regs;
+
 	if (cpu_is_omap44xx())
 		nr_regs = OMAP4_MBOX_NR_REGS;
+	else if (cpu_is_ti81xx())
+		nr_regs = TI81XX_MBOX_NR_REGS;
 	else
 		nr_regs = MBOX_NR_REGS;
 	for (i = 0; i < nr_regs; i++) {
@@ -212,6 +220,8 @@ static void omap2_mbox_restore_ctx(struct omap_mbox *mbox)
 	int nr_regs;
 	if (cpu_is_omap44xx())
 		nr_regs = OMAP4_MBOX_NR_REGS;
+	else if (cpu_is_ti81xx())
+		nr_regs = TI81XX_MBOX_NR_REGS;
 	else
 		nr_regs = MBOX_NR_REGS;
 	for (i = 0; i < nr_regs; i++) {
@@ -373,6 +383,78 @@ struct omap_mbox mbox_2_info = {
 
 struct omap_mbox *omap4_mboxes[] = { &mbox_1_info, &mbox_2_info, NULL };
 
+/* Mailbox for DSP */
+static struct omap_mbox2_priv omap2_mbox_ti81xx_dsp_priv = {
+	.tx_fifo = {
+		.msg		= MAILBOX_MESSAGE(3),
+		.fifo_stat	= MAILBOX_FIFOSTATUS(3),
+	},
+	.rx_fifo = {
+		.msg		= MAILBOX_MESSAGE(0),
+		.msg_stat	= MAILBOX_MSGSTATUS(0),
+	},
+	.irqenable	= OMAP4_MAILBOX_IRQENABLE(0),
+	.irqstatus	= OMAP4_MAILBOX_IRQSTATUS(0),
+	.notfull_bit	= MAILBOX_IRQ_NOTFULL(3),
+	.newmsg_bit	= MAILBOX_IRQ_NEWMSG(0),
+	.irqdisable	= OMAP4_MAILBOX_IRQENABLE_CLR(0),
+};
+
+struct omap_mbox mbox_ti81xx_dsp_info = {
+	.name	= "mailbox-dsp",
+	.ops	= &omap2_mbox_ops,
+	.priv	= &omap2_mbox_ti81xx_dsp_priv,
+};
+
+/* Mailbox for VideoM3 */
+static struct omap_mbox2_priv omap2_mbox_ti81xx_video_priv = {
+	.tx_fifo = {
+		.msg		= MAILBOX_MESSAGE(4),
+		.fifo_stat	= MAILBOX_FIFOSTATUS(4),
+	},
+	.rx_fifo = {
+		.msg		= MAILBOX_MESSAGE(6),
+		.msg_stat	= MAILBOX_MSGSTATUS(6),
+	},
+	.irqenable	= OMAP4_MAILBOX_IRQENABLE(0),
+	.irqstatus	= OMAP4_MAILBOX_IRQSTATUS(0),
+	.notfull_bit	= MAILBOX_IRQ_NOTFULL(4),
+	.newmsg_bit	= MAILBOX_IRQ_NEWMSG(6),
+	.irqdisable	= OMAP4_MAILBOX_IRQENABLE_CLR(0),
+};
+
+struct omap_mbox mbox_ti81xx_video_info = {
+	.name	= "mailbox-video",
+	.ops	= &omap2_mbox_ops,
+	.priv	= &omap2_mbox_ti81xx_video_priv,
+};
+
+/* Mailbox for VpssM3 */
+static struct omap_mbox2_priv omap2_mbox_ti81xx_vpss_priv = {
+	.tx_fifo = {
+		.msg		= MAILBOX_MESSAGE(5),
+		.fifo_stat	= MAILBOX_FIFOSTATUS(5),
+	},
+	.rx_fifo = {
+		.msg		= MAILBOX_MESSAGE(8),
+		.msg_stat	= MAILBOX_MSGSTATUS(8),
+	},
+	.irqenable	= OMAP4_MAILBOX_IRQENABLE(0),
+	.irqstatus	= OMAP4_MAILBOX_IRQSTATUS(0),
+	.notfull_bit	= MAILBOX_IRQ_NOTFULL(5),
+	.newmsg_bit	= MAILBOX_IRQ_NEWMSG(8),
+	.irqdisable	= OMAP4_MAILBOX_IRQENABLE_CLR(0),
+};
+
+struct omap_mbox mbox_ti81xx_vpss_info = {
+	.name	= "mailbox-vpss",
+	.ops	= &omap2_mbox_ops,
+	.priv	= &omap2_mbox_ti81xx_vpss_priv,
+};
+
+struct omap_mbox *ti81xx_mboxes[] = { &mbox_ti81xx_dsp_info, \
+			&mbox_ti81xx_video_info, &mbox_ti81xx_vpss_info, NULL };
+
 static int __devinit omap2_mbox_probe(struct platform_device *pdev)
 {
 	struct resource *mem;
@@ -381,7 +463,7 @@ static int __devinit omap2_mbox_probe(struct platform_device *pdev)
 
 	if (false)
 		;
-	else if (cpu_is_omap34xx() && !cpu_is_am33xx()) {
+	else if (cpu_is_omap34xx() && !cpu_is_am33xx() || !cpu_is_ti81xx()) {
 		list = omap3_mboxes;
 
 		list[0]->irq = platform_get_irq(pdev, 0);
@@ -389,6 +471,12 @@ static int __devinit omap2_mbox_probe(struct platform_device *pdev)
 		list = am33xx_mboxes;
 
 		list[0]->irq = platform_get_irq(pdev, 0);
+	}
+	else if (cpu_is_ti81xx()) {
+		list = ti81xx_mboxes;
+
+		list[0]->irq = list[1]->irq = list[2]->irq =
+			platform_get_irq_byname(pdev, "mbox");
 	}
 	else if (cpu_is_omap2430()) {
 		list = omap2_mboxes;

@@ -25,6 +25,8 @@
 #include <plat/omap-secure.h>
 
 
+#include <plat/ti81xx_ram.h>
+
 #define NO_LENGTH_CHECK 0xffffffff
 
 struct omap_board_config_kernel *omap_board_config __initdata;
@@ -61,6 +63,12 @@ const void *__init __omap_get_config(u16 tag, size_t len, int nr)
 const void *__init omap_get_var_config(u16 tag, size_t *len)
 {
         return get_config(tag, NO_LENGTH_CHECK, 0, len);
+}
+
+void  __init ti81xx_reserve(void)
+{
+	ti81xxfb_reserve_sdram_memblock();
+	ti81xx_pcie_mem_reserve_sdram_memblock();
 }
 
 void __init omap_reserve(void)

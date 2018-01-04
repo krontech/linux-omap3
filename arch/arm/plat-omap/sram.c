@@ -46,7 +46,8 @@
 #define OMAP4_SRAM_PUB_PA	(OMAP4_SRAM_PA + 0x4000)
 #endif
 
-#if defined(CONFIG_ARCH_OMAP2PLUS)
+
+#if defined(CONFIG_ARCH_OMAP2PLUS) || defined(CONFIG_ARCH_TI814X)
 #define SRAM_BOOTLOADER_SZ	0x00
 #else
 #define SRAM_BOOTLOADER_SZ	0x80
@@ -121,6 +122,11 @@ static void __init omap_detect_sram(void)
 			} else if (cpu_is_omap44xx()) {
 				omap_sram_start = OMAP4_SRAM_PUB_PA;
 				omap_sram_size = 0xa000; /* 40K */
+			} else if (cpu_is_dm385() || (cpu_is_ti814x() &&
+					(omap_rev() > TI8148_REV_ES1_0))) {
+				pr_err("ti814x: pm: SRAM is locked\n");
+				omap_sram_start = TI814X_SRAM_PA;
+				omap_sram_size = 0xF000;/* 64K - 4K */
 			} else {
 				omap_sram_start = OMAP2_SRAM_PUB_PA;
 				omap_sram_size = 0x800; /* 2K */
@@ -135,6 +141,14 @@ static void __init omap_detect_sram(void)
 			} else if (cpu_is_am33xx()) {
 				omap_sram_start = AM33XX_SRAM_PA;
 				omap_sram_size = 0x10000; /* 64K */
+			} else if (cpu_is_dm385() || (cpu_is_ti814x() &&
+					(omap_rev() > TI8148_REV_ES1_0))) {
+				omap_sram_start = TI814X_SRAM_PA;
+				/* Total Internal sram size is 64KB and 1KB of
+				 * this is reserved, for alignment purpose we
+				 * lose 3KB more hence only 60KB is available
+				 */
+				omap_sram_size = 0xF000; /* 64K - 4K */
 			} else {
 				omap_sram_start = OMAP2_SRAM_PA;
 				if (cpu_is_omap242x())
@@ -362,6 +376,12 @@ static inline int am33xx_sram_init(void)
 	return 0;
 }
 
+static int __init ti814x_sram_init(void)
+{
+	omap_push_sram_idle();
+	return 0;
+}
+
 int __init omap_sram_init(void)
 {
 	omap_detect_sram();
@@ -377,6 +397,10 @@ int __init omap_sram_init(void)
 		omap34xx_sram_init();
 	else if (cpu_is_am33xx())
 		am33xx_sram_init();
+	else if (cpu_is_dm385() || (cpu_is_ti814x() &&
+					(omap_rev() > TI8148_REV_ES1_0)))
+		/* Power management is not supported on ti814x PG 1.x */
+		ti814x_sram_init();
 
 	return 0;
 }

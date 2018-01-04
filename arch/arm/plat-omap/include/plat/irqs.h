@@ -31,6 +31,7 @@
 /* All OMAP4 specific defines are moved to irqs-44xx.h */
 #include "irqs-44xx.h"
 #include "irqs-33xx.h"
+#include "irqs-ti81xx.h"
 
 /*
  * IRQ numbers for interrupt handler 1
@@ -424,8 +425,17 @@
 #define TWL_IRQ_END		TWL6040_CODEC_IRQ_END
 #endif
 
+/* MSI IRQs may get added for TI81XX */
+#define MSI_IRQ_BASE		TWL_IRQ_END
+#ifdef CONFIG_PCI_MSI
+#define MSI_NR_IRQS		32
+#else
+#define MSI_NR_IRQS		0
+#endif
+#define MSI_IRQ_END		(MSI_IRQ_BASE + MSI_NR_IRQS)
+
 /* GPMC related */
-#define OMAP_GPMC_IRQ_BASE	(TWL_IRQ_END)
+#define OMAP_GPMC_IRQ_BASE	(MSI_IRQ_END)
 #define OMAP_GPMC_NR_IRQS	8
 #define OMAP_GPMC_IRQ_END	(OMAP_GPMC_IRQ_BASE + OMAP_GPMC_NR_IRQS)
 

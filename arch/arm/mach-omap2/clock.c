@@ -416,6 +416,21 @@ const struct clkops clkops_omap3_core_dpll_ops = {
 
 #endif
 
+/* TI81XX FAPLL clkops */
+#if defined(CONFIG_SOC_OMAPTI81XX)
+
+const struct clkops clkops_ti816x_fapll_ops = {
+	.enable		= ti816x_fapll_enable,
+	.disable	= ti816x_fapll_disable,
+};
+
+const struct clkops clkops_ti814x_dpll_ops = {
+	.enable		= ti814x_dpll_enable,
+	.disable	= ti814x_dpll_disable,
+};
+
+#endif
+
 /*
  * OMAP2+ clock reset and init functions
  */

@@ -220,6 +220,7 @@ struct musb_platform_ops {
 
 	int	(*vbus_status)(struct musb *musb);
 	void	(*set_vbus)(struct musb *musb, int on);
+	void	(*id_poll)(struct musb *musb);
 
 	int	(*adjust_channel_params)(struct dma_channel *channel,
 				u16 packet_sz, u8 *mode,

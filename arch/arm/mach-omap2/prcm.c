@@ -77,6 +77,9 @@ static void omap_prcm_arch_reset(char mode, const char *cmd)
 		omap3_ctrl_write_boot_mode((cmd ? (u8)*cmd : 0));
 	} else if (cpu_is_omap44xx()) {
 		omap4_prminst_global_warm_sw_reset(); /* never returns */
+	} else if (cpu_is_ti81xx()) {
+		omap2_prm_set_mod_reg_bits(TI81XX_GLOBAL_RST_COLD, prcm_offs,
+						TI81XX_PRM_DEVICE_RSTCTRL);
 	} else {
 		WARN_ON(1);
 	}

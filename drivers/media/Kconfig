@@ -118,6 +118,8 @@ source "drivers/media/common/tuners/Kconfig"
 
 source "drivers/media/video/Kconfig"
 
+source "drivers/media/video/tiler/Kconfig"
+
 source "drivers/media/radio/Kconfig"
 
 #

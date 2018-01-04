@@ -31,6 +31,25 @@
 
 #define OMAP_MMC_MAX_SLOTS	2
 
+#define TI81XX_NR_MMC		1
+#define TI814X_NR_MMC		3
+#define TI81XX_HSMMC_SIZE	0x10000
+#define TI816X_MMC1_BASE	0x48060100 /* TI816X MMC/SD config base */
+#define TI816X_MMC1_HL_BASE	0x48060000 /* TI816X HL configuration*/
+#define TI814X_MMC1_BASE	0x48060100 /* TI814X MMC/SD config base */
+#define TI814X_MMC1_HL_BASE	0x48060100 /* TI814X HL configuration*/
+#define TI814X_MMC2_BASE	0x481D8100 /* TI814X MMC/SD config base */
+#define TI814X_MMC2_HL_BASE	0x481D8000 /* TI814X HL configuration*/
+#define TI814X_MMC3_BASE	0x47810000 /* TI814X MMC/SD config base */
+#define TI814X_MMC3_HL_BASE	0x47810000 /* TI814X HL configuration*/
+
+
+#define HSMMC5			(1 << 4)
+#define HSMMC4			(1 << 3)
+#define HSMMC3			(1 << 2)
+#define HSMMC2			(1 << 1)
+#define HSMMC1			(1 << 0)
+
 /*
  * struct omap_mmc_dev_attr.flags possibilities
  *
@@ -52,7 +71,7 @@
 
 enum {
 	MMC_CTRL_VERSION_1 = 0, /* OMAP class devicess */
-	MMC_CTRL_VERSION_2	/* AM33XX class devices */
+	MMC_CTRL_VERSION_2	/* AM33XX/TI81XX class devicess */
 };
 
 struct omap_mmc_dev_attr {

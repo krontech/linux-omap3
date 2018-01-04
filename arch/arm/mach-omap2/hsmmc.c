@@ -458,7 +458,7 @@ void __init omap_init_hsmmc(struct omap2_hsmmc_info *hsmmcinfo, int ctrl_nr)
 		goto done;
 	}
 
-	if (!cpu_is_am33xx())
+	if (!cpu_is_am33xx() && !cpu_is_ti81xx())
 		omap_hsmmc_mux(mmc_data, (ctrl_nr - 1));
 
 	name = "omap_hsmmc";

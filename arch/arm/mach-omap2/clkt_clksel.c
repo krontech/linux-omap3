@@ -311,9 +311,10 @@ u32 omap2_clksel_round_rate_div(struct clk *clk, unsigned long target_rate,
 	}
 
 	if (!clkr->div) {
-		pr_err("clock: Could not find divisor for target "
-		       "rate %ld for clock %s parent %s\n", target_rate,
-		       clk->name, clk->parent->name);
+		if (!cpu_is_ti816x() && !cpu_is_ti814x())
+			pr_err("clock: Could not find divisor for target "
+			       "rate %ld for clock %s parent %s\n",
+				target_rate, clk->name, clk->parent->name);
 		return ~0;
 	}
 
@@ -507,3 +508,227 @@ int omap2_clksel_set_parent(struct clk *clk, struct clk *new_parent)
 
 	return 0;
 }
+
+#ifdef CONFIG_ARCH_TI81XX
+
+/**
+ * ti816x_clksel_set_rate() - program clock rate in hardware
+ * @clk: struct clk * to program rate
+ * @rate: target rate to program
+ *
+ * This function is intended to be called by the aduio and some
+ * of the coprocessors. Program @clk's rate to @rate in the hardware.
+ * The clock should be disabled when this happens, otherwise setrate
+ * will fail, because this is treated as clock being used. If multiple
+ * drivers are using the clock, even though it is trying to change
+ * then this return -EINVAL with error message. Returns -EINVAL upon
+ * error, or 0 upon success.
+ */
+int ti816x_clksel_set_rate(struct clk *clk, unsigned long rate)
+{
+	struct clk *pclk;
+	struct clk *fclk;
+	struct fapll_data *fd;
+	int ret, fapll_sr = 0;
+
+	if (clk->usecount == 0) {
+		pr_err("clock: Enable the clock '%s' before setting rate\n",
+			clk->name);
+		return -EINVAL;
+	}
+	if (clk->usecount > 1) {
+		pr_err("clock: '%s' clock is in use can't change the rate "
+			"usecount = '%d'", clk->name, clk->usecount);
+		return -EBUSY;
+	}
+
+	pclk = clk->parent;
+	if (pclk->usecount > 1) {
+		pr_err("clock: '%s' clock's parent '%s' is in use can't"
+			" change the rate usecount = %d", clk->name,
+			pclk->name, pclk->usecount);
+		return -EBUSY;
+	}
+
+	fclk = pclk->parent;
+	/* check the dividers in parent clock */
+	ret = pclk->set_rate(pclk, rate);
+	if (!ret)
+		propagate_rate(pclk);
+	else {
+		if (!fclk->fapll_data)
+			goto failed_set_divider;
+
+		fd = fclk->fapll_data;
+		if (!((fd->fapll_id == 1) || (fd->fapll_id == 4)))
+			goto failed_set_divider;
+
+		if ((fd->fapll_id == 1) && (fclk->synthesizer_id == 2))
+			goto failed_set_divider;
+
+		fapll_sr = 1;
+	}
+
+	if (fapll_sr) {
+		if (fclk->usecount > 1) {
+			pr_err("clock: %s, parent %s is already in use, change"
+				" parent\n", pclk->name, pclk->parent->name);
+			return -EINVAL;
+		}
+
+		/* Changing the FAPLL synthesizer rate */
+		ret = fclk->set_rate(fclk, rate);
+		if (ret) {
+			pr_err("clock: failed to set fapll rate\n");
+			return -EINVAL;
+		}
+
+		/* reset divider */
+		ret = omap2_clksel_set_rate(pclk, fclk->rate);
+		if (ret) {
+			pr_err("clock: failed to reset the divider\n");
+			return -EINVAL;
+		}
+		propagate_rate(fclk);
+	}
+	return 0;
+
+failed_set_divider:
+	pr_err("clock: failed to set divider\n");
+	return -EINVAL;
+}
+
+/*
+ * _ti814x_adpll_check_and_set_rate - check if given clock's parent is an ADPLL
+ *  and check if it is allowed to change the rate of the ADPLL based on id,
+ *  Set rate if it is a clock not an ADPLL and propagate rate down tree
+ * @clk - pointer to struct clk
+ * @dpll_setrate - output variable indicating whether rate can be set
+ * @rate - rate to be set
+ */
+static int _ti814x_adpll_check_and_set_rate(struct clk *clk,
+					int *dpll_setrate,
+					unsigned long rate)
+{
+	struct dpll_data *dd;
+	struct clk *dclk = clk->parent;
+	int ret = 0;
+
+	*dpll_setrate = 0;
+
+	if (dclk->dpll_data) {
+		dd = dclk->dpll_data;
+		if (((dd->dpll_id == TI814X_ARM_DPLL_ID) ||
+				(dd->dpll_id == TI814X_DDR_DPLL_ID)))
+			return -EINVAL;
+		*dpll_setrate = 1;
+	} else if (dclk->set_rate) {
+		if (dclk->usecount > 1) {
+			pr_err("clock: %s, parent %s is already in use, can't"
+				" change rate\n", clk->name, dclk->name);
+			return -EBUSY;
+		}
+		ret = dclk->set_rate(dclk, rate);
+		if (!ret) {
+			/* re-set divider based on parent rate */
+			ret = omap2_clksel_set_rate(clk, dclk->rate);
+			if (ret) {
+				pr_err("clock: failed to reset the divider\n");
+				return ret;
+			}
+			propagate_rate(dclk);
+		}
+	}
+	return ret;
+}
+
+/**
+ * ti814x_clksel_set_rate() - program clock rate in hardware
+ * @clk: struct clk * to program rate
+ * @rate: target rate to program
+ *
+ * This function is intended to be called by the aduio and some
+ * of the coprocessors. Program @clk's rate to @rate in the hardware.
+ * The clock should be disabled when this happens, otherwise setrate
+ * will fail, because this is treated as clock being used. If multiple
+ * drivers are using the clock, returns -EINVAL with error message.
+ * Returns -EINVAL upon error, or 0 upon success.
+ */
+int ti814x_clksel_set_rate(struct clk *clk, unsigned long rate)
+{
+	struct clk *pclk;
+	struct clk *dclk;
+	int ret, dpll_setrate = 0;
+
+	if (clk->usecount == 0) {
+		pr_err("clock: Enable the clock '%s' before setting rate\n",
+			clk->name);
+		return -EINVAL;
+	}
+	if (clk->usecount > 1) {
+		pr_err("clock: '%s' clock is in use can't change the rate "
+			"usecount = '%d'", clk->name, clk->usecount);
+		return -EBUSY;
+	}
+
+	pclk = clk->parent;
+	if (pclk->usecount > 1) {
+		pr_err("clock: '%s' clock's parent '%s' is in use can't"
+			" change the rate usecount = %d", clk->name,
+			pclk->name, pclk->usecount);
+		return -EBUSY;
+	}
+
+	dclk = pclk->parent;
+	/* check the dividers in parent clock */
+	ret = pclk->set_rate(pclk, rate);
+	if (!ret) {
+		propagate_rate(pclk);
+	} else {
+
+		ret = _ti814x_adpll_check_and_set_rate(pclk,
+						&dpll_setrate,
+						rate);
+
+		if (ret && dpll_setrate)
+			goto failed_set_divider;
+		else if (ret) {
+			pclk = dclk;
+			dclk = dclk->parent;
+			ret = _ti814x_adpll_check_and_set_rate(pclk,
+							&dpll_setrate,
+							rate);
+			if (ret && dpll_setrate)
+				goto failed_set_divider;
+		}
+	}
+	if (dpll_setrate) {
+		if (dclk->usecount > 1) {
+			pr_err("clock: %s, parent %s is already in use, can't"
+			"change rate\n", pclk->name, dclk->name);
+			return -EBUSY;
+		}
+
+		/* Changing the DPLL rate */
+		ret = dclk->set_rate(dclk, rate);
+		if (ret) {
+			pr_err("clock: failed to set dpll rate\n");
+			return -EINVAL;
+		}
+
+		/* reset divider */
+		ret = omap2_clksel_set_rate(pclk, dclk->rate);
+		if (ret) {
+			pr_err("clock: failed to reset the divider\n");
+			return -EINVAL;
+		}
+		propagate_rate(dclk);
+	}
+	return 0;
+
+failed_set_divider:
+	pr_err("clock: failed to set divider\n");
+	return ret;
+}
+
+#endif

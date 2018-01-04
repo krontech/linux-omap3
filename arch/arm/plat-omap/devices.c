@@ -26,11 +26,12 @@
 #include <plat/mmc.h>
 #include <plat/menelaus.h>
 #include <plat/omap44xx.h>
+#include <plat/dma.h>
 
 #if defined(CONFIG_MMC_OMAP) || defined(CONFIG_MMC_OMAP_MODULE) || \
 	defined(CONFIG_MMC_OMAP_HS) || defined(CONFIG_MMC_OMAP_HS_MODULE)
 
-#define OMAP_MMC_NR_RES		2
+#define OMAP_MMC_NR_RES		4
 
 /*
  * Register MMC devices. Called from mach-omap1 and mach-omap2 device init.
@@ -53,6 +54,52 @@ int __init omap_mmc_add(const char *name, int id, unsigned long base,
 	res[0].flags = IORESOURCE_MEM;
 	res[1].start = res[1].end = irq;
 	res[1].flags = IORESOURCE_IRQ;
+	/* Populate DMA lines based on the instance used. Rx first,Tx next*/
+	switch (id) {
+	case 0:
+		res[2].start = OMAP24XX_DMA_MMC1_RX;
+		res[2].end = OMAP24XX_DMA_MMC1_RX;
+		res[2].flags = IORESOURCE_DMA;
+		res[3].start = OMAP24XX_DMA_MMC1_TX;
+		res[3].end = OMAP24XX_DMA_MMC1_TX;
+		res[3].flags = IORESOURCE_DMA;
+		break;
+	case 1:
+		res[2].start = OMAP24XX_DMA_MMC2_RX;
+		res[2].end = OMAP24XX_DMA_MMC2_RX;
+		res[2].flags = IORESOURCE_DMA;
+		res[3].start = OMAP24XX_DMA_MMC2_TX;
+		res[3].end = OMAP24XX_DMA_MMC2_TX;
+		res[3].flags = IORESOURCE_DMA;
+		break;
+	case 2:
+		res[2].start = OMAP34XX_DMA_MMC3_RX;
+		res[2].end = OMAP34XX_DMA_MMC3_RX;
+		res[2].flags = IORESOURCE_DMA;
+		res[3].start = OMAP34XX_DMA_MMC3_TX;
+		res[3].end = OMAP34XX_DMA_MMC3_TX;
+		res[3].flags = IORESOURCE_DMA;
+		break;
+	case 3:
+		res[2].start = OMAP44XX_DMA_MMC4_RX;
+		res[2].end = OMAP44XX_DMA_MMC4_RX;
+		res[2].flags = IORESOURCE_DMA;
+		res[3].start = OMAP44XX_DMA_MMC4_TX;
+		res[3].end = OMAP44XX_DMA_MMC4_TX;
+		res[3].flags = IORESOURCE_DMA;
+		break;
+	case 4:
+		res[2].start = OMAP44XX_DMA_MMC5_RX;
+		res[2].end = OMAP44XX_DMA_MMC5_RX;
+		res[2].flags = IORESOURCE_DMA;
+		res[3].start = OMAP44XX_DMA_MMC5_TX;
+		res[3].end = OMAP44XX_DMA_MMC5_TX;
+		res[3].flags = IORESOURCE_DMA;
+		break;
+	default:
+		ret = -ENODEV;
+		goto fail;
+	}
 
 	ret = platform_device_add_resources(pdev, res, ARRAY_SIZE(res));
 	if (ret == 0)
@@ -182,6 +229,49 @@ phys_addr_t omap_dsp_get_mempool_base(void)
 }
 EXPORT_SYMBOL(omap_dsp_get_mempool_base);
 #endif
+
+#if defined(CONFIG_TI81XX_PCIE_EPDRV) || \
+	defined(CONFIG_TI81XX_PCIE_EPDRV_MODULE)
+/**
+ * PCIe memory reservation for DM81xx Endpoint
+ */
+static u32 ti81xx_def_sdram_pcie_mem_size __initdata;
+
+u32 ti81xx_ep_mem_start;
+EXPORT_SYMBOL_GPL(ti81xx_ep_mem_start);
+
+u32 ti81xx_ep_mem_size;
+EXPORT_SYMBOL_GPL(ti81xx_ep_mem_size);
+
+static int __init ti81xx_early_pcie_mem(char *p)
+{
+	ti81xx_def_sdram_pcie_mem_size = memparse(p, &p);
+	pr_info("DM81xx PCIe EP memory  size = %d ",
+			ti81xx_def_sdram_pcie_mem_size);
+	return 0;
+}
+early_param("pcie_mem", ti81xx_early_pcie_mem);
+
+void __init ti81xx_pcie_mem_reserve_sdram_memblock(void)
+{
+
+	phys_addr_t paddr;
+
+	if (!ti81xx_def_sdram_pcie_mem_size)
+		return;
+
+	paddr = memblock_alloc(ti81xx_def_sdram_pcie_mem_size, SZ_1M);
+	if (!paddr) {
+		pr_err("%s: failed to reserve %x bytes\n",
+			__func__, ti81xx_def_sdram_pcie_mem_size);
+		return;
+	}
+	memblock_free(paddr, ti81xx_def_sdram_pcie_mem_size);
+	memblock_remove(paddr, ti81xx_def_sdram_pcie_mem_size);
+	ti81xx_ep_mem_start = paddr;
+	ti81xx_ep_mem_size = ti81xx_def_sdram_pcie_mem_size;
+}
+#endif /* CONFIG_TI81XX_PCIE_EPDRV || CONFIG_TI81XX_PCIE_EPDRV_MODULE */
 
 /*
  * This gets called after board-specific INIT_MACHINE, and initializes most

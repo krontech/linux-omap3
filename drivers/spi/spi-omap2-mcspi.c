@@ -108,7 +108,11 @@ struct omap2_mcspi_dma {
 /* use PIO for small transfers, avoiding DMA setup/teardown overhead and
  * cache operations; better heuristics consider wordsize and bitrate.
  */
+#if defined(CONFIG_ARCH_TI81XX) /* TI81xx works only in PIO */
+#define DMA_MIN_BYTES			(4 * 1024 * 1024)
+#else
 #define DMA_MIN_BYTES			160
+#endif
 
 struct omap2_mcspi {
 	struct work_struct	work;
@@ -822,7 +826,11 @@ static int omap2_mcspi_setup(struct spi_device *spi)
 
 	if (mcspi_dma->dma_rx_channel == -1
 			|| mcspi_dma->dma_tx_channel == -1) {
-		ret = omap2_mcspi_request_dma(spi);
+		/* TI81XX has EDMA and not SDMA, hence overriding SDMA usage */
+		if (!cpu_is_ti81xx())
+			ret = omap2_mcspi_request_dma(spi);
+		else
+			ret = 0;
 		if (ret < 0)
 			return ret;
 	}

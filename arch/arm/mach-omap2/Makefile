@@ -19,7 +19,8 @@ obj-$(CONFIG_ARCH_OMAP4) += prm44xx.o $(hwmod-common) $(secure-common)
 
 obj-$(CONFIG_OMAP_MCBSP) += mcbsp.o
 
-obj-$(CONFIG_TWL4030_CORE) += omap_twl.o
+obj-$(CONFIG_TWL4030_CORE)		+= omap_twl.o
+obj-$(CONFIG_REGULATOR_TPS65023)	+= pmic_tps65023.o
 
 # SMP support ONLY available for OMAP4
 obj-$(CONFIG_SMP)			+= omap-smp.o omap-headsmp.o
@@ -48,6 +49,7 @@ obj-$(CONFIG_SOC_OMAP2430)		+= mux2430.o
 obj-$(CONFIG_ARCH_OMAP3)		+= mux34xx.o
 obj-$(CONFIG_ARCH_OMAP4)		+= mux44xx.o
 obj-$(CONFIG_SOC_OMAPAM33XX)           += mux33xx.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= mux81xx.o mux814x.o
 
 # SMS/SDRC
 obj-$(CONFIG_ARCH_OMAP2)		+= sdrc2xxx.o
@@ -58,6 +60,7 @@ ifeq ($(CONFIG_PM_OPP),y)
 obj-y					+= opp.o
 obj-$(CONFIG_ARCH_OMAP3)		+= opp3xxx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= opp4xxx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= opp814x_data.o
 endif
 
 # Power Management
@@ -70,13 +73,16 @@ obj-$(CONFIG_ARCH_OMAP4)		+= pm44xx.o omap-mpuss-lowpower.o \
 					   cpuidle44xx.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= cpuidle33xx.o pm33xx.o \
 					   sleep33xx.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= pm81xx.o sleep814x.o
 obj-$(CONFIG_PM_DEBUG)			+= pm-debug.o
 obj-$(CONFIG_OMAP_SMARTREFLEX)          += sr_device.o smartreflex.o
 obj-$(CONFIG_OMAP_SMARTREFLEX_CLASS3)	+= smartreflex-class3.o
+obj-$(CONFIG_TI816X_SMARTREFLEX)	+= smartreflex-ti816x.o
 
 AFLAGS_sleep24xx.o			:=-Wa,-march=armv6
 AFLAGS_sleep34xx.o			:=-Wa,-march=armv7-a$(plus_sec)
 AFLAGS_sleep33xx.o			:=-Wa,-march=armv7-a$(plus_sec)
+AFLAGS_sleep814x.o			:=-Wa,-march=armv7-a$(plus_sec)
 
 ifeq ($(CONFIG_PM_VERBOSE),y)
 CFLAGS_pm_bus.o				+= -DDEBUG
@@ -90,6 +96,7 @@ obj-$(CONFIG_ARCH_OMAP2)		+= prcm.o cm2xxx_3xxx.o prm2xxx_3xxx.o
 obj-$(CONFIG_ARCH_OMAP3)		+= prcm.o cm2xxx_3xxx.o prm2xxx_3xxx.o \
 					   vc3xxx_data.o vp3xxx_data.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= cminst44xx.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= cminst44xx.o
 
 # XXX The presence of cm2xxx_3xxx.o on the line below is temporary and
 # will be removed once the OMAP4 part of the codebase is converted to
@@ -126,6 +133,10 @@ obj-$(CONFIG_SOC_OMAPAM33XX)		+= prminst44xx.o \
 obj-$(CONFIG_ARCH_OMAP4)		+= $(powerdomain-common) \
 					   powerdomain44xx.o \
 					   powerdomains44xx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= $(powerdomain-common) \
+					   powerdomain2xxx_3xxx.o \
+					   powerdomains3xxx_data.o \
+					   powerdomains2xxx_3xxx_data.o
 
 # PRCM clockdomain control
 obj-$(CONFIG_ARCH_OMAP2)		+= clockdomain.o \
@@ -139,6 +150,8 @@ obj-$(CONFIG_ARCH_OMAP3)		+= clockdomain.o \
 					   clockdomains3xxx_data.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= clockdomain44xx.o \
 					   clockdomains33xx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= clockdomain44xx.o
+					   clockdomains81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= clockdomain.o \
 					   clockdomain44xx.o \
 					   clockdomains44xx_data.o
@@ -160,6 +173,9 @@ obj-$(CONFIG_ARCH_OMAP3)		+= $(clock-common) clock3xxx.o \
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= clock33xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= $(clock-common) clock44xx_data.o \
 					   dpll3xxx.o dpll44xx.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= clock81xx.o ti81xx_vpss.o \
+					   clock814x_data.o adpll_ti814x.o \
+					   clock816x_data.o fapll_ti816x.o 
 
 # OMAP2 clock rate set data (old "OPP" data)
 obj-$(CONFIG_SOC_OMAP2420)		+= opp2420_data.o
@@ -180,6 +196,7 @@ obj-$(CONFIG_ARCH_OMAP3)		+= omap_hwmod_2xxx_3xxx_ipblock_data.o \
 					   omap_hwmod_2xxx_3xxx_interconnect_data.o \
 					   omap_hwmod_3xxx_data.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= omap_hwmod_33xx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= omap_hwmod_81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= omap_hwmod_44xx_data.o
 
 # EMU peripherals
@@ -202,6 +219,12 @@ obj-y					+= $(i2c-omap-m) $(i2c-omap-y)
 
 ifneq ($(CONFIG_TIDSPBRIDGE),)
 obj-y					+= dsp.o
+endif
+
+obj-$(CONFIG_PCI)                       += pcie-ti81xx.o
+
+ifeq ($(CONFIG_PCI_DEBUG),y)
+CFLAGS_pcie-ti81xx.o += -DDEBUG
 endif
 
 # Specific board support
@@ -253,6 +276,8 @@ obj-$(CONFIG_MACH_CRANEBOARD)		+= board-am3517crane.o
 obj-$(CONFIG_MACH_SBC3530)		+= board-omap3stalker.o
 obj-$(CONFIG_MACH_TI8168EVM)		+= board-ti8168evm.o
 obj-$(CONFIG_MACH_TI8148EVM)		+= board-ti8168evm.o
+obj-$(CONFIG_MACH_DM385EVM)		+= board-dm385evm.o 
+obj-$(CONFIG_MACH_CHRONOS14)		+= board-chronos14.o
 obj-$(CONFIG_MACH_AM335XEVM)		+= board-am335xevm.o
 obj-$(CONFIG_MACH_AM335XIAEVM)		+= board-am335xevm.o
 
@@ -288,3 +313,13 @@ obj-y					+= $(smsc911x-m) $(smsc911x-y)
 obj-$(CONFIG_ARCH_OMAP4)		+= hwspinlock.o
 
 obj-y					+= common-board-devices.o twl-common.o
+
+ifeq ($(CONFIG_MACH_OMAP3_BEAGLE),y)
+beagle-camera-$(CONFIG_VIDEO_OMAP3)	:= board-omap3beagle-camera.o
+obj-y					+= $(beagle-camera-m) $(beagle-camera-y)
+endif
+
+ifeq ($(CONFIG_MACH_OMAP3EVM),y)
+evm-camera-$(CONFIG_VIDEO_OMAP3)	:= board-omap3evm-camera.o
+obj-y					+= $(evm-camera-m) $(evm-camera-y)
+endif

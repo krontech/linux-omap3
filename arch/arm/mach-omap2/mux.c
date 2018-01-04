@@ -67,19 +67,27 @@ struct omap_mux_partition *omap_mux_get(const char *name)
 	return NULL;
 }
 
-u16 omap_mux_read(struct omap_mux_partition *partition, u16 reg)
+u32 omap_mux_read(struct omap_mux_partition *partition, u16 reg)
 {
 	if (partition->flags & OMAP_MUX_REG_8BIT)
 		return __raw_readb(partition->base + reg);
+	if (partition->flags & OMAP_MUX_REG_32BIT)
+		return __raw_readl(partition->base + reg);
 	else
 		return __raw_readw(partition->base + reg);
 }
 
-void omap_mux_write(struct omap_mux_partition *partition, u16 val,
+void omap_mux_write(struct omap_mux_partition *partition, u32 val,
 			   u16 reg)
 {
+	/* Avoid unintentional change of bits 20-31 on TI814x */
+	if (cpu_is_ti814x())
+		val |= __raw_readl(partition->base + reg) & 0xFFF00000;
+
 	if (partition->flags & OMAP_MUX_REG_8BIT)
 		__raw_writeb(val, partition->base + reg);
+	if (partition->flags & OMAP_MUX_REG_32BIT)
+		__raw_writel(val, partition->base + reg);
 	else
 		__raw_writew(val, partition->base + reg);
 }
@@ -205,7 +213,11 @@ static int __init _omap_mux_get_by_name(struct omap_mux_partition *partition,
 	}
 
 	if (found == 1) {
-		return found_mode;
+		/* TI814x devices have mux mode represented by bit 0 to 7 */
+		if (cpu_is_ti814x())
+			return 1 << found_mode;
+		else
+			return found_mode;
 	}
 
 	if (found > 1) {
@@ -512,7 +524,7 @@ void omap_hwmod_mux(struct omap_hwmod_mux_info *hmux, u8 state)
 	}
 
 /* REVISIT: Add checking for non-optimal mux settings */
-static inline void omap_mux_decode(struct seq_file *s, u16 val)
+static inline void omap_mux_decode(struct seq_file *s, u32 val)
 {
 	char *flags[OMAP_MUX_MAX_NR_FLAGS];
 	char mode[sizeof("OMAP_MUX_MODE") + 1];
@@ -620,7 +632,7 @@ static int omap_mux_dbg_board_show(struct seq_file *s, void *unused)
 		struct omap_mux *m = &e->mux;
 		char m0_def[OMAP_MUX_DEFNAME_LEN];
 		char *m0_name = m->muxnames[0];
-		u16 val;
+		u32 val;
 		int i, mode;
 
 		if (!m0_name)
@@ -635,7 +647,12 @@ static int omap_mux_dbg_board_show(struct seq_file *s, void *unused)
 			m0_def[i] = toupper(m0_name[i]);
 		}
 		val = omap_mux_read(partition, m->reg_offset);
-		mode = val & OMAP_MUX_MODE7;
+
+		if (cpu_is_ti814x())
+			mode = ffs(val) - 1;
+		else
+			mode = val & OMAP_MUX_MODE7;
+
 		if (mode != 0)
 			seq_printf(s, "/* %s */\n", m->muxnames[mode]);
 
@@ -690,7 +707,7 @@ static int omap_mux_dbg_signal_show(struct seq_file *s, void *unused)
 	struct omap_mux *m = s->private;
 	struct omap_mux_partition *partition;
 	const char *none = "NA";
-	u16 val;
+	u32 val;
 	int mode;
 
 	partition = omap_mux_get_partition(m);
@@ -698,7 +715,11 @@ static int omap_mux_dbg_signal_show(struct seq_file *s, void *unused)
 		return 0;
 
 	val = omap_mux_read(partition, m->reg_offset);
-	mode = val & OMAP_MUX_MODE7;
+
+	if (cpu_is_ti814x())
+		mode = ffs(val) - 1;
+	else
+		mode = val & OMAP_MUX_MODE7;
 
 	seq_printf(s, "name: %s.%s (0x%08x/0x%03x = 0x%04x), b %s, t %s\n",
 			m->muxnames[0], m->muxnames[mode],
@@ -852,7 +873,7 @@ static int __init omap_mux_late_init(void)
 			struct omap_mux *m = &e->mux;
 			u16 mode = omap_mux_read(partition, m->reg_offset);
 
-			if (OMAP_MODE_GPIO(mode))
+			if (!cpu_is_ti81xx() && OMAP_MODE_GPIO(mode))
 				continue;
 
 #ifndef CONFIG_DEBUG_FS
@@ -977,7 +998,7 @@ static void __init omap_mux_set_cmdline_signals(void)
 			if (res < 0)
 				continue;
 
-			omap_mux_init_signal(name, (u16)val);
+			omap_mux_init_signal(name, (int)val);
 		}
 	}
 

@@ -335,6 +335,11 @@ static int omap2430_musb_init(struct musb *musb)
 	musb->a_wait_bcon = MUSB_TIMEOUT_A_WAIT_BCON;
 	setup_timer(&musb_idle_timer, musb_do_idle, (unsigned long) musb);
 
+#ifdef CONFIG_PM
+	gb_musb = musb;
+	omap_musb_save = omap2430_idle_save_context;
+	omap_musb_restore = omap2430_idle_restore_context;
+#endif
 	return 0;
 
 err1:

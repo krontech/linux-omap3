@@ -80,6 +80,8 @@ config SOC_OMAPTI81XX
 	bool "TI81XX support"
 	depends on ARCH_OMAP3
 	default y
+	select ARCH_SUPPORTS_MSI
+	select MIGHT_HAVE_PCI
 
 config SOC_OMAPAM33XX
 	bool "AM33XX support"
@@ -331,6 +333,16 @@ config MACH_TI8148EVM
 	bool "TI8148 Evaluation Module"
 	depends on SOC_OMAPTI81XX
 	default y
+
+config MACH_DM385EVM
+	bool "DM385 Evaluation Module"
+	default y
+	depends on SOC_OMAPTI81XX
+
+config MACH_CHRONOS14
+	bool "Chronos 1.4 High Speed Camera"
+	default y
+	depends on SOC_OMAPTI81XX
 
 config MACH_AM335XEVM
 	bool "AM335X Evaluation Module"

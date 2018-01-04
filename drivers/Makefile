@@ -121,6 +121,8 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
 obj-$(CONFIG_STAGING)		+= staging/
 obj-y				+= platform/
 obj-y				+= ieee802154/
+obj-$(CONFIG_SYSLINK_MULTIPROC)	+= dsp/syslink/multicore_ipc/
+obj-$(CONFIG_SYSLINK_NOTIFY)	+= dsp/syslink/omap_notify/
 #common clk code
 obj-y				+= clk/
 
@@ -133,3 +135,6 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
 obj-$(CONFIG_HYPERV)		+= hv/
 
 obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+
+obj-$(CONFIG_DMM_OMAP)		+= media/
+obj-$(CONFIG_TILER_OMAP)	+= media/

@@ -186,6 +186,16 @@ static void mbox_rx_work(struct work_struct *work)
 		spin_lock_irq(&mq->lock);
 		if (mq->full) {
 			mq->full = false;
+
+			if (!mbox_fifo_empty(mq->mbox)) {
+				msg = mbox_fifo_read(mq->mbox);
+
+				len = kfifo_in(&mq->fifo, (unsigned char *)&msg,
+								sizeof(msg));
+/*				WARN_ON(len != sizeof(msg));*/
+			}
+
+
 			omap_mbox_enable_irq(mq->mbox, IRQ_RX);
 		}
 		spin_unlock_irq(&mq->lock);
@@ -232,14 +242,18 @@ nomem:
 
 static irqreturn_t mbox_interrupt(int irq, void *p)
 {
-	struct omap_mbox *mbox = p;
+	int i;
 
-	if (is_mbox_irq(mbox, IRQ_TX))
-		__mbox_tx_interrupt(mbox);
+	for (i = 0; mboxes[i]; i++)  {
+		struct omap_mbox *mbox = mboxes[i];
+		if (is_mbox_irq(mbox, IRQ_TX))
+			__mbox_tx_interrupt(mbox);
 
-	if (is_mbox_irq(mbox, IRQ_RX))
-		__mbox_rx_interrupt(mbox);
 
+		if (is_mbox_irq(mbox, IRQ_RX))
+			__mbox_rx_interrupt(mbox);
+
+	}
 	return IRQ_HANDLED;
 }
 

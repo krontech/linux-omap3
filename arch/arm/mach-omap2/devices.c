@@ -27,6 +27,8 @@
 #include <linux/platform_data/uio_pruss.h>
 #include <linux/pwm/pwm.h>
 #include <linux/mfd/ti_tscadc.h>
+#include <linux/ahci_platform.h>
+#include <linux/delay.h>
 
 #include <mach/hardware.h>
 #include <mach/irqs.h>
@@ -56,6 +58,10 @@
 
 /* LCD controller similar DA8xx */
 #include <video/da8xx-fb.h>
+
+#include <plat/smartreflex.h>
+#include <plat/ti81xx-vpss.h>
+#include "pcie-ti81xx.h"
 
 #include "mux.h"
 #include "control.h"
@@ -229,21 +235,6 @@ int __init am335x_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
 }
 #endif
 
-#if (defined(CONFIG_SND_AM33XX_SOC) || (defined(CONFIG_SND_AM33XX_SOC_MODULE)))
-struct platform_device am33xx_pcm_device = {
-	.name		= "davinci-pcm-audio",
-	.id		= -1,
-};
-
-static void am33xx_init_pcm(void)
-{
-	platform_device_register(&am33xx_pcm_device);
-}
-
-#else
-static inline void am33xx_init_pcm(void) {}
-#endif
-
 static struct resource omap3isp_resources[] = {
 	{
 		.start		= OMAP3430_ISP_BASE,
@@ -397,6 +388,11 @@ static inline void omap_init_sti(void) {}
 
 #if defined(CONFIG_SND_SOC) || defined(CONFIG_SND_SOC_MODULE)
 
+struct platform_device davinci_pcm = {
+	.name	= "davinci-pcm-audio",
+	.id	= -1,
+};
+
 static struct platform_device omap_pcm = {
 	.name	= "omap-pcm-audio",
 	.id	= -1,
@@ -416,8 +412,10 @@ OMAP_MCBSP_PLATFORM_DEVICE(5);
 
 static void omap_init_audio(void)
 {
-	if (cpu_is_am33xx())
+	if (cpu_is_am33xx() || cpu_is_ti81xx()) {
+		platform_device_register(&davinci_pcm);
 		return;
+	}
 
 	platform_device_register(&omap_mcbsp1);
 	platform_device_register(&omap_mcbsp2);
@@ -696,7 +694,7 @@ static void omap_init_sham(void)
 	if (cpu_is_omap24xx()) {
 		sham_device.resource = omap2_sham_resources;
 		sham_device.num_resources = omap2_sham_resources_sz;
-	} else if (cpu_is_omap34xx() && !cpu_is_am33xx()) {
+	} else if (cpu_is_omap34xx() && !cpu_is_am33xx() && !cpu_is_ti81xx()) {
 		sham_device.resource = omap3_sham_resources;
 		sham_device.num_resources = omap3_sham_resources_sz;
 	} else {
@@ -765,7 +763,7 @@ static void omap_init_aes(void)
 	if (cpu_is_omap24xx()) {
 		aes_device.resource = omap2_aes_resources;
 		aes_device.num_resources = omap2_aes_resources_sz;
-	} else if (cpu_is_omap34xx() && !cpu_is_am33xx()) {
+	} else if (cpu_is_omap34xx() && !cpu_is_am33xx() && !cpu_is_ti81xx()) {
 		aes_device.resource = omap3_aes_resources;
 		aes_device.num_resources = omap3_aes_resources_sz;
 	} else {
@@ -818,6 +816,18 @@ static inline void omap242x_mmc_mux(struct omap_mmc_platform_data
 		u32 v = omap_ctrl_readl(OMAP2_CONTROL_DEVCONF0);
 		v |= (1 << 24);
 		omap_ctrl_writel(v, OMAP2_CONTROL_DEVCONF0);
+	}
+
+	if (cpu_is_ti816x()) {
+		omap_mux_init_signal("mmc_pow", OMAP_PULL_ENA);
+		omap_mux_init_signal("mmc_clk", OMAP_PIN_OUTPUT);
+		omap_mux_init_signal("mmc_cmd", OMAP_PULL_UP);
+		omap_mux_init_signal("mmc_dat0", OMAP_PULL_UP);
+		omap_mux_init_signal("mmc_dat1_sdirq", OMAP_PULL_UP);
+		omap_mux_init_signal("mmc_dat2_sdrw", OMAP_PULL_UP);
+		omap_mux_init_signal("mmc_dat3", OMAP_PULL_UP);
+		omap_mux_init_signal("mmc_sdcd", OMAP_PULL_ENA);
+		omap_mux_init_signal("mmc_sdwp", OMAP_PULL_ENA);
 	}
 }
 
@@ -898,9 +908,29 @@ static void omap_init_vout(void)
 static inline void omap_init_vout(void) {}
 #endif
 
-#if defined(CONFIG_SOC_OMAPAM33XX) && defined(CONFIG_OMAP3_EDMA)
+#if defined(CONFIG_OMAP3_EDMA)
 
 #define AM33XX_SCM_BASE_EDMA		0x00000f90
+#define TI81XX_SCM_BASE_EDMA		0x00000f90
+
+static const s16 ti816x_dma_rsv_chans[][2] = {
+	/* (offset, number) */
+	{0, 4},
+	{26, 6},
+	{48, 4},
+	{56, 8},
+	{-1, -1}
+};
+
+static const s16 ti816x_dma_rsv_slots[][2] = {
+	/* (offset, number) */
+	{0, 4},
+	{26, 6},
+	{48, 4},
+	{56, 8},
+	{64, 127},
+	{-1, -1}
+};
 
 static const s16 am33xx_dma_rsv_chans[][2] = {
 	/* (offset, number) */
@@ -937,6 +967,25 @@ static const s8 am33xx_queue_priority_mapping[][2] = {
 	{0, 0},
 	{1, 1},
 	{2, 2},
+	{-1, -1}
+};
+
+/* Four Transfer Controllers on TI81XX */
+static const s8 ti81xx_queue_tc_mapping[][2] = {
+	/* {event queue no, TC no} */
+	{0, 0},
+	{1, 1},
+	{2, 2},
+	{3, 3},
+	{-1, -1}
+};
+
+static const s8 ti81xx_queue_priority_mapping[][2] = {
+	/* {event queue no, Priority} */
+	{0, 0},
+	{1, 1},
+	{2, 2},
+	{3, 3},
 	{-1, -1}
 };
 
@@ -997,6 +1046,7 @@ int map_xbar_event_to_channel(unsigned int event, unsigned int *channel,
 	unsigned int val = 0;
 	unsigned int offset = 0;
 	unsigned int mask = 0;
+	unsigned long addr = 0;
 
 	ctrl = EDMA_CTLR(event);
 	xbar_evt_no = event - (edma_cc[ctrl]->num_channels);
@@ -1010,14 +1060,19 @@ int map_xbar_event_to_channel(unsigned int event, unsigned int *channel,
 			clear_bit(*channel, edma_cc[ctrl]->edma_unused);
 		offset = (*channel)/4;
 		offset *= 4;
-		val = (unsigned int)__raw_readl(AM33XX_CTRL_REGADDR(
-					AM33XX_SCM_BASE_EDMA + offset));
+
+		
+		if (cpu_is_am33xx()) {
+			addr = AM33XX_CTRL_REGADDR(AM33XX_SCM_BASE_EDMA + offset);
+		} else {
+			addr = TI81XX_CTRL_REGADDR(TI81XX_SCM_BASE_EDMA + offset);
+		}
+		val = (unsigned int)__raw_readl(addr);
 		mask = *channel & 0x3;
 		mask <<= 3;
 		val &= ~(0xFF << mask);
 		val |= xbar_event_mapping[xbar_evt_no].xbar_event_no << mask;
-		__raw_writel(val,
-			AM33XX_CTRL_REGADDR(AM33XX_SCM_BASE_EDMA + offset));
+		__raw_writel(val, addr);
 		return 0;
 	} else {
 		return -EINVAL;
@@ -1044,7 +1099,43 @@ static struct edma_soc_info am33xx_edma_info[] = {
 	},
 };
 
-static int __init am33xx_register_edma(void)
+static struct edma_soc_info ti816x_edma_info[] = {
+	{
+		.n_channel		= 64,
+		.n_region		= 5,
+		.n_slot			= 256,
+		.n_tc			= 4,
+		.n_cc			= 1,
+		.rsv_chans		= ti816x_dma_rsv_chans,
+		.rsv_slots		= ti816x_dma_rsv_slots,
+		.queue_tc_mapping	= ti81xx_queue_tc_mapping,
+		.queue_priority_mapping	= ti81xx_queue_priority_mapping,
+		.is_xbar		= 1,
+		.n_events		= 95,
+		.xbar_event_mapping	= am33xx_xbar_event_mapping,
+		.map_xbar_channel	= map_xbar_event_to_channel,
+	},
+};
+
+static struct edma_soc_info ti814x_edma_info[] = {
+	{
+		.n_channel		= 64,
+		.n_region		= 5,
+		.n_slot			= 256,
+		.n_tc			= 4,
+		.n_cc			= 1,
+		.rsv_chans		= am33xx_dma_rsv_chans,
+		.rsv_slots		= am33xx_dma_rsv_slots,
+		.queue_tc_mapping	= ti81xx_queue_tc_mapping,
+		.queue_priority_mapping	= ti81xx_queue_priority_mapping,
+		.is_xbar		= 1,
+		.n_events		= 95,
+		.xbar_event_mapping	= am33xx_xbar_event_mapping,
+		.map_xbar_channel	= map_xbar_event_to_channel,
+	},
+};
+
+static int __init omap_init_edma(void)
 {
 	int i, l;
 	struct omap_hwmod *oh[4];
@@ -1052,7 +1143,13 @@ static int __init am33xx_register_edma(void)
 	struct edma_soc_info *pdata = am33xx_edma_info;
 	char oh_name[8];
 
-	if (!cpu_is_am33xx())
+	if (cpu_is_am33xx())
+		pdata = am33xx_edma_info;
+	else if (cpu_is_ti816x())
+		pdata = ti816x_edma_info;
+	else if (cpu_is_ti814x())
+		pdata = ti814x_edma_info;
+	else
 		return -ENODEV;
 
 	oh[0] = omap_hwmod_lookup("tpcc");
@@ -1061,7 +1158,7 @@ static int __init am33xx_register_edma(void)
 		return -ENODEV;
 	}
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < pdata->n_tc; i++) {
 		l = snprintf(oh_name, 8, "tptc%d", i);
 
 		oh[i+1] = omap_hwmod_lookup(oh_name);
@@ -1081,7 +1178,7 @@ static int __init am33xx_register_edma(void)
 }
 
 #else
-static inline void am33xx_register_edma(void) {}
+static inline void omap_init_edma(void) {}
 #endif
 
 #if defined (CONFIG_SOC_OMAPAM33XX)
@@ -1158,9 +1255,873 @@ static struct platform_device am335x_sgx = {
 	.id	= -1,
 };
 
+#if defined (CONFIG_SOC_OMAPTI81XX)
+static void __init ti81xx_video_mux(void)
+{
+	if (cpu_is_ti816x()) {
+		omap_mux_init_signal("vin1_d9",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d10", OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d11", OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d12", OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d13", OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d14", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d20", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d21", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d22", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d23", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin1_d4",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d5",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d6",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d7",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d8",  OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d15", OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin0_d16", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d17", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d18", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_d19", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vout0_r_cr0", OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi5_data", OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi5_bytstrt", OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi5_pacval", OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi5_pacerr", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin1_clk1",   OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin0_hsync0", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_vsync0", OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_fld0",   OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin0_de0",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi7_dclk",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi7_data",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi7_bytstrt",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("tsi7_pacval",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("vout0_r_cr1",    OMAP_MUX_MODE1);
+		omap_mux_init_signal("vin1_clk0",    OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d0",    OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d1",    OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d2",    OMAP_MUX_MODE2);
+		omap_mux_init_signal("vin1_d3",    OMAP_MUX_MODE2);
+		omap_mux_init_signal("vout0_r_cr2",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr3",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr4",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr5",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr6",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr7",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr8",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr9",    OMAP_MUX_MODE0);
+		omap_mux_init_signal("iic1_scl", OMAP_MUX_MODE0 | OMAP_PULL_UP);
+		omap_mux_init_signal("iic1_sda", OMAP_MUX_MODE0 | OMAP_PULL_UP);
+
+	} else if (cpu_is_ti814x())	{
+		/*VOUT0 DVO2 configuration*/
+		if (!machine_is_chronos14()) {
+			omap_mux_init_signal("vout0_fid_mux1", OMAP_MUX_MODE0);
+		}
+		omap_mux_init_signal("vout0_clk", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_hsync", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_vsync", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_avid", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c2", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c3", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c4", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c5", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c6", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c7", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c8", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_b_cb_c9", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc2", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc3", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc4", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc5", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc6", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc7", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc8", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_g_y_yc9", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr2", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr3", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr4", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr5", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr6", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr7", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr8", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_r_cr9", OMAP_MUX_MODE0);
+
+		/*HDMI I2C scl and I2C sda Function 2*/
+		omap_mux_init_signal("hdmi_ddc_scl_mux0",
+			TI814X_PULL_UP | TI814X_INPUT_EN);
+		omap_mux_init_signal("hdmi_ddc_sda_mux0",
+			TI814X_PULL_UP | TI814X_INPUT_EN);
+		omap_mux_init_signal("hdmi_cec_mux0",
+			TI814X_PULL_UP | TI814X_INPUT_EN);
+		omap_mux_init_signal("hdmi_hpd_mux0",
+			TI814X_INPUT_EN);
+
+		if (!machine_is_chronos14()) {
+			/*I2C2 configuration functon 6*/
+			omap_mux_init_signal("i2c2_scl_mux0",
+				TI814X_PULL_UP | TI814X_INPUT_EN);
+			omap_mux_init_signal("i2c2_sda_mux0",
+				TI814X_PULL_UP | TI814X_INPUT_EN);
+
+			/*VIN0 configuraiton*/
+			omap_mux_init_signal("vin0_clk1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de0_mux0", OMAP_MUX_MODE0);
+			/* force pin pad of  vin0_de0_mux0 to 0*/
+			omap_writel(0, 0x48140A18);
+			omap_mux_init_signal("vin0_fld0_mux0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_clk0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_hsync0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_vsync0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d0",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d2",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d3",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d4",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d5",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d6",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d7",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d8",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d9",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d10",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d11",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d12",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d13",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d14",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d15",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d16",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d17",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d18",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d19",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d20",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d21",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d22",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_d23",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de0_mux1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_de1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_fld0_mux1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_fld1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+		}
+
+		/*VIN1 Configuration*/
+		if (!machine_is_chronos14()) {
+			omap_mux_init_signal("vin1_clk1",
+					TI814X_PULL_DIS | TI814X_INPUT_EN);
+		}
+		omap_mux_init_signal("vin1_hsync0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1_vsync0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1_fid0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1_de0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1_clk0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d0",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d1",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d2",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d3",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d4",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d5",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d6",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d8",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d9",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d10",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d11",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d12",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d13",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d14",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d15",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d16",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d17",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d18",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d19",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d20",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d21",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d22",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d23",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		omap_mux_init_signal("vin1a_d7",
+				TI814X_PULL_DIS | TI814X_INPUT_EN);
+		/*FIXME move to right place
+		    set divider for SYSCLK10*/
+		omap_writel(3, 0x48180324);
+	}
+}
+
+#else
+static inline void ti81xx_video_mux(void) {}
+#endif
+
 #endif
 
 /*-------------------------------------------------------------------------*/
+
+#if defined(CONFIG_SOC_OMAPTI81XX)
+static inline void ti814x_sata_pllcfg(void)
+{
+	if (!cpu_is_ti814x())
+		return;
+
+	if (machine_is_chronos14()) {
+		/* Configure 100Mhz clock source on DM814x */
+
+		/* Configure SATA0 PLL -applies for TI814x*/
+		omap_ctrl_writel(0x80000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 20 MHz Operation) */
+		omap_ctrl_writel(0xC12C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x80000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x80000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0x400000016 to 0xC0000016 for 20MHz
+		* Usage instead of 100MHz
+		*/
+		omap_ctrl_writel(0xC0000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+
+		/* cfgpll0 Replaced 0x40007077 with 0xC0007077 for
+		* 20MHz Usage instead of 100MHz
+		*/
+		omap_ctrl_writel(0xC0007077, TI814X_CONTROL_SATA_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+	}
+	else if ((cpu_is_ti814x()) && (!cpu_is_dm385())) {
+		/* Configure 100Mhz clock source on DM814x */
+
+		/* Configure SATA0 PLL -applies for TI814x*/
+		omap_ctrl_writel(0x00000004, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(100);
+		/* cfgpll1  (for 100 MHz Operation) */
+		omap_ctrl_writel(0x812C003C, TI814X_CONTROL_SATA_PLLCFG1);
+		udelay(2000);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_SATA_PLLCFG3);
+		udelay(2000);
+		/* wait for bias to be stable */
+		omap_ctrl_writel(0x00000014, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(850);
+		omap_ctrl_writel(0x00000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(60);
+		/* cfgpll0 Replaced 0xC00000016 to 0x40000016 for 100MHz
+		* Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0x40000016, TI814X_CONTROL_SATA_PLLCFG0);
+		udelay(2000);
+
+		/* cfgpll0 Replaced 0xC0007077 with 0x40007077 for
+		* 100MHz Usage instead of 20MHz
+		*/
+		omap_ctrl_writel(0x40007077, TI814X_CONTROL_SATA_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_SATA_PLLSTATUS) & 0x1))
+			cpu_relax();
+	} else {
+		/* Configure 20Mhz clock source on ti813x */
+	}
+
+}
+
+static inline void ti814x_pcie_pllcfg(void)
+{
+
+	if (cpu_is_ti814x()) {
+		/* TODO: Add bitfield macros for following */
+
+		omap_ctrl_writel(0x00000002, TI814X_SERDES_REFCLK_CTL);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG0);
+		omap_ctrl_writel(0x00640000, TI814X_CONTROL_PCIE_PLLCFG1);
+		omap_ctrl_writel(0x00000000, TI814X_CONTROL_PCIE_PLLCFG2);
+		omap_ctrl_writel(0x004008E0, TI814X_CONTROL_PCIE_PLLCFG3);
+		omap_ctrl_writel(0x0000609C, TI814X_CONTROL_PCIE_PLLCFG4);
+
+		/* Configure SERDES misc bits - values as is from h/w */
+		if (!cpu_is_dm385()) {
+			/*
+			 * TODO: MISCCFG write is not needed for PG2.x devices,
+			 * to be tested with if{} part removed
+			 */
+			if (omap_rev() > TI8148_REV_ES1_0)
+				omap_ctrl_writel(0x0000039E,
+						TI814X_CONTROL_PCIE_MISCCFG);
+			else
+				omap_ctrl_writel(0x00000E7B,
+						TI814X_CONTROL_SMA0);
+		}
+
+		udelay(50);
+		omap_ctrl_writel(0x00000004, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000014, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x00000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x30000016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(50);
+		omap_ctrl_writel(0x70007016, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		udelay(200);
+		omap_ctrl_writel(0x70007017, TI814X_CONTROL_PCIE_PLLCFG0);
+
+		while (!(omap_ctrl_readl(TI814X_CONTROL_PCIE_PLLSTATUS) & 0x1))
+			cpu_relax();
+
+	}
+
+}
+#endif
+
+#if defined(CONFIG_SATA_AHCI_PLATFORM) || \
+	defined(CONFIG_SATA_AHCI_PLATFORM_MODULE)
+
+static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base);
+static void ti81xx_ahci_plat_exit(struct device *dev);
+
+
+static struct ahci_platform_data omap_sata0_pdata = {
+	.init	= ti81xx_ahci_plat_init,
+	.exit	= ti81xx_ahci_plat_exit,
+};
+
+static struct ahci_platform_data omap_sata1_pdata = {
+	.init	= ti81xx_ahci_plat_init,
+	.exit	= ti81xx_ahci_plat_exit,
+};
+
+static u64 omap_sata_dmamask = DMA_BIT_MASK(32);
+
+/* SATA PHY control register offsets */
+#define SATA_P0PHYCR_REG	0x178
+#define SATA_P1PHYCR_REG	0x1F8
+
+#define SATA_PHY_ENPLL(x)	((x) << 0)
+#define SATA_PHY_MPY(x)		((x) << 1)
+#define SATA_PHY_LB(x)		((x) << 5)
+#define SATA_PHY_CLKBYP(x)	((x) << 7)
+#define SATA_PHY_RXINVPAIR(x)	((x) << 9)
+#define SATA_PHY_LBK(x)		((x) << 10)
+#define SATA_PHY_RXLOS(x)	((x) << 12)
+#define SATA_PHY_RXCDR(x)	((x) << 13)
+#define SATA_PHY_RXEQ(x)	((x) << 16)
+#define SATA_PHY_RXENOC(x)	((x) << 20)
+#define SATA_PHY_TXINVPAIR(x)	((x) << 21)
+#define SATA_PHY_TXCM(x)	((x) << 22)
+#define SATA_PHY_TXSWING(x)	((x) << 23)
+#define SATA_PHY_TXDE(x)	((x) << 27)
+
+#define TI81XX_SATA_BASE	0x4A140000
+#define DM385_SATA1_BASE	0x4A0AE000
+
+/* These values are tried and tested and not expected to change.
+ * Hence not using a macro to generate them.
+ */
+#define TI814X_SATA_PHY_CFGRX0_VAL	0x008FCC22
+#define TI814X_SATA_PHY_CFGRX1_VAL	0x008E0500
+#define TI814X_SATA_PHY_CFGRX2_VAL	0x7BDEF000
+#define TI814X_SATA_PHY_CFGRX3_VAL	0x1F180B0F
+#define TI814X_SATA_PHY_CFGTX0_VAL	0x01003622
+#define TI814X_SATA_PHY_CFGTX1_VAL	0x40000002
+#define TI814X_SATA_PHY_CFGTX2_VAL	0x00C201F8
+#define TI814X_SATA_PHY_CFGTX3_VAL	0x073CE39E
+
+#define TI813X_SATA_PHY_CFGRX0_VAL	0x00C7CC22
+#define TI813X_SATA_PHY_CFGRX1_VAL	0x008E0500
+#define TI813X_SATA_PHY_CFGRX2_VAL	0x7BDEF000
+#define TI813X_SATA_PHY_CFGRX3_VAL	0x1F180B0F
+#define TI813X_SATA_PHY_CFGTX0_VAL	0x01001622
+#define TI813X_SATA_PHY_CFGTX1_VAL	0x40000002
+#define TI813X_SATA_PHY_CFGTX2_VAL	0x00000000
+#define TI813X_SATA_PHY_CFGTX3_VAL	0x073CE39E
+
+static int ti81xx_ahci_plat_init(struct device *dev, void __iomem *base)
+{
+	unsigned int phy_val;
+	int ret;
+	struct clk *sata_clk;
+
+	sata_clk = clk_get(dev, NULL);
+	if (IS_ERR(sata_clk)) {
+		pr_err("ahci : Failed to get SATA clock\n");
+		return PTR_ERR(sata_clk);
+	}
+
+	if (!base) {
+		pr_err("ahci : SATA reg space not mapped, PHY enable failed\n");
+		ret = -ENOMEM;
+		goto err;
+	}
+
+	ret = clk_enable(sata_clk);
+	if (ret) {
+		pr_err("ahci : Clock enable failed\n");
+		goto err;
+	}
+
+	if (cpu_is_ti816x()) {
+		phy_val = SATA_PHY_ENPLL(1) |
+			SATA_PHY_MPY(8) |
+			SATA_PHY_LB(0) |
+			SATA_PHY_CLKBYP(0) |
+			SATA_PHY_RXINVPAIR(0) |
+			SATA_PHY_LBK(0) |
+			SATA_PHY_RXLOS(1) |
+			SATA_PHY_RXCDR(4) |
+			SATA_PHY_RXEQ(1) |
+			SATA_PHY_RXENOC(1) |
+			SATA_PHY_TXINVPAIR(0) |
+			SATA_PHY_TXCM(0) |
+			SATA_PHY_TXSWING(7) |
+			SATA_PHY_TXDE(0);
+
+		writel(phy_val, base + SATA_P0PHYCR_REG);
+		writel(phy_val, base + SATA_P1PHYCR_REG);
+	} else if (cpu_is_ti814x()) {
+
+		if (cpu_is_dm385()) {
+			/* Configuring for 20Mhz clock source on TI813x */
+			writel(TI813X_SATA_PHY_CFGRX0_VAL,
+				base + TI814X_SATA_PHY_CFGRX0_OFFSET);
+			writel(TI813X_SATA_PHY_CFGRX1_VAL,
+				base + TI814X_SATA_PHY_CFGRX1_OFFSET);
+			writel(TI813X_SATA_PHY_CFGRX2_VAL,
+				base + TI814X_SATA_PHY_CFGRX2_OFFSET);
+			writel(TI813X_SATA_PHY_CFGRX3_VAL,
+				base + TI814X_SATA_PHY_CFGRX3_OFFSET);
+			writel(TI813X_SATA_PHY_CFGTX0_VAL,
+				base + TI814X_SATA_PHY_CFGTX0_OFFSET);
+			writel(TI813X_SATA_PHY_CFGTX1_VAL,
+				base + TI814X_SATA_PHY_CFGTX1_OFFSET);
+			writel(TI813X_SATA_PHY_CFGTX2_VAL,
+				base + TI814X_SATA_PHY_CFGTX2_OFFSET);
+			writel(TI813X_SATA_PHY_CFGTX3_VAL,
+				base + TI814X_SATA_PHY_CFGTX3_OFFSET);
+
+		} else {
+			/* Configuring for 100Mhz clock source on TI814x */
+			writel(TI814X_SATA_PHY_CFGRX0_VAL,
+				base + TI814X_SATA_PHY_CFGRX0_OFFSET);
+			writel(TI814X_SATA_PHY_CFGRX1_VAL,
+				base + TI814X_SATA_PHY_CFGRX1_OFFSET);
+			writel(TI814X_SATA_PHY_CFGRX2_VAL,
+				base + TI814X_SATA_PHY_CFGRX2_OFFSET);
+			writel(TI814X_SATA_PHY_CFGRX3_VAL,
+				base + TI814X_SATA_PHY_CFGRX3_OFFSET);
+			writel(TI814X_SATA_PHY_CFGTX0_VAL,
+				base + TI814X_SATA_PHY_CFGTX0_OFFSET);
+			writel(TI814X_SATA_PHY_CFGTX1_VAL,
+				base + TI814X_SATA_PHY_CFGTX1_OFFSET);
+			writel(TI814X_SATA_PHY_CFGTX2_VAL,
+				base + TI814X_SATA_PHY_CFGTX2_OFFSET);
+			writel(TI814X_SATA_PHY_CFGTX3_VAL,
+				base + TI814X_SATA_PHY_CFGTX3_OFFSET);
+		}
+	}
+
+	return 0;
+err:
+	clk_put(sata_clk);
+	return ret;
+}
+
+static void ti81xx_ahci_plat_exit(struct device *dev)
+{
+	struct clk *sata_clk;
+
+	sata_clk = clk_get(dev, NULL);
+	if (IS_ERR(sata_clk)) {
+		pr_err("ahci : Failed to get SATA clock\n");
+		return;
+	}
+
+	clk_disable(sata_clk);
+	clk_put(sata_clk);
+}
+
+/* resources will be filled by soc specific init routine */
+static struct resource omap_ahci0_resources[] = {
+	{
+		.start	= TI81XX_SATA_BASE,
+		.end	= TI81XX_SATA_BASE + 0x10fff,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.start	= TI81XX_IRQ_SATA,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+static struct resource omap_ahci1_resources[] = {
+	{
+		.start	= DM385_SATA1_BASE,
+		.end	= DM385_SATA1_BASE + 0x10fff,
+		.flags	= IORESOURCE_MEM,
+	},
+	{
+		.start	= DM385_IRQ_SATA1,
+		.flags	= IORESOURCE_IRQ,
+	}
+};
+
+static struct platform_device omap_ahci0_device = {
+	.name	= "ahci",
+	.id	= 0,
+	.dev	= {
+		.platform_data = &omap_sata0_pdata,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+		.dma_mask		= &omap_sata_dmamask,
+	},
+	.num_resources	= ARRAY_SIZE(omap_ahci0_resources),
+	.resource	= omap_ahci0_resources,
+};
+
+static struct platform_device omap_ahci1_device = {
+	.name	= "ahci",
+	.id	= 1,
+	.dev	= {
+		.platform_data = &omap_sata1_pdata,
+		.coherent_dma_mask	= DMA_BIT_MASK(32),
+		.dma_mask		= &omap_sata_dmamask,
+	},
+	.num_resources	= ARRAY_SIZE(omap_ahci1_resources),
+	.resource	= omap_ahci1_resources,
+};
+
+
+static inline void omap_init_ahci(void)
+{
+	if (cpu_is_ti81xx()) {
+		platform_device_register(&omap_ahci0_device);
+		if (cpu_is_dm385())
+			platform_device_register(&omap_ahci1_device);
+	}
+}
+#else
+static inline void omap_init_ahci(void) {}
+#endif
+
+#if defined(CONFIG_ARCH_TI81XX)
+static struct resource dm385_mcasp_resource[] = {
+	{
+		.name = "mcasp",
+		.start = TI81XX_ASP1_BASE,
+		.end = TI81XX_ASP1_BASE + (SZ_1K * 12) - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	/* TX event */
+	{
+		.start = TI81XX_DMA_MCASP1_AXEVT,
+		.end = TI81XX_DMA_MCASP1_AXEVT,
+		.flags = IORESOURCE_DMA,
+	},
+	/* RX event */
+	{
+		.start = TI81XX_DMA_MCASP1_AREVT,
+		.end = TI81XX_DMA_MCASP1_AREVT,
+		.flags = IORESOURCE_DMA,
+	},
+};
+
+static struct resource ti81xx_mcasp_resource[] = {
+	{
+		.name = "mcasp",
+		.start = TI81XX_ASP2_BASE,
+		.end = TI81XX_ASP2_BASE + (SZ_1K * 12) - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	/* TX event */
+	{
+		.start = TI81XX_DMA_MCASP2_AXEVT,
+		.end = TI81XX_DMA_MCASP2_AXEVT,
+		.flags = IORESOURCE_DMA,
+	},
+	/* RX event */
+	{
+		.start = TI81XX_DMA_MCASP2_AREVT,
+		.end = TI81XX_DMA_MCASP2_AREVT,
+		.flags = IORESOURCE_DMA,
+	},
+};
+
+static struct platform_device ti81xx_mcasp_device = {
+	.name = "davinci-mcasp",
+};
+
+void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
+{
+	if (machine_is_ti8168evm() || machine_is_ti8148evm() || machine_is_chronos14()) {
+		ti81xx_mcasp_device.id = 2;
+		ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
+		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
+	} else if (machine_is_dm385evm()) {
+		ti81xx_mcasp_device.id = 1;
+		ti81xx_mcasp_device.resource = dm385_mcasp_resource;
+		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(dm385_mcasp_resource);
+	} else {
+		pr_err("%s: platform not supported\n", __func__);
+		return;
+	}
+
+	ti81xx_mcasp_device.dev.platform_data = pdata;
+	platform_device_register(&ti81xx_mcasp_device);
+}
+#endif
+
+#if defined(CONFIG_ARCH_TI81XX) && defined(CONFIG_PCI)
+static struct ti81xx_pcie_data ti81xx_pcie_data = {
+	.msi_irq_base	= MSI_IRQ_BASE,
+	.msi_irq_num	= MSI_NR_IRQS,
+};
+
+static struct resource ti81xx_pcie_resources[] = {
+	{
+		/* Register space */
+		.name		= "pcie-regs",
+		.start		= TI816X_PCIE_REG_BASE,
+		.end		= TI816X_PCIE_REG_BASE + SZ_16K - 1,
+		.flags		= IORESOURCE_MEM,
+	},
+	{
+		/* Non-prefetch memory */
+		.name		= "pcie-nonprefetch",
+		.start		= TI816X_PCIE_MEM_BASE,
+		.end		= TI816X_PCIE_MEM_BASE + SZ_256M - 1,
+		.flags		= IORESOURCE_MEM,
+	},
+	{
+		/* IO window */
+		.name		= "pcie-io",
+		.start		= TI816X_PCIE_IO_BASE,
+		.end		= TI816X_PCIE_IO_BASE + SZ_2M + SZ_1M - 1,
+		.flags		= IORESOURCE_IO,
+	},
+	{
+		/* Inbound memory window */
+		.name		= "pcie-inbound0",
+		.start		= PLAT_PHYS_OFFSET,
+		.end		= PLAT_PHYS_OFFSET + SZ_2G - 1,
+		.flags		= IORESOURCE_MEM,
+	},
+	{
+		/* Legacy Interrupt */
+		.name		= "legacy_int",
+		.start		= TI81XX_IRQ_PCIINT0,
+		.end		= TI81XX_IRQ_PCIINT0,
+		.flags		= IORESOURCE_IRQ,
+	},
+#ifdef CONFIG_PCI_MSI
+	{
+		/* MSI Interrupt Line */
+		.name		= "msi_int",
+		.start		= TI81XX_IRQ_PCIINT1,
+		.end		= TI81XX_IRQ_PCIINT1,
+		.flags		= IORESOURCE_IRQ,
+	},
+#endif
+};
+
+static struct platform_device ti81xx_pcie_device = {
+	.name		= "ti81xx_pcie",
+	.id		= 0,
+	.dev		= {
+		.platform_data = &ti81xx_pcie_data,
+	},
+	.num_resources	= ARRAY_SIZE(ti81xx_pcie_resources),
+	.resource	= ti81xx_pcie_resources,
+};
+
+static inline void ti81xx_init_pcie(void)
+{
+	if (!cpu_is_ti81xx())
+		return;
+
+	if (cpu_is_ti816x()) {
+		omap_ctrl_writel(TI816X_PCIE_PLLMUX_25X |
+				TI81XX_PCIE_DEVTYPE_RC,
+				TI816X_CONTROL_PCIE_CFG);
+
+		/* MSI clearing is "write 0 to clear" */
+		ti81xx_pcie_data.msi_inv = 1;
+
+		ti81xx_pcie_data.device_id = 0xb800;
+	} else if (cpu_is_ti814x()) {
+
+		omap_ctrl_writel(TI81XX_PCIE_DEVTYPE_RC,
+				TI814X_CONTROL_PCIE_CFG);
+		/*
+		 * Force x1 lane as TI814X only supports x1 while the PCIe
+		 * registers read x2 leading to wrong capability printed form
+		 * PCIe configuration.
+		 */
+		ti81xx_pcie_data.force_x1 = 1;
+
+		if (cpu_is_dm385())
+			ti81xx_pcie_data.device_id = 0xb802;
+		else
+			ti81xx_pcie_data.device_id = 0xb801;
+	}
+
+	platform_device_register(&ti81xx_pcie_device);
+}
+#else
+static inline void ti81xx_init_pcie(void) {}
+#endif
+
+#ifdef CONFIG_ARCH_TI814X
+static inline void ti814x_enable_i2c2(void)
+{
+	struct clk *fclk;
+
+	fclk = clk_get(NULL, "i2c3_fck");
+	if (!IS_ERR(fclk))
+		clk_enable(fclk);
+	else
+		printk(KERN_WARNING "clk get on i2c3 fck failed\n");
+}
+#endif
+
+#ifdef CONFIG_ARCH_TI81XX
+static struct resource ti81xx_rtc_resources[] = {
+	{
+		.start	= TI81XX_RTC_BASE,
+		.end	= TI81XX_RTC_BASE + SZ_4K - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+	{ /* timer irq */
+		.start	= TI81XX_IRQ_RTC,
+		.end	= TI81XX_IRQ_RTC,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{ /* alarm irq */
+		.start	= TI81XX_IRQ_RTC_ALARM,
+		.end	= TI81XX_IRQ_RTC_ALARM,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+static struct platform_device ti81xx_rtc_device = {
+	.name		= "omap_rtc",
+	.id		= -1,
+	.num_resources	= ARRAY_SIZE(ti81xx_rtc_resources),
+	.resource	= ti81xx_rtc_resources,
+};
+
+#define KICK0_REG	0x6c
+#define KICK1_REG	0x70
+#define OSC_REG		0x54
+
+#define KICK0_REG_VAL	0x83e70b13
+#define KICK1_REG_VAL	0x95a4f1e0
+#define RESET_VAL	BIT(5)
+
+static int ti81xx_rtc_init(void)
+{
+	void __iomem *base;
+	struct clk *clk;
+
+	clk = clk_get(NULL, "rtc_c32k_fck");
+	if (!clk) {
+		pr_err("rtc : Failed to get RTC clock\n");
+		return -1;
+	}
+
+	if (clk_enable(clk)) {
+		pr_err("rtc: Clock Enable Failed\n");
+		return -1;
+	}
+
+	base = ioremap(TI81XX_RTC_BASE, SZ_4K);
+
+	if (WARN_ON(!base))
+		return -ENOMEM;
+
+	/* Unlock the rtc's registers */
+	__raw_writel(KICK0_REG_VAL, base + KICK0_REG);
+	__raw_writel(KICK1_REG_VAL, base + KICK1_REG);
+
+	/* Reset the RTC */
+	__raw_writel(RESET_VAL, base + OSC_REG);
+
+	/*
+	 * After setting the SW_RESET bit, RTC registers must not be accessed
+	 * for 3 32kHz clock cycles (roughly 2200 OCP cycles).
+	 */
+	udelay(100);
+
+	/*
+	 * Unlock the rtc's registers again as the registers would have been
+	 * locked due to reset
+	 */
+	__raw_writel(KICK0_REG_VAL, base + KICK0_REG);
+	__raw_writel(KICK1_REG_VAL, base + KICK1_REG);
+
+	iounmap(base);
+
+	return  platform_device_register(&ti81xx_rtc_device);
+}
+#endif
 
 static int __init omap2_init_devices(void)
 {
@@ -1174,18 +2135,35 @@ static int __init omap2_init_devices(void)
 	omap_init_camera();
 	omap_init_mbox();
 	omap_init_mcspi();
+	omap_init_elm();
 	omap_init_pmu();
 	omap_hdq_init();
 	omap_init_sti();
 	omap_init_sham();
 	omap_init_aes();
 	omap_init_vout();
-	am33xx_register_edma();
-	am33xx_init_pcm();
+	omap_init_edma();
+	omap_init_davinci_pcm();
 #if defined (CONFIG_SOC_OMAPAM33XX)
 	am335x_register_pruss_uio(&am335x_pruss_uio_pdata);
 	if (omap3_has_sgx())
 		platform_device_register(&am335x_sgx);
+#endif
+#if defined(CONFIG_SOC_OMAPTI81XX)
+	if (cpu_is_ti814x()) {
+		/* Init PCIe,SATA PLL here, before invoking respective init*/
+		if (!machine_is_chronos14()) {
+			ti814x_pcie_pllcfg();
+		}
+		ti814x_sata_pllcfg();
+	}
+	ti81xx_init_pcie();
+	ti81xx_video_mux();
+#ifdef CONFIG_ARCH_TI814X
+	ti814x_enable_i2c2();
+#endif
+#endif
+	omap_init_ahci();
 #endif
 	return 0;
 }
@@ -1212,6 +2190,22 @@ static struct cpsw_slave_data am33xx_cpsw_slaves[] = {
 	},
 };
 
+/* TODO : Verify the offsets */
+struct cpsw_slave_data ti81xx_cpsw_slaves[] = {
+	{
+		.slave_reg_ofs  = 0x50,
+		.sliver_reg_ofs = 0x700,
+		.phy_id		= "0:00",
+		.dual_emac_reserved_vlan = CPSW_PORT_VLAN_SLAVE_0,
+	},
+	{
+		.slave_reg_ofs  = 0x90,
+		.sliver_reg_ofs = 0x740,
+		.phy_id		= "0:01",
+		.dual_emac_reserved_vlan = CPSW_PORT_VLAN_SLAVE_1,
+	},
+};
+
 static struct cpsw_platform_data am33xx_cpsw_pdata = {
 	.ss_reg_ofs		= 0x1200,
 	.channels		= 8,
@@ -1225,6 +2219,27 @@ static struct cpsw_platform_data am33xx_cpsw_pdata = {
 	.cpts_reg_ofs		= 0xc00,
 	.cpts_clock_mult	= 0x80000000,
 	.cpts_clock_shift	= 29,
+	.bd_ram_ofs		= 0x2000,
+	.bd_ram_size		= SZ_8K,
+	.rx_descs               = 64,
+	.mac_control            = BIT(5), /* MIIEN */
+	.gigabit_en		= 1,
+	.host_port_num		= 0,
+	.no_bd_ram		= false,
+	.version		= CPSW_VERSION_2,
+};
+
+static struct cpsw_platform_data ti814x_cpsw_pdata = {
+	.ss_reg_ofs		= 0x900,
+	.channels		= 8,
+	.cpdma_reg_ofs		= 0x100,
+	.slaves			= 2,
+	.slave_data		= ti81xx_cpsw_slaves,
+	.ale_reg_ofs		= 0x600,
+	.ale_entries		= 1024,
+	.host_port_reg_ofs      = 0x28,
+	.hw_stats_reg_ofs       = 0x400,
+	.cpts_reg_ofs		= 0x500,
 	.bd_ram_ofs		= 0x2000,
 	.bd_ram_size		= SZ_8K,
 	.rx_descs               = 64,
@@ -1271,37 +2286,45 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 {
 	struct omap_hwmod *oh;
 	struct platform_device *pdev;
+	struct cpsw_platform_data *pdata;
 	u32 mac_lo, mac_hi, gmii_sel;
 	u32 i;
 
+	if (cpu_is_am33xx())
+		pdata = &am33xx_cpsw_pdata;
+	else if (cpu_is_ti81xx())
+		pdata = &ti814x_cpsw_pdata;
+	else
+		return -ENODEV;
+
 	mac_lo = omap_ctrl_readl(TI81XX_CONTROL_MAC_ID0_LO);
 	mac_hi = omap_ctrl_readl(TI81XX_CONTROL_MAC_ID0_HI);
-	am33xx_cpsw_slaves[0].mac_addr[0] = mac_hi & 0xFF;
-	am33xx_cpsw_slaves[0].mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	am33xx_cpsw_slaves[0].mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
-	am33xx_cpsw_slaves[0].mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
-	am33xx_cpsw_slaves[0].mac_addr[4] = mac_lo & 0xFF;
-	am33xx_cpsw_slaves[0].mac_addr[5] = (mac_lo & 0xFF00) >> 8;
+	pdata->slave_data[0].mac_addr[0] = mac_hi & 0xFF;
+	pdata->slave_data[0].mac_addr[1] = (mac_hi & 0xFF00) >> 8;
+	pdata->slave_data[0].mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
+	pdata->slave_data[0].mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
+	pdata->slave_data[0].mac_addr[4] = mac_lo & 0xFF;
+	pdata->slave_data[0].mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
 	/* Read MACID0 from eeprom if eFuse MACID is invalid */
-	if (!is_valid_ether_addr(am33xx_cpsw_slaves[0].mac_addr)) {
+	if (!is_valid_ether_addr(pdata->slave_data[0].mac_addr)) {
 		for (i = 0; i < ETH_ALEN; i++)
-			am33xx_cpsw_slaves[0].mac_addr[i] = am33xx_macid0[i];
+			pdata->slave_data[0].mac_addr[i] = am33xx_macid0[i];
 	}
 
 	mac_lo = omap_ctrl_readl(TI81XX_CONTROL_MAC_ID1_LO);
 	mac_hi = omap_ctrl_readl(TI81XX_CONTROL_MAC_ID1_HI);
-	am33xx_cpsw_slaves[1].mac_addr[0] = mac_hi & 0xFF;
-	am33xx_cpsw_slaves[1].mac_addr[1] = (mac_hi & 0xFF00) >> 8;
-	am33xx_cpsw_slaves[1].mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
-	am33xx_cpsw_slaves[1].mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
-	am33xx_cpsw_slaves[1].mac_addr[4] = mac_lo & 0xFF;
-	am33xx_cpsw_slaves[1].mac_addr[5] = (mac_lo & 0xFF00) >> 8;
+	pdata->slave_data[1].mac_addr[0] = mac_hi & 0xFF;
+	pdata->slave_data[1].mac_addr[1] = (mac_hi & 0xFF00) >> 8;
+	pdata->slave_data[1].mac_addr[2] = (mac_hi & 0xFF0000) >> 16;
+	pdata->slave_data[1].mac_addr[3] = (mac_hi & 0xFF000000) >> 24;
+	pdata->slave_data[1].mac_addr[4] = mac_lo & 0xFF;
+	pdata->slave_data[1].mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
 	/* Read MACID1 from eeprom if eFuse MACID is invalid */
 	if (!is_valid_ether_addr(am33xx_cpsw_slaves[1].mac_addr)) {
 		for (i = 0; i < ETH_ALEN; i++)
-			am33xx_cpsw_slaves[1].mac_addr[i] = am33xx_macid1[i];
+			pdata->slave_data[1].mac_addr[i] = am33xx_macid1[i];
 	}
 
 	switch (mode) {
@@ -1313,8 +2336,8 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 		break;
 	case AM33XX_CPSW_MODE_RGMII:
 		gmii_sel = AM33XX_RGMII_MODE_EN;
-		am33xx_cpsw_slaves[0].phy_if = PHY_INTERFACE_MODE_RGMII;
-		am33xx_cpsw_slaves[1].phy_if = PHY_INTERFACE_MODE_RGMII;
+		pdata->slave_data[0].phy_if = PHY_INTERFACE_MODE_RGMII;
+		pdata->slave_data[1].phy_if = PHY_INTERFACE_MODE_RGMII;
 		break;
 	default:
 		return -EINVAL;
@@ -1323,13 +2346,12 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 	writel(gmii_sel, AM33XX_CTRL_REGADDR(AM33XX_CONTROL_GMII_SEL_OFFSET));
 
 	if (phy_id0 != NULL)
-		am33xx_cpsw_slaves[0].phy_id = phy_id0;
+		pdata->slave_data[0].phy_id = phy_id0;
 
 	if (phy_id1 != NULL)
-		am33xx_cpsw_slaves[1].phy_id = phy_id1;
+		pdata->slave_data[1].phy_id = phy_id1;
 
-	memcpy(am33xx_cpsw_pdata.mac_addr,
-			am33xx_cpsw_slaves[0].mac_addr, ETH_ALEN);
+	memcpy(pdata->mac_addr, pdata->slave_data[0].mac_addr, ETH_ALEN);
 
 	oh = omap_hwmod_lookup("mdio");
 	if (!oh) {
@@ -1348,8 +2370,8 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 		return -ENODEV;
 	}
 
-	pdev = omap_device_build("cpsw", -1, oh, &am33xx_cpsw_pdata,
-			sizeof(am33xx_cpsw_pdata), NULL, 0, 0);
+	pdev = omap_device_build("cpsw", -1, oh, pdata,
+			sizeof(struct cpsw_platform_data), NULL, 0, 0);
 	if (IS_ERR(pdev))
 		pr_err("could not build omap_device for cpsw\n");
 
@@ -1412,8 +2434,13 @@ static int __init omap_init_wdt(void)
 	int id = -1;
 	struct platform_device *pdev;
 	struct omap_hwmod *oh;
-	char *oh_name = "wd_timer2";
+	char *oh_name;
 	char *dev_name = "omap_wdt";
+
+	if (cpu_is_ti814x())
+		oh_name = "wd_timer1";
+	else
+		oh_name = "wd_timer2";
 
 	if (!cpu_class_is_omap2())
 		return 0;

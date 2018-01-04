@@ -50,6 +50,8 @@ int omap_type(void)
 		val = omap_ctrl_readl(OMAP343X_CONTROL_STATUS);
 	} else if (cpu_is_omap44xx()) {
 		val = omap_ctrl_readl(OMAP4_CTRL_MODULE_CORE_STATUS);
+	} else if (cpu_is_ti81xx()) {
+		val = omap_ctrl_readl(TI81XX_CONTROL_STATUS);
 	} else {
 		pr_err("Cannot detect omap type!\n");
 		goto out;
@@ -213,6 +215,7 @@ static void __init omap3_cpuinfo(void)
 	OMAP3_SHOW_FEATURE(sgx);
 	OMAP3_SHOW_FEATURE(neon);
 	OMAP3_SHOW_FEATURE(isp);
+	OMAP3_SHOW_FEATURE(dsp);
 	OMAP3_SHOW_FEATURE(192mhz_clk);
 
 	printk(")\n");
@@ -282,7 +285,16 @@ void __init omap4xxx_check_features(void)
 
 void __init ti81xx_check_features(void)
 {
+	u32 status;
+
 	omap_features = OMAP3_HAS_NEON;
+
+	status = omap_ctrl_readl(TI81XX_DEV_FEATURE);
+	if (status & TI81XX_DSP_MASK)
+		omap_features |= OMAP3_HAS_DSP;
+	if (status & TI81XX_SGX_MASK)
+		omap_features |= OMAP3_HAS_SGX;
+
 	omap3_cpuinfo();
 }
 
@@ -401,10 +413,14 @@ void __init omap3xxx_check_revision(void)
 			cpu_rev = "1.0";
 			break;
 		case 1:
-		/* FALLTHROUGH */
-		default:
 			omap_revision = TI8168_REV_ES1_1;
 			cpu_rev = "1.1";
+			break;
+		case 2:
+		/* FALLTHROUGH */
+		default:
+			omap_revision = TI8168_REV_ES2_0;
+			cpu_rev = "2.0";
 			break;
 		}
 		break;
@@ -439,11 +455,24 @@ void __init omap3xxx_check_revision(void)
 			cpu_rev = "2.0";
 			break;
 		case 3:
-		/* FALLTHROUGH */
-		default:
 			omap_revision = TI8148_REV_ES2_1;
 			cpu_rev = "2.1";
 			break;
+		case 4:
+		/* FALLTHROUGH */
+		default:
+			omap_revision = TI8148_REV_ES3_0;
+			cpu_rev = "3.0";
+			break;
+		}
+		break;
+	case 0xb96b:
+		switch (rev) {
+		case 0:
+			/* FALLTHROUGH */
+		default:
+			omap_revision = TI8148_REV_ES1_0;
+			cpu_rev = "1.0";
 		}
 		break;
 	default:

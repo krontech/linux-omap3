@@ -271,6 +271,10 @@ static int allocate_sram(struct snd_pcm_substream *substream, unsigned size,
 	if (buf->private_data || !size)
 		return 0;
 
+	/* No SRAM support on TI81xx */
+	if (cpu_is_ti81xx())
+		return 0;
+
 	ppcm->period_bytes_max = size;
 	iram_virt = (void *)gen_pool_alloc(davinci_gen_pool, size);
 	if (!iram_virt)
@@ -821,7 +825,7 @@ static void davinci_pcm_free(struct snd_pcm *pcm)
 				      buf->area, buf->addr);
 		buf->area = NULL;
 		iram_dma = buf->private_data;
-		if (iram_dma) {
+		if (iram_dma && !cpu_is_ti81xx()) {
 			gen_pool_free(davinci_gen_pool,
 			      (unsigned long)iram_dma->area, iram_dma->bytes);
 			kfree(iram_dma);

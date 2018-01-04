@@ -263,13 +263,13 @@ void am35x_set_mode(u8 musb_mode)
 	omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
 }
 
-void ti81xx_musb_phy_power(u8 id, u8 on , bool wkup)
+void ti81xx_musb_phy_power(u8 id, u8 on)
 {
 	void __iomem *scm_base = NULL;
 	u32 usbphycfg;
 	u32 usbwkupctrl = 0;
 
-	if (cpu_is_ti816x())
+	if (cpu_is_ti81xx())
 		scm_base = ioremap(TI81XX_SCM_BASE, SZ_2K);
 	else if (cpu_is_am33xx())
 		scm_base = ioremap(AM33XX_SCM_BASE, SZ_2K);
@@ -287,6 +287,25 @@ void ti81xx_musb_phy_power(u8 id, u8 on , bool wkup)
 			usbphycfg |= id ? TI816X_USBPHY1_NORMAL_MODE :
 						TI816X_USBPHY0_NORMAL_MODE;
 			usbphycfg &= ~TI816X_USBPHY_REFCLK_OSC;
+		} else if (cpu_is_ti814x()) {
+			usbphycfg &= ~(TI814X_USBPHY_CM_PWRDN
+				| TI814X_USBPHY_OTG_PWRDN
+				| TI814X_USBPHY_DMPULLUP
+				| TI814X_USBPHY_DPPULLUP
+				| TI814X_USBPHY_DPINPUT
+				| TI814X_USBPHY_DMINPUT
+				| TI814X_USBPHY_DATA_POLARITY);
+			usbphycfg |= (TI814X_USBPHY_SRCONDM
+				| TI814X_USBPHY_SINKONDP
+				| TI814X_USBPHY_CHGISINK_EN
+				| TI814X_USBPHY_CHGVSRC_EN
+				| TI814X_USBPHY_CDET_EXTCTL
+				| TI814X_USBPHY_DPOPBUFCTL
+				| TI814X_USBPHY_DMOPBUFCTL
+				| TI814X_USBPHY_DPGPIO_PD
+				| TI814X_USBPHY_DMGPIO_PD
+				| TI814X_USBPHY_OTGVDET_EN
+				| TI814X_USBPHY_OTGSESSEND_EN);
 		} else if (cpu_is_am33xx()) {
 			usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
 			usbphycfg |= (USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN);
@@ -297,6 +316,9 @@ void ti81xx_musb_phy_power(u8 id, u8 on , bool wkup)
 			usbphycfg &= ~((id ? TI816X_USBPHY1_NORMAL_MODE :
 					TI816X_USBPHY0_NORMAL_MODE)
 					| TI816X_USBPHY_REFCLK_OSC);
+		else if (cpu_is_ti814x())
+			usbphycfg |= TI814X_USBPHY_CM_PWRDN
+				| TI814X_USBPHY_OTG_PWRDN;
 		else if (cpu_is_am33xx()) {
 			usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
 		if (wkup)

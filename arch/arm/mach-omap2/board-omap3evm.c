@@ -50,6 +50,7 @@
 
 #include "mux.h"
 #include "sdram-micron-mt46h32m32lf-6.h"
+#include "sdram-hynix-h8kds0un0mer-4em.h"
 #include "hsmmc.h"
 #include "common-board-devices.h"
 

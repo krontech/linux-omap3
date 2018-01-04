@@ -736,7 +736,8 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
 	up->mdr1 = UART_OMAP_MDR1_DISABLE;
 
 	up->fcr = UART_FCR_R_TRIG_01 | UART_FCR_T_TRIG_01 |
-			UART_FCR_ENABLE_FIFO;
+			UART_FCR_ENABLE_FIFO | UART_FCR_CLEAR_RCVR |
+							UART_FCR_CLEAR_XMIT;
 	if (up->use_dma)
 		up->fcr |= UART_FCR_DMA_SELECT;
 
@@ -1021,7 +1022,7 @@ static int serial_omap_poll_get_char(struct uart_port *port)
 
 #ifdef CONFIG_SERIAL_OMAP_CONSOLE
 
-static struct uart_omap_port *serial_omap_console_ports[4];
+static struct uart_omap_port *serial_omap_console_ports[6];
 
 static struct uart_driver serial_omap_reg;
 

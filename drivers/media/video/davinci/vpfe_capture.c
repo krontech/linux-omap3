@@ -1314,17 +1314,9 @@ static void vpfe_videobuf_release(struct videobuf_queue *vq,
 {
 	struct vpfe_fh *fh = vq->priv_data;
 	struct vpfe_device *vpfe_dev = fh->vpfe_dev;
-	unsigned long flags;
 
 	v4l2_dbg(1, debug, &vpfe_dev->v4l2_dev, "vpfe_videobuf_release\n");
 
-	/*
-	 * We need to flush the buffer from the dma queue since
-	 * they are de-allocated
-	 */
-	spin_lock_irqsave(&vpfe_dev->dma_queue_lock, flags);
-	INIT_LIST_HEAD(&vpfe_dev->dma_queue);
-	spin_unlock_irqrestore(&vpfe_dev->dma_queue_lock, flags);
 	videobuf_dma_contig_free(vq, vb);
 	vb->state = VIDEOBUF_NEEDS_INIT;
 }

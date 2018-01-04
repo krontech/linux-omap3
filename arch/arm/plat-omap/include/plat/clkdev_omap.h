@@ -11,7 +11,7 @@
 #include <linux/clkdev.h>
 
 struct omap_clk {
-	u16				cpu;
+	u32				cpu;
 	struct clk_lookup		lk;
 };
 
@@ -38,10 +38,12 @@ struct omap_clk {
 #define CK_3517		(1 << 9)
 #define CK_36XX		(1 << 10)	/* 36xx/37xx-specific clocks */
 #define CK_443X		(1 << 11)
-#define CK_TI816X	(1 << 12)
-#define CK_446X		(1 << 13)
-#define CK_AM33XX	(1 << 14)	/* AM33xx specific clocks */
-#define CK_1710		(1 << 15)	/* 1710 extra for rate selection */
+#define CK_TI814X	(1 << 12)
+#define CK_TI816X	(1 << 13)
+#define CK_DM385	(1 << 14)
+#define CK_446X		(1 << 15)
+#define CK_AM33XX	(1 << 16)	/* AM33xx specific clocks */
+#define CK_1710		(1 << 17)	/* 1710 extra for rate selection */
 
 
 #define CK_34XX		(CK_3430ES1 | CK_3430ES2PLUS)

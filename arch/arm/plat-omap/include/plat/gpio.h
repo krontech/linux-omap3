@@ -53,6 +53,7 @@
 #define OMAP_MPUIO_LATCH		0x34
 
 #define OMAP34XX_NR_GPIOS		6
+#define TI816X_NR_GPIOS			2
 
 /*
  * OMAP1510 GPIO registers
@@ -214,6 +215,7 @@ extern void omap_set_gpio_debounce(int gpio, int enable);
 extern void omap_set_gpio_debounce_time(int gpio, int enable);
 extern void omap_gpio_save_context(void);
 extern void omap_gpio_restore_context(void);
+extern void omap3_gpio_restore_pad_context(int restore_oe);
 /*-------------------------------------------------------------------------*/
 
 /* Wrappers for "new style" GPIO calls, using the new infrastructure

@@ -9,7 +9,8 @@
 
 static inline void arch_idle(void)
 {
-	cpu_do_idle();
+	if (!cpu_is_ti814x() || (omap_rev() > TI8148_REV_ES1_0))
+		cpu_do_idle();
 }
 
 extern void (*arch_reset)(char, const char *);

@@ -223,7 +223,7 @@ static int __devinit cppi41_controller_start(struct dma_controller *controller)
 	cppi_info = cppi->cppi_info;
 	musb = cppi->musb;
 
-	if (cpu_is_ti816x() || cpu_is_am33xx()) {
+	if (cpu_is_ti81xx() || cpu_is_am33xx()) {
 		cppi->automode_reg_offs = TI81XX_USB_AUTOREQ_REG;
 		cppi->teardown_reg_offs = TI81XX_USB_TEARDOWN_REG;
 	} else {
@@ -1646,7 +1646,7 @@ cppi41_dma_controller_create(struct musb  *musb, void __iomem *mregs)
 			"transparent");
 
 	/* enable infinite mode only for ti81xx silicon rev2 */
-	if (cpu_is_am33xx() || cpu_is_ti816x()) {
+	if (cpu_is_am33xx() || cpu_is_ti81xx()) {
 		/*
 		 * to enable inf_mode, generic rndis mode must be
 		 * enabled. also datatog_fix must be set to zero

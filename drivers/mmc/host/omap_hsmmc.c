@@ -211,25 +211,72 @@ static irqreturn_t omap_hsmmc_cd_handler(int irq, void *dev_id);
 static int omap_hsmmc_card_detect(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
+	struct omap_hsmmc_host *host =
+		platform_get_drvdata(to_platform_device(dev));
 
-	/* NOTE: assumes card detect signal is active-low */
-	return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
+	u32 pstate;
+	u32 enabled;
+
+	if (mmc->version != MMC_CTRL_VERSION_2)
+		/* NOTE: assumes card detect signal is active-low */
+		return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
+	else {
+		pstate = 0;
+		enabled = 0;
+
+		enabled = host->mmc->enabled;
+		if (!enabled)
+			mmc_host_enable(host->mmc);
+
+		pstate = OMAP_HSMMC_READ(host->base, PSTATE);
+
+		if (!enabled)
+			mmc_host_disable(host->mmc);
+		pstate = pstate & PSTATE_CINS_MASK;
+		pstate = pstate >> PSTATE_CINS_SHIFT;
+		return pstate;
+	}
 }
 
 static int omap_hsmmc_get_wp(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
+	struct omap_hsmmc_host *host =
+		platform_get_drvdata(to_platform_device(dev));
 
-	/* NOTE: assumes write protect signal is active-high */
-	return gpio_get_value_cansleep(mmc->slots[0].gpio_wp);
+	u32 pstate;
+
+	if (mmc->version != MMC_CTRL_VERSION_2)
+		/* NOTE: assumes write protect signal is active-high */
+		return gpio_get_value_cansleep(mmc->slots[0].gpio_wp);
+	else {
+		pstate = 0;
+		pstate = OMAP_HSMMC_READ(host->base, PSTATE);
+		pstate &= PSTATE_WP_MASK;
+
+		/* For TI814X, always return that the card is 'rw', since
+		 * the WP pin is not connected.
+		 * Otherwise, detect the status and then return whether
+		 * the card is 'ro' or 'rw'.
+		 */
+		if (cpu_is_ti814x())
+			return 0;
+		else
+			return !(pstate >> PSTATE_WP_SHIFT);
+	}
 }
 
 static int omap_hsmmc_get_cover_state(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
+	struct omap_hsmmc_host *host =
+		platform_get_drvdata(to_platform_device(dev));
 
-	/* NOTE: assumes card detect signal is active-low */
-	return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
+	if (mmc->version != MMC_CTRL_VERSION_2)
+		/* NOTE: assumes card detect signal is active-low */
+		return !gpio_get_value_cansleep(mmc->slots[0].switch_pin);
+	else
+		return OMAP_HSMMC_READ(host->base, PSTATE) >> PSTATE_CINS_SHIFT;
 }
 
 #ifdef CONFIG_PM
@@ -237,18 +284,28 @@ static int omap_hsmmc_get_cover_state(struct device *dev, int slot)
 static int omap_hsmmc_suspend_cdirq(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
+	struct omap_hsmmc_host *host =
+		platform_get_drvdata(to_platform_device(dev));
 
-	disable_irq(mmc->slots[0].card_detect_irq);
-
+	if (mmc->version != MMC_CTRL_VERSION_2)
+		disable_irq(mmc->slots[0].card_detect_irq);
+	else
+		OMAP_HSMMC_WRITE(host->base, IE,
+			OMAP_HSMMC_READ(host->base, IE) & ~IE_CINS);
 	return 0;
 }
 
 static int omap_hsmmc_resume_cdirq(struct device *dev, int slot)
 {
 	struct omap_mmc_platform_data *mmc = dev->platform_data;
+	struct omap_hsmmc_host *host =
+		platform_get_drvdata(to_platform_device(dev));
 
-	enable_irq(mmc->slots[0].card_detect_irq);
-
+	if (mmc->version != MMC_CTRL_VERSION_2)
+		enable_irq(mmc->slots[0].card_detect_irq);
+	else
+		OMAP_HSMMC_WRITE(host->base, IE,
+			OMAP_HSMMC_READ(host->base, IE) | IE_CINS);
 	return 0;
 }
 
@@ -549,6 +606,17 @@ static int omap_hsmmc_gpio_init(struct omap_mmc_platform_data *pdata)
 	} else
 		pdata->slots[0].gpio_wp = -EINVAL;
 
+	if (pdata->version == MMC_CTRL_VERSION_2) {
+		pdata->suspend = omap_hsmmc_suspend_cdirq;
+		pdata->resume = omap_hsmmc_resume_cdirq;
+		pdata->slots[0].get_cover_state = omap_hsmmc_get_cover_state;
+		pdata->slots[0].get_ro = omap_hsmmc_get_wp;
+		if (pdata->slots[0].caps & MMC_CAP_NEEDS_POLL)
+			pdata->slots[0].card_detect = NULL;
+		else
+			pdata->slots[0].card_detect = omap_hsmmc_card_detect;
+	}
+
 	return 0;
 
 err_free_wp:
@@ -609,11 +677,15 @@ static void omap_hsmmc_enable_irq(struct omap_hsmmc_host *host,
 
 static void omap_hsmmc_disable_irq(struct omap_hsmmc_host *host)
 {
-
-	OMAP_HSMMC_WRITE(host->base, ISE, 0);
-	OMAP_HSMMC_WRITE(host->base, IE, 0);
-	OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
-
+	if (cpu_is_ti81xx()) {
+		OMAP_HSMMC_WRITE(host->base, ISE, 0xC0);
+		OMAP_HSMMC_WRITE(host->base, IE, 0xC0);
+		OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+	} else {
+		OMAP_HSMMC_WRITE(host->base, ISE, 0);
+		OMAP_HSMMC_WRITE(host->base, IE, 0);
+		OMAP_HSMMC_WRITE(host->base, STAT, STAT_CLEAR);
+	}
 }
 
 /* Calculate divisor for the given clock frequency */
@@ -1122,6 +1194,11 @@ static void omap_hsmmc_do_irq(struct omap_hsmmc_host *host, int status, int irq)
 {
 	struct mmc_data *data;
 	int end_cmd = 0, end_trans = 0;
+
+	/* Schedule card detect here ONLY if irq for CD isn't registerted*/
+	if ((host->pdata->version == MMC_CTRL_VERSION_2) &&
+				((status & CINS) || (status & 0x80)))
+		omap_hsmmc_cd_handler(irq, host);
 
 	if (!host->req_in_progress) {
 		do {

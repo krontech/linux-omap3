@@ -38,6 +38,7 @@
 #define __ASM_ARM_ARCH_IO_H
 
 #include <mach/hardware.h>
+#include <mach/pci.h>
 
 #define IO_SPACE_LIMIT 0xffffffff
 
@@ -84,6 +85,12 @@
 
 #define OMAP2_EMU_IO_OFFSET		0xaa800000	/* Emulation */
 #define OMAP2_EMU_IO_ADDRESS(pa)	IOMEM((pa) + OMAP2_EMU_IO_OFFSET)
+
+#define TI81XX_L4_SLOW_IO_OFFSET	0xb2000000
+#define TI81XX_L4_SLOW_IO_ADDRESS(pa)	IOMEM((pa) + TI81XX_L4_SLOW_IO_OFFSET)
+
+#define TI81XX_L2_MC_IO_OFFSET		0xa4000000
+#define TI81XX_L2_MC_IO_ADDRESS(pa)	IOMEM((pa) + TI81XX_L2_MC_IO_OFFSET)
 
 /*
  * ----------------------------------------------------------------------------
@@ -247,6 +254,20 @@
 						/* 0x4e000000 --> 0xfd300000 */
 #define OMAP44XX_DMM_SIZE	SZ_1M
 #define OMAP44XX_DMM_VIRT	(OMAP44XX_EMIF2_VIRT + OMAP44XX_EMIF2_SIZE)
+
+/*
+ * TI81XX Specific I/O Mapping
+ */
+#define L4_SLOW_TI81XX_PHYS	L4_SLOW_TI81XX_BASE
+						/* 0x48000000 --> 0xd8000000 */
+#define L4_SLOW_TI81XX_VIRT	(L4_SLOW_TI81XX_PHYS + TI81XX_L4_SLOW_IO_OFFSET)
+#define L4_SLOW_TI81XX_SIZE	SZ_4M
+
+#define TI81XX_L2_MC_PHYS	0x55000000
+						/* 0x55000000 --> upto 1MB */
+#define TI81XX_L2_MC_VIRT	(TI81XX_L2_MC_PHYS + TI81XX_L2_MC_IO_OFFSET)
+#define TI81XX_L2_MC_SIZE	SZ_1M
+
 /*
  * ----------------------------------------------------------------------------
  * Omap specific register access

@@ -24,6 +24,7 @@
 
 #include <asm/hardware/asp.h>
 #include <mach/edma.h>
+#include <mach/mux.h>
 #ifdef CONFIG_MACH_AM335XEVM
 #include <mach/board-am335xevm.h>
 #endif
@@ -56,7 +57,11 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
 		sysclk = 12288000;
 
 	else if (machine_is_davinci_da830_evm() ||
-				machine_is_davinci_da850_evm())
+				machine_is_davinci_da850_evm() ||
+				machine_is_ti8168evm() ||
+				machine_is_ti8148evm() ||
+				machine_is_chronos14() ||
+				machine_is_dm385evm())
 		sysclk = 24576000;
 	/* On AM335X, CODEC gets MCLK from external Xtal (12MHz). */
 	else if (machine_is_am335xevm())
@@ -271,6 +276,28 @@ static struct snd_soc_dai_link am335x_evm_sk_dai = {
 	.ops = &evm_ops,
 };
 
+static struct snd_soc_dai_link ti81xx_evm_dai[] = {
+	{
+		.name = "TLV320AIC3X",
+		.stream_name = "AIC3X",
+		.codec_dai_name = "tlv320aic3x-hifi",
+		.codec_name = "tlv320aic3x-codec.1-0018",
+		.platform_name = "davinci-pcm-audio",
+		.init = evm_aic3x_init,
+		.ops = &evm_ops,
+	},
+#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+	{
+		.name = "HDMI_SOC_LINK",
+		.stream_name = "hdmi",
+		.cpu_dai_name = "hdmi-dai",
+		.platform_name = "davinci-pcm-audio",
+		.codec_dai_name = "HDMI-DAI-CODEC",     /* DAI name */
+		.codec_name = "hdmi-dummy-codec",
+	},
+#endif
+};
+
 /* davinci dm6446 evm audio machine driver */
 static struct snd_soc_card dm6446_snd_soc_card_evm = {
 	.name = "DaVinci DM6446 EVM",
@@ -323,8 +350,24 @@ static struct snd_soc_card am335x_evm_sk_snd_soc_card = {
 	.num_links = 1,
 };
 
-static struct platform_device *evm_snd_device;
+static struct snd_soc_card ti81xx_snd_soc_card = {
+	.name = "TI81XX EVM",
+	.dai_link = ti81xx_evm_dai,
+	.num_links = ARRAY_SIZE(ti81xx_evm_dai),
+};
 
+static void ti81xx_evm_dai_fixup(void)
+{
+	if (machine_is_ti8168evm() || machine_is_ti8148evm() || machine_is_chronos14()) {
+		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.2";
+	} else if (machine_is_dm385evm()) {
+		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.1";
+	} else {
+		ti81xx_evm_dai[0].cpu_dai_name = NULL;
+	}
+}
+
+static struct platform_device *evm_snd_device;
 static int __init evm_init(void)
 {
 	struct snd_soc_card *evm_snd_dev_data;
@@ -355,6 +398,11 @@ static int __init evm_init(void)
 		if (am335x_evm_get_id() == EVM_SK)
 			evm_snd_dev_data = &am335x_evm_sk_snd_soc_card;
 #endif
+		index = 0;
+	} else if (machine_is_ti8168evm() || machine_is_ti8148evm()
+					|| machine_is_chronos14() || machine_is_dm385evm()) {
+		ti81xx_evm_dai_fixup();
+		evm_snd_dev_data = &ti81xx_snd_soc_card;
 		index = 0;
 	} else
 		return -EINVAL;

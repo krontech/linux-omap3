@@ -1961,6 +1961,32 @@ err0:
 	return retval;
 }
 
+int num_composite_drv;
+int get_gadget_drv_id(void)
+{
+	int id;
+	if (num_composite_drv >= MAX_MUSB_INSTANCE)
+		return -EINVAL;
+	id = num_composite_drv;
+	num_composite_drv++;
+	return id;
+}
+EXPORT_SYMBOL(get_gadget_drv_id);
+
+int put_gadget_drv_id(void)
+{
+	if (num_composite_drv <= 0)
+		return -EINVAL;
+	num_composite_drv--;
+	return num_composite_drv;
+}
+EXPORT_SYMBOL(put_gadget_drv_id);
+
+int get_gadget_max_drv_id(void)
+{
+	return MAX_MUSB_INSTANCE;
+}
+EXPORT_SYMBOL(get_gadget_max_drv_id);
 static void stop_activity(struct musb *musb, struct usb_gadget_driver *driver)
 {
 	int			i;

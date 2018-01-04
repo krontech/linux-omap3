@@ -669,12 +669,78 @@ static int __devinit omap_dm_timer_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 
+<<<<<<< HEAD
 	timer = kzalloc(sizeof(struct omap_dm_timer), GFP_KERNEL);
 	if (!timer) {
 		dev_err(&pdev->dev, "%s: no memory for omap_dm_timer.\n",
 			__func__);
 		ret = -ENOMEM;
 		goto err_free_ioregion;
+=======
+	spin_lock_init(&dm_timer_lock);
+
+	dm_regs = (u32 *)reg_map;
+
+	if (cpu_class_is_omap1()) {
+		dm_timers = omap1_dm_timers;
+		dm_timer_count = omap1_dm_timer_count;
+		map_size = SZ_2K;
+	} else if (cpu_is_omap24xx()) {
+		dm_timers = omap2_dm_timers;
+		dm_timer_count = omap2_dm_timer_count;
+		dm_source_names = omap2_dm_source_names;
+		dm_source_clocks = omap2_dm_source_clocks;
+	} else if (cpu_is_omap34xx()) {
+		dm_timers = omap3_dm_timers;
+		dm_timer_count = omap3_dm_timer_count;
+		dm_source_names = omap3_dm_source_names;
+		dm_source_clocks = omap3_dm_source_clocks;
+	} else if (cpu_is_omap44xx()) {
+		dm_timers = omap4_dm_timers;
+		dm_timer_count = omap4_dm_timer_count;
+		dm_source_names = omap4_dm_source_names;
+		dm_source_clocks = omap4_dm_source_clocks;
+	} else if (cpu_is_ti81xx()) {
+		dm_timers = ti81xx_dm_timers;
+		/* TI816X has difference clock sources and 1 timer less */
+		if (cpu_is_ti816x()) {
+			dm_timer_count = ti81xx_dm_timer_count - 1;
+			dm_source_names = ti816x_dm_source_names;
+			dm_source_clocks = ti816x_dm_source_clocks;
+		} else {
+			dm_timer_count = ti81xx_dm_timer_count;
+			dm_source_names = ti814x_dm_source_names;
+			dm_source_clocks = ti814x_dm_source_clocks;
+		}
+
+		/* Few registers/offsets are different */
+		dm_regs = (u32 *)ti81xx_reg_map;
+	}
+
+	if (cpu_class_is_omap2())
+		for (i = 0; dm_source_names[i] != NULL; i++)
+			dm_source_clocks[i] = clk_get(NULL, dm_source_names[i]);
+
+	if (cpu_is_omap243x())
+		dm_timers[0].phys_base = 0x49018000;
+
+	for (i = 0; i < dm_timer_count; i++) {
+		timer = &dm_timers[i];
+
+		/* Static mapping, never released */
+		timer->io_base = ioremap(timer->phys_base, map_size);
+		BUG_ON(!timer->io_base);
+
+#ifdef CONFIG_ARCH_OMAP2PLUS
+		if (cpu_class_is_omap2()) {
+			char clk_name[16];
+			sprintf(clk_name, "gpt%d_ick", i + 1);
+			timer->iclk = clk_get(NULL, clk_name);
+			sprintf(clk_name, "gpt%d_fck", i + 1);
+			timer->fclk = clk_get(NULL, clk_name);
+		}
+#endif
+>>>>>>> chronos
 	}
 
 	timer->io_base = ioremap(mem->start, resource_size(mem));

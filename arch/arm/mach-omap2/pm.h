@@ -112,6 +112,9 @@ extern void am33xx_resume_vector(void);
 extern void am33xx_sram_cpuidle(void);
 extern unsigned int am33xx_sram_cpuidle_sz;
 
+extern void ti814x_cpu_suspend(void __iomem *);
+extern unsigned int ti814x_cpu_suspend_sz;
+
 #define PM_RTA_ERRATUM_i608		(1 << 0)
 #define PM_SDRC_WAKEUP_ERRATUM_i583	(1 << 1)
 
@@ -149,6 +152,19 @@ static inline int omap4_twl_init(void)
 {
 	return -EINVAL;
 }
+#endif
+
+#ifdef CONFIG_REGULATOR_TPS65023
+extern int omap3_tps65023_init(void);
+#else
+static inline int omap3_tps65023_init(void)
+{
+	return -EINVAL;
+}
+#endif
+
+#ifndef CONFIG_SUSPEND
+#define omap_pm_ops NULL
 #endif
 
 #endif

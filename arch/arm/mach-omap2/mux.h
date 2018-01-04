@@ -12,6 +12,8 @@
 #include "mux34xx.h"
 #include "mux44xx.h"
 #include "mux33xx.h"
+#include "mux816x.h"
+#include "mux814x.h"
 
 #define OMAP_MUX_TERMINATOR	0xffff
 
@@ -64,6 +66,12 @@
 #define	AM33XX_PIN_INPUT_PULLUP		(AM33XX_INPUT_EN | AM33XX_PULL_UP)
 #define	AM33XX_PIN_INPUT_PULLDOWN	(AM33XX_INPUT_EN)
 
+/* TI814x specific mux bit definitions */
+#define TI814X_PULL_DIS			(1 << 16)
+#define TI814X_PULL_UP			(1 << 17)
+#define TI814X_INPUT_EN			(1 << 18)
+#define TI814X_SLEW_SLOW		(1 << 19)
+
 /* Active pin states */
 #define OMAP_PIN_OUTPUT			0
 #define OMAP_PIN_INPUT			OMAP_INPUT_EN
@@ -102,12 +110,14 @@
  * omap_mux_init flags definition:
  *
  * OMAP_MUX_REG_8BIT: Ensure that access to padconf is done in 8 bits.
+ * OMAP_MUX_REG_32BIT: Ensure that access to padconf is done in 32 bits.
  * The default value is 16 bits.
  * OMAP_MUX_GPIO_IN_MODE3: The GPIO is selected in mode3.
  * The default is mode4.
  */
 #define OMAP_MUX_REG_8BIT		(1 << 0)
 #define OMAP_MUX_GPIO_IN_MODE3		(1 << 1)
+#define OMAP_MUX_REG_32BIT		(1 << 2)
 
 /**
  * struct omap_board_data - board specific device data
@@ -179,7 +189,7 @@ struct omap_ball {
  */
 struct omap_board_mux {
 	u16	reg_offset;
-	u16	value;
+	u32	value;
 };
 
 #define OMAP_DEVICE_PAD_REMUX		BIT(1)	/* Dynamically remux a pad,
@@ -301,7 +311,7 @@ struct omap_mux_partition *omap_mux_get(const char *name);
  * @mux_offset:		Offset of the mux register
  *
  */
-u16 omap_mux_read(struct omap_mux_partition *p, u16 mux_offset);
+u32 omap_mux_read(struct omap_mux_partition *p, u16 mux_offset);
 
 /**
  * omap_mux_write() - write mux register
@@ -311,7 +321,7 @@ u16 omap_mux_read(struct omap_mux_partition *p, u16 mux_offset);
  *
  * This should be only needed for dynamic remuxing of non-gpio signals.
  */
-void omap_mux_write(struct omap_mux_partition *p, u16 val, u16 mux_offset);
+void omap_mux_write(struct omap_mux_partition *p, u32 val, u16 mux_offset);
 
 /**
  * omap_mux_write_array() - write an array of mux registers
@@ -358,6 +368,18 @@ int omap4_mux_init(struct omap_board_mux *board_subset,
  * @board_mux:		Board specific mux table
  */
 int am33xx_mux_init(struct omap_board_mux *board_mux);
+
+/**
+ * ti81xx_mux_init() - initialize mux system along with board specific set
+ * @board_mux:		Board specific mux table
+ */
+int ti81xx_mux_init(struct omap_board_mux *board_mux);
+
+/**
+ * ti814x_mux_init() - initialize mux system along with board specific set
+ * @board_mux:		Board specific mux table
+ */
+int ti814x_mux_init(struct omap_board_mux *board_mux);
 
 /**
  * omap_mux_init - private mux init function, do not call

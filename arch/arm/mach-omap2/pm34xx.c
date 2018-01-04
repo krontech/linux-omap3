@@ -39,6 +39,7 @@
 #include <plat/prcm.h>
 #include <plat/gpmc.h>
 #include <plat/dma.h>
+#include <plat/usb.h>
 
 #include "common.h"
 #include "cm2xxx_3xxx.h"
@@ -130,6 +131,7 @@ static void omap3_core_save_context(void)
 	/* Save the system control module context, padconf already save above*/
 	omap3_control_save_context();
 	omap_dma_global_context_save();
+	omap_musb_save_context();
 }
 
 static void omap3_core_restore_context(void)
@@ -141,6 +143,7 @@ static void omap3_core_restore_context(void)
 	/* Restore the interrupt controller context */
 	omap_intc_restore_context();
 	omap_dma_global_context_restore();
+	omap_musb_restore_context();
 }
 
 /*
@@ -385,6 +388,12 @@ void omap_sram_idle(void)
 			omap3_cm_restore_context();
 			omap3_sram_restore_context();
 			omap2_sms_restore_context();
+			/*
+			 * Errata 1.164 fix : OTG autoidle can prevent
+			 * sleep
+			 */
+			if (cpu_is_omap3430())
+				usb_musb_disable_autoidle();
 		}
 		if (core_next_state == PWRDM_POWER_OFF)
 			omap2_prm_clear_mod_reg_bits(OMAP3430_AUTO_OFF_MASK,
@@ -397,10 +406,20 @@ void omap_sram_idle(void)
 
 	/* PER */
 	if (per_next_state < PWRDM_POWER_ON) {
-		per_prev_state = pwrdm_read_prev_pwrst(per_pwrdm);
+		if (per_next_state == PWRDM_POWER_OFF) {
+			/*
+			 * Reading the prev-state takes long time (11us@OPP2),
+			 * only do it, if we really tried to put PER in OFF
+			 */
+			per_prev_state = pwrdm_read_prev_pwrst(per_pwrdm);
+			if (per_prev_state == PWRDM_POWER_OFF) {
+				omap3_per_restore_context();
+				omap3_gpio_restore_pad_context(0);
+			} else if (per_next_state == PWRDM_POWER_OFF) {
+				omap3_gpio_restore_pad_context(1);
+			}
+		}
 		omap2_gpio_resume_after_idle();
-		if (per_prev_state == PWRDM_POWER_OFF)
-			omap3_per_restore_context();
 	}
 
 	/* Disable IO-PAD and IO-CHAIN wakeup */
