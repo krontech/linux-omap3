@@ -49,7 +49,6 @@
 #include <linux/fs.h>
 #include <linux/string.h>
 #include <mach/gpio.h>
-#include <linux/smp_lock.h>
 #include "ft5x06_ts.h"
 
 //#define TOUCH_VIRTUAL_KEYS
@@ -93,24 +92,24 @@ extern int sprd_3rdparty_gpio_tp_irq;
 
 
 static struct i2c_client *this_client;
+#if !I2C_BOARD_INFO_METHOD
 static struct sprd_i2c_setup_data ft5x0x_ts_setup={0, FT5206_TS_ADDR, 0, FT5206_TS_NAME};
+static void ft5x0x_ts_reset(void);
+#endif
 /* Attribute */
-static unsigned char suspend_flag=0; //0: sleep out; 1: sleep in
-static ssize_t ft5x0x_show_suspend(struct device* cd,struct device_attribute *attr, char* buf);
-static ssize_t ft5x0x_store_suspend(struct device* cd, struct device_attribute *attr,const char* buf, size_t len);
 static ssize_t ft5x0x_show_version(struct device* cd,struct device_attribute *attr, char* buf);
 static ssize_t ft5x0x_update(struct device* cd, struct device_attribute *attr, const char* buf, size_t len);
 static ssize_t ft5x0x_show_debug(struct device* cd,struct device_attribute *attr, char* buf);
 static ssize_t ft5x0x_store_debug(struct device* cd, struct device_attribute *attr,const char* buf, size_t len);
 static unsigned char ft5x0x_read_fw_ver(void);
 #ifdef HAS_EARLYSUSPEND
+static unsigned char suspend_flag=0; //0: sleep out; 1: sleep in
 static void ft5x0x_ts_suspend(struct early_suspend *handler);
 static void ft5x0x_ts_resume(struct early_suspend *handler);
 #endif
 static int fts_ctpm_fw_update(void);
 //static int fts_ctpm_fw_upgrade_with_i_file(void);
 //#define CONFIG_FT5X0X_MULTITOUCH 1
-static void ft5x0x_ts_reset(void);
 #ifdef HAS_LDO
 static void ft5x0x_chip_vdd_input(bool turn_on);
 #endif
@@ -144,9 +143,7 @@ struct ft5x0x_ts_data {
 #endif
 };
 
-#ifdef HAS_EARLYSUSPEND
-static DEVICE_ATTR(suspend, S_IRUGO | S_IWUSR, ft5x0x_show_suspend, ft5x0x_store_suspend);
-#endif
+
 static DEVICE_ATTR(update, S_IRUGO | S_IWUSR, ft5x0x_show_version, ft5x0x_update);
 static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, ft5x0x_show_debug, ft5x0x_store_debug);
 
@@ -172,6 +169,7 @@ static ssize_t ft5x0x_store_debug(struct device* cd, struct device_attribute *at
 	return len;
 }
 
+#ifdef HAS_EARLYSUSPEND
 static ssize_t ft5x0x_show_suspend(struct device* cd,
 				     struct device_attribute *attr, char* buf)
 {
@@ -196,20 +194,19 @@ static ssize_t ft5x0x_store_suspend(struct device* cd, struct device_attribute *
 	if(on_off==1)
 	{
 		printk("FT5206 Entry Suspend\n");
-#ifdef HAS_EARLYSUSPEND
 		ft5x0x_ts_suspend(NULL);
-#endif
 	}
 	else
 	{
 		printk("FT5206 Entry Resume\n");
-#ifdef HAS_EARLYSUSPEND
 		ft5x0x_ts_resume(NULL);
-#endif
 	}
 	
 	return len;
 }
+
+static DEVICE_ATTR(suspend, S_IRUGO | S_IWUSR, ft5x0x_show_suspend, ft5x0x_store_suspend);
+#endif
 
 static ssize_t ft5x0x_show_version(struct device* cd,
 				     struct device_attribute *attr, char* buf)
@@ -448,7 +445,6 @@ static int ft5x0x_write_reg(u8 addr, u8 para)
     return 0;
 }
 
-
 /***********************************************************************************************
 Name	:	ft5x0x_read_reg 
 
@@ -463,10 +459,8 @@ function	:	read register of ft5x0x
 static int ft5x0x_read_reg(u8 addr, u8 *pdata)
 {
 	int ret;
-	u8 buf[2] = {0};
-
-	buf[0] = addr;
-	struct i2c_msg msgs[] = {
+	u8 buf[2] = {addr, 0};
+	struct i2c_msg msgs[2] = {
 		{
 			.addr	= this_client->addr,
 			.flags	= 0,
@@ -1189,6 +1183,7 @@ static irqreturn_t ft5x0x_ts_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#if !I2C_BOARD_INFO_METHOD
 static void ft5x0x_ts_reset(void)
 {
 	TS_DBG("%s",__func__);
@@ -1199,6 +1194,7 @@ static void ft5x0x_ts_reset(void)
 	gpio_set_value(sprd_3rdparty_gpio_tp_rst, 1);
 	msleep(1);
 }
+#endif
 
 /***********************************************************************************************
 Name	:	 
@@ -1287,7 +1283,7 @@ ft5x0x_ts_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	struct ft5x0x_ts_data *ft5x0x_ts;
 	struct input_dev *input_dev;
 	int err = 0;
-	unsigned char uc_reg_value; 
+	//unsigned char uc_reg_value; 
 #if CFG_SUPPORT_TOUCH_KEY
     int i;
 #endif

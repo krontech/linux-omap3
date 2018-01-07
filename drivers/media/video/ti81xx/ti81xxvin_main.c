@@ -2013,7 +2013,7 @@ static int vidioc_streamoff(struct file *file, void *priv,
 	return ret;
 }
 
-static long vidioc_default(struct file *file, void *priv, int cmd, void *arg)
+static long vidioc_default(struct file *file, void *priv, bool valid_prio, int cmd, void *arg)
 {
 	struct ti81xxvin_fh *fh = priv;
 	struct ti81xxvin_instance_obj *inst = fh->instance;
@@ -2438,7 +2438,7 @@ static int ti81xxvin_probe(struct platform_device *pdev)
 			v4l2_i2c_new_subdev_board(&ti81xxvin_obj.v4l2_dev,
 						  i2c_adap,
 						  &subdevdata->board_info,
-						  NULL, 0);
+						  NULL);
 
 		if (!ti81xxvin_obj.sd[i]) {
 			ti81xxvin_err("Error registering v4l2 subdevice\n");

@@ -24,7 +24,6 @@
 
 #include <asm/hardware/asp.h>
 #include <mach/edma.h>
-#include <mach/mux.h>
 #ifdef CONFIG_MACH_AM335XEVM
 #include <mach/board-am335xevm.h>
 #endif
@@ -344,11 +343,13 @@ static struct snd_soc_card am335x_snd_soc_card = {
 	.num_links = 1,
 };
 
+#ifdef CONFIG_MACH_AM335XEVM
 static struct snd_soc_card am335x_evm_sk_snd_soc_card = {
 	.name = "AM335X EVM",
 	.dai_link = &am335x_evm_sk_dai,
 	.num_links = 1,
 };
+#endif
 
 static struct snd_soc_card ti81xx_snd_soc_card = {
 	.name = "TI81XX EVM",
@@ -368,6 +369,7 @@ static void ti81xx_evm_dai_fixup(void)
 }
 
 static struct platform_device *evm_snd_device;
+
 static int __init evm_init(void)
 {
 	struct snd_soc_card *evm_snd_dev_data;

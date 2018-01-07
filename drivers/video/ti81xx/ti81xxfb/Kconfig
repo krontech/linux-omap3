@@ -1,6 +1,6 @@
 menuconfig FB_TI81XX
 	tristate "TI81XX frame buffer support (EXPERIMENTAL)"
-	depends on FB && ARCH_TI81XX && TI81XX_VPSS
+	depends on FB && SOC_OMAPTI81XX && TI81XX_VPSS
 	select FB_CFB_FILLRECT
 	select FB_CFB_COPYAREA
 	select FB_CFB_IMAGEBLIT

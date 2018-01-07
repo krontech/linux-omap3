@@ -233,7 +233,7 @@ static inline void set_24xx_gpio_triggering(struct gpio_bank *bank, int gpio,
 			  trigger & IRQ_TYPE_EDGE_FALLING);
 	}
 	if (likely(!(bank->non_wakeup_gpios & gpio_bit))) {
-		if (cpu_is_omap44xx() || cpu_is_am33xx() ||  || cpu_is_ti81xx()) {
+		if (cpu_is_omap44xx() || cpu_is_am33xx() || cpu_is_ti81xx()) {
 			_gpio_rmw(base, OMAP4_GPIO_IRQWAKEN0, gpio_bit,
 				  trigger != 0);
 		} else {

@@ -199,54 +199,6 @@ static int s35390a_get_datetime(struct i2c_client *client, struct rtc_time *tm)
 	return rtc_valid_tm(tm);
 }
 
-static int s35390a_freq_irq_enable(struct i2c_client *client, unsigned enabled)
-{
-	struct s35390a *s35390a = i2c_get_clientdata(client);
-	char buf[1];
-	int err;
-
-	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf));
-	if (err) {
-		dev_err(&client->dev, "%s: failed to read STS2 reg\n",
-			__func__);
-		return err;
-	}
-
-	/* This chip returns the bits of each byte in reverse order */
-	buf[0] = bitrev8(buf[0]);
-
-	buf[0] &= ~S35390A_INT1_MODE_MASK;
-
-	if (enabled)
-		buf[0] |= S35390A_INT1_MODE_FREQ;
-	else
-		buf[0] |= S35390A_INT1_MODE_NOINTR;
-
-	/* This chip returns the bits of each byte in reverse order */
-	buf[0] = bitrev8(buf[0]);
-
-	err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf));
-	if (err) {
-		dev_err(&client->dev, "%s: failed to set STS2 reg\n", __func__);
-		return err;
-	}
-
-	if (enabled) {
-		buf[0] = s35390a->rtc->irq_freq;
-
-		buf[0] = bitrev8(buf[0]);
-		err = s35390a_set_reg(s35390a, S35390A_CMD_INT1_REG1, buf,
-				sizeof(buf));
-	}
-
-	return err;
-}
-
-static int s35390a_rtc_freq_irq_enable(struct device *dev, unsigned enabled)
-{
-	return s35390a_freq_irq_enable(to_i2c_client(dev), enabled);
-}
-
 static int s35390a_alarm_irq_enable(struct i2c_client *client, unsigned enabled)
 {
 	struct s35390a *s35390a = i2c_get_clientdata(client);
@@ -377,36 +329,6 @@ static int s35390a_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	return s35390a_set_datetime(to_i2c_client(dev), tm);
 }
 
-static int s35390a_update_irq_enable(struct i2c_client *client,
-			unsigned enabled)
-{
-	struct s35390a *s35390a = i2c_get_clientdata(client);
-	char buf[1];
-
-	if (s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf)) < 0)
-		return -EIO;
-
-	/* This chip returns the bits of each byte in reverse order */
-	buf[0] = bitrev8(buf[0]);
-
-	buf[0] &= ~S35390A_INT1_MODE_MASK;
-
-	if (enabled)
-		buf[0] |= S35390A_INT1_MODE_PMIN_EDG;
-	else
-		buf[0] |= S35390A_INT1_MODE_NOINTR;
-
-	/* This chip returns the bits of each byte in reverse order */
-	buf[0] = bitrev8(buf[0]);
-
-	return s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf));
-}
-
-static int s35390a_rtc_update_irq_enable(struct device *dev, unsigned enabled)
-{
-	return s35390a_update_irq_enable(to_i2c_client(dev), enabled);
-}
-
 static void s35390a_work(struct work_struct *work)
 {
 	struct s35390a *s35390a;
@@ -455,28 +377,12 @@ static irqreturn_t s35390a_irq(int irq, void *client)
 	return IRQ_HANDLED;
 }
 
-static int s35390a_set_irq_freq(struct i2c_client *client, int freq)
-{
-	if (!is_power_of_2(freq) || (freq > 16))
-		return -EINVAL;
-
-	return 0;
-}
-
-static int s35390a_rtc_set_irq_freq(struct device *dev, int freq)
-{
-	return s35390a_set_irq_freq(to_i2c_client(dev), freq);
-}
-
 static const struct rtc_class_ops s35390a_rtc_ops = {
 	.read_time		= s35390a_rtc_read_time,
 	.set_time		= s35390a_rtc_set_time,
 	.alarm_irq_enable	= s35390a_rtc_alarm_irq_enable,
 	.set_alarm		= s35390a_rtc_set_alarm,
 	.read_alarm		= s35390a_rtc_read_alarm,
-	.update_irq_enable	= s35390a_rtc_update_irq_enable,
-	.irq_set_freq		= s35390a_rtc_set_irq_freq,
-	.irq_set_state		= s35390a_rtc_freq_irq_enable,
 
 };
 

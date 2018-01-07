@@ -26,7 +26,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <plat/common.h>
-#include <plat/smartreflex.h>
+#include "smartreflex.h"
 
 #include "control.h"
 
