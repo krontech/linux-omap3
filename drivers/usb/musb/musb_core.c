@@ -1884,7 +1884,6 @@ allocate_instance(struct device *dev,
 		 * that...
 		 */
 
-<<<<<<< HEAD
 		musb = hcd_to_musb(hcd);
 		INIT_LIST_HEAD(&musb->control);
 		INIT_LIST_HEAD(&musb->in_bulk);
@@ -1899,23 +1898,6 @@ allocate_instance(struct device *dev,
 		if (!musb)
 			return NULL;
 	}
-=======
-	musb = hcd_to_musb(hcd);
-	INIT_LIST_HEAD(&musb->control);
-	INIT_LIST_HEAD(&musb->in_bulk);
-	INIT_LIST_HEAD(&musb->out_bulk);
-	INIT_LIST_HEAD(&musb->gb_list);
-
-	hcd->uses_new_polling = 1;
-
-	musb->vbuserr_retry = VBUSERR_RETRY_COUNT;
-#else
-	musb = kzalloc(sizeof *musb, GFP_KERNEL);
-	if (!musb)
-		return NULL;
-
-#endif
->>>>>>> chronos
 	dev_set_drvdata(dev, musb);
 	musb->mregs = mbase;
 	musb->ctrl_base = mbase;
@@ -1997,46 +1979,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 		goto fail0;
 	}
 
-<<<<<<< HEAD
-=======
-	switch (plat->mode) {
-	case MUSB_HOST:
-#ifdef CONFIG_USB_MUSB_HDRC_HCD
-		break;
-#else
-		goto bad_config;
-#endif
-	case MUSB_PERIPHERAL:
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-		break;
-#else
-		goto bad_config;
-#endif
-	case MUSB_OTG:
-#ifdef CONFIG_USB_MUSB_OTG
-		break;
-#else
-#ifdef CONFIG_USB_MUSB_HDRC_HCD
-		plat->mode = MUSB_HOST;
-#endif
-
-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-		plat->mode = MUSB_PERIPHERAL;
-#endif
-	dev_info(dev, "degrade from otg to %s-only mode\n",
-		(plat->mode == MUSB_HOST) ? "host" : "peripheral");
-	break;
-#endif
-#ifndef CONFIG_USB_MUSB_OTG
-bad_config:
-#endif
-	default:
-		dev_err(dev, "incompatible Kconfig role setting\n");
-		status = -EINVAL;
-		goto fail0;
-	}
-
->>>>>>> chronos
 	/* allocate */
 	musb = allocate_instance(dev, plat->config, ctrl);
 	if (!musb) {
@@ -2604,7 +2546,6 @@ static int __init musb_init(void)
 		return 0;
 
 	pr_info("%s: version " MUSB_VERSION ", "
-<<<<<<< HEAD
 		"?dma?"
 		", "
 		"otg (peripheral+host)",

@@ -34,8 +34,16 @@ extern int __init omap_init_clocksource_32k(void);
 extern unsigned long long notrace omap_32k_sched_clock(void);
 
 extern void omap_reserve(void);
+extern void ti81xx_reserve(void);
 extern int omap_dss_reset(struct omap_hwmod *);
 
 void omap_sram_init(void);
+
+#if defined(CONFIG_TI81XX_PCIE_EPDRV) || \
+	defined(CONFIG_TI81XX_PCIE_EPDRV_MODULE)
+extern void ti81xx_pcie_mem_reserve_sdram_memblock(void);
+#else
+static inline void ti81xx_pcie_mem_resserve_sdram_memblock(void) {}
+#endif
 
 #endif /* __ARCH_ARM_MACH_OMAP_COMMON_H */

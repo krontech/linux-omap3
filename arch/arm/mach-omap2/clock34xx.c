@@ -20,8 +20,6 @@
 #include <linux/kernel.h>
 #include <linux/clk.h>
 #include <linux/io.h>
-#include <linux/err.h>
-#include <linux/cpufreq.h>
 
 #include <plat/clock.h>
 

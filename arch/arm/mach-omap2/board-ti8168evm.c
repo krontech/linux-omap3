@@ -851,7 +851,7 @@ static void __init ti8168_evm_init(void)
 	omap_serial_init();
 	ti816x_evm_i2c_init();
 	i2c_add_driver(&ti816xevm_cpld_driver);
-	ti81xx_register_mcasp(0, &ti8168_evm_snd_data);
+	omap3_register_mcasp(&ti8168_evm_snd_data, 2);
 	ti816x_spi_init();
 	/* initialize usb */
 	usb_musb_init(&musb_board_data);

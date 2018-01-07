@@ -22,9 +22,12 @@
 #include "clock81xx.h"
 #include "prm.h"
 #include "prm2xxx_3xxx.h"
+#include "prm81xx.h"
 #include "prm-regbits-81xx.h"
 #include "cm.h"
 #include "cm-regbits-81xx.h"
+
+/* FIXME: This whole file seems like it needs to go away and be replaced with clockdomain stuff. */
 
 /**
  * ti81xx_dflt_wait_clk_enable() - Enable a ti816x/ti814x module clock

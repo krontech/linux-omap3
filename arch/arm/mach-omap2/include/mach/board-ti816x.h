@@ -39,7 +39,7 @@ enum ti816x_ths7360_sf_ctrl {
 	TI816X_THS7360_SF_TRUE_HD_MODE
 };
 
-#ifdef CONFIG_ARCH_TI816X
+#ifdef CONFIG_SOC_OMAPTI81XX
 int pcf8575_ths7375_enable(enum ti816x_ths_filter_ctrl ctrl);
 int pcf8575_ths7360_sd_enable(enum ti816x_ths_filter_ctrl ctrl);
 int pcf8575_ths7360_hd_enable(enum ti816x_ths7360_sf_ctrl ctrl);

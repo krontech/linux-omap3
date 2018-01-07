@@ -95,7 +95,7 @@ static struct platform_device *omap4_iommu_pdev[NR_OMAP4_IOMMU_DEVICES];
 #define omap4_iommu_pdev	NULL
 #endif
 
-#ifdef CONFIG_ARCH_TI81XX
+#ifdef CONFIG_SOC_OMAPTI81XX
 static struct iommu_device ti81xx_devices[] = {
 	{
 		.base = TI81XX_MC_MMU_BASE,
@@ -134,7 +134,11 @@ static int __init omap_iommu_init(void)
 		{ .flags = IORESOURCE_IRQ },
 	};
 
-	if (cpu_is_omap34xx()) {
+	if (cpu_is_ti81xx()) {
+		devices = ti81xx_devices;
+		omap_iommu_pdev = ti81xx_iommu_pdev;
+		num_iommu_devices = NR_TI81XX_IOMMU_DEVICES;
+	} else if (cpu_is_omap34xx()) {
 		devices = omap3_devices;
 		omap_iommu_pdev = omap3_iommu_pdev;
 		num_iommu_devices = NR_OMAP3_IOMMU_DEVICES;
@@ -142,10 +146,6 @@ static int __init omap_iommu_init(void)
 		devices = omap4_devices;
 		omap_iommu_pdev = omap4_iommu_pdev;
 		num_iommu_devices = NR_OMAP4_IOMMU_DEVICES;
-	} else if (cpu_is_ti81xx()) {
-		devices = ti81xx_devices;
-		omap_iommu_pdev = ti81xx_iommu_pdev;
-		num_iommu_devices = NR_TI81XX_IOMMU_DEVICES;
 	} else
 		return -ENODEV;
 

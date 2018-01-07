@@ -1336,7 +1336,6 @@ static int _deassert_hardreset(struct omap_hwmod *oh, const char *name)
 	if (IS_ERR_VALUE(ret))
 		return ret;
 
-<<<<<<< HEAD
 	/*
 	 * In order to use omap4 prm code for am33xx family of devices,
 	 * first check cpu_is_am33xx here.

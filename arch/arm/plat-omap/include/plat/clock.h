@@ -159,53 +159,51 @@ struct clksel {
  * can be placed into read-only space.
  */
 struct dpll_data {
-	void __iomem	*mult_div1_reg;
-	u32		mult_mask;
-	u32		div1_mask;
-	struct clk	*clk_bypass;
-	struct clk	*clk_ref;
-	void __iomem	*control_reg;
-	u32		enable_mask;
-	unsigned long	last_rounded_rate;
-	u16		last_rounded_m;
-	u16		max_multiplier;
-	u8		last_rounded_n;
-	u8		min_divider;
-	u8		max_divider;
-	u8		modes;
-#if (defined(CONFIG_ARCH_OMAP3) ||\
-	defined(CONFIG_ARCH_OMAP4) ||\
-	defined(CONFIG_ARCH_TI81XX))
-	void __iomem	*autoidle_reg;
-	void __iomem	*idlest_reg;
-	u32		autoidle_mask;
-	u32		freqsel_mask;
-	u32		idlest_mask;
-	u32		dco_mask;
-	u32		sddiv_mask;
-	u8		auto_recal_bit;
-	u8		recal_en_bit;
-	u8		recal_st_bit;
+	void __iomem		*mult_div1_reg;
+	u32			mult_mask;
+	u32			div1_mask;
+	struct clk		*clk_bypass;
+	struct clk		*clk_ref;
+	void __iomem		*control_reg;
+	u32			enable_mask;
+	unsigned long		last_rounded_rate;
+	u16			last_rounded_m;
+	u16			max_multiplier;
+	u8			last_rounded_n;
+	u8			min_divider;
+	u16			max_divider;
+	u8			modes;
+#if defined(CONFIG_ARCH_OMAP3) || defined(CONFIG_ARCH_OMAP4)
+	void __iomem		*autoidle_reg;
+	void __iomem		*idlest_reg;
+	u32			autoidle_mask;
+	u32			freqsel_mask;
+	u32			idlest_mask;
+	u32			dco_mask;
+	u32			sddiv_mask;
+	u8			auto_recal_bit;
+	u8			recal_en_bit;
+	u8			recal_st_bit;
 	/* data fields required by TI814X ADPLLs */
-	u8		dpll_id;
-	void __iomem	*div_m2n_reg;
-	u32		div_m2_mask;
-	u32		div_n_mask;
-	u8		pre_div_n;
-	u8		post_div_m2;
-	void __iomem	*frac_mult_reg;
-	u32		frac_mult_mask;
-	u32		last_rounded_frac_m;
-	u8		last_rounded_m2;
-	u32		bypass_bit;
-	u8		byp_clk_src_bit;
-	u8		stby_ret_bit;
-	u8		stop_mode_bit;
-	void __iomem	*load_mn_reg;
-	void __iomem	*load_m2n2_reg;
-	u8		dco_freq_sel;
+	u8			dpll_id;
+	void __iomem		*div_m2n_reg;
+	u32			div_m2_mask;
+	u32			div_n_mask;
+	u8			pre_div_n;
+	u8			post_div_m2;
+	void __iomem		*frac_mult_reg;
+	u32			frac_mult_mask;
+	u32			last_rounded_frac_m;
+	u8			last_rounded_m2;
+	u32			bypass_bit;
+	u8			byp_clk_src_bit;
+	u8			stby_ret_bit;
+	u8			stop_mode_bit;
+	void __iomem		*load_mn_reg;
+	void __iomem		*load_m2n2_reg;
+	u8			dco_freq_sel;
 #  endif
-	u8		flags;
+	u8			flags;
 };
 
 /**
@@ -378,7 +376,7 @@ struct clk {
 	struct dpll_data	*dpll_data;
 	const char		*clkdm_name;
 	struct clockdomain	*clkdm;
-#ifdef CONFIG_ARCH_TI81XX
+#ifdef CONFIG_SOC_OMAPTI81XX
 	u32			synthesizer_id;
 	u32			pwd_mask;
 	u32			freq_flag;

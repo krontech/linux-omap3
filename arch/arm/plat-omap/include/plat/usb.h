@@ -117,7 +117,7 @@ extern void am35x_musb_reset(void);
 extern void am35x_musb_phy_power(u8 id, u8 on);
 extern void am35x_musb_clear_irq(void);
 extern void am35x_set_mode(u8 musb_mode);
-extern void ti81xx_musb_phy_power(u8 id, u8 on);
+extern void ti81xx_musb_phy_power(u8 id, u8 on, bool wkup);
 
 /*
  * FIXME correct answer depends on hmc_mode,

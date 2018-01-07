@@ -1336,22 +1336,6 @@ static int do_write(struct fsg_dev *fsg)
 			 * but not more than the buffer size.
 			 */
 			amount = min(amount_left_to_req, mod_data.buflen);
-<<<<<<< HEAD
-=======
-			amount = min((loff_t) amount, curlun->file_length -
-					usb_offset);
-			partial_page = usb_offset & (PAGE_CACHE_SIZE - 1);
-			/* TBD: commented the below lines
-			 * the performance of file write from host is low due
-			 * to file stroage gadget driver submits two fetch
-			 * reques and performs two writes to storage media
-			 */
-			/*
-			if (partial_page > 0)
-				amount = min(amount,
-	(unsigned int) PAGE_CACHE_SIZE - partial_page);
-			*/
->>>>>>> chronos
 
 			/* Beyond the end of the backing file? */
 			if (usb_offset >= curlun->file_length) {
@@ -3149,7 +3133,6 @@ static void fsg_release(struct kref *ref)
 
 	kfree(fsg->luns);
 	kfree(fsg);
-	put_gadget_drv_id();
 }
 
 static void lun_release(struct device *dev)
@@ -3637,6 +3620,7 @@ static int __init fsg_alloc(void)
 	return 0;
 }
 
+
 static int __init fsg_init(void)
 {
 	int		rc;
@@ -3649,16 +3633,8 @@ static int __init fsg_init(void)
 	if ((rc = fsg_alloc()) != 0)
 		return rc;
 	fsg = the_fsg;
-	fsg_driver.id = get_gadget_drv_id();
-	if (fsg_driver.id < 0) {
-		DBG(fsg, "unable to get driver id\n");
-		return -EINVAL;
-	}
-
-	rc = usb_gadget_probe_driver(&fsg_driver, fsg_bind);
-	if (rc != 0) {
+	if ((rc = usb_gadget_probe_driver(&fsg_driver, fsg_bind)) != 0)
 		kref_put(&fsg->ref, fsg_release);
-	}
 	return rc;
 }
 module_init(fsg_init);

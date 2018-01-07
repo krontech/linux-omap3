@@ -117,7 +117,7 @@ void __init omap3_map_io(void)
 				TI81XX_CONTROL_DEVICE_ID - 0x204)
 
 static struct omap_globals ti81xx_globals = {
-	.class  = TI81XX_CLASS,
+	.class  = TI814X_CLASS,
 	.tap    = OMAP2_L4_IO_ADDRESS(TI81XX_TAP_BASE),
 	.ctrl   = OMAP2_L4_IO_ADDRESS(TI81XX_CTRL_BASE),
 	.prm    = OMAP2_L4_IO_ADDRESS(TI81XX_PRCM_BASE),
@@ -179,3 +179,4 @@ void __init omap4_map_io(void)
 	omap44xx_map_common_io();
 }
 #endif
+

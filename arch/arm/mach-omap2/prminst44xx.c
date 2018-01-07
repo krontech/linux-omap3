@@ -42,6 +42,11 @@ static u32 *am33xx_prm_bases[] = {
 	[AM33XX_PRM_PARTITION]			= AM33XX_L4_WK_IO_ADDRESS(AM33XX_PRM_BASE),
 };
 
+static u32 *ti81xx_prm_bases[] = {
+	[OMAP4430_INVALID_PRCM_PARTITION]	= 0,
+	[TI81XX_PRM_PARTITION]			= OMAP2_L4_IO_ADDRESS(TI81XX_PRCM_BASE),
+};
+
 /* Read a register in a PRM instance */
 u32 omap4_prminst_read_inst_reg(u8 part, s16 inst, u16 idx)
 {
@@ -194,5 +199,8 @@ void __init omap44xx_prminst_init(void)
 	} else if (cpu_is_am33xx()) {
 		_prm_bases = am33xx_prm_bases;
 		max_prm_partitions = ARRAY_SIZE(am33xx_prm_bases);
+	} else if (cpu_is_ti81xx()) {
+		_prm_bases = ti81xx_prm_bases;
+		max_prm_partitions = ARRAY_SIZE(ti81xx_prm_bases);
 	}
 }

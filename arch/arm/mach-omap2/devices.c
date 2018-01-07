@@ -59,13 +59,13 @@
 /* LCD controller similar DA8xx */
 #include <video/da8xx-fb.h>
 
-#include <plat/smartreflex.h>
 #include <plat/ti81xx-vpss.h>
 #include "pcie-ti81xx.h"
 
 #include "mux.h"
 #include "control.h"
 #include "devices.h"
+#include "smartreflex.h"
 
 #define L3_MODULES_MAX_LEN 12
 #define L3_MODULES 3
@@ -203,9 +203,9 @@ int __init am33xx_register_mfd_tscadc(struct mfd_tscadc_board *pdata)
 	return 0;
 }
 
-#if defined(CONFIG_SND_AM335X_SOC_EVM) || \
-				defined(CONFIG_SND_AM335X_SOC_EVM_MODULE)
-int __init am335x_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
+#if defined(CONFIG_SND_DAVINCI_SOC_MCASP) || \
+				defined(CONFIG_SND_DAVINCI_SOC_MCASP_MODULE)
+int omap3_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
 {
 	int l;
 	struct omap_hwmod *oh;
@@ -229,7 +229,7 @@ int __init am335x_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
 }
 
 #else
-int __init am335x_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
+int omap3_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr)
 {
 	return 0;
 }
@@ -606,9 +606,9 @@ int __init am33xx_register_ehrpwm(int id, struct pwmss_platform_data *pdata)
 
 #else
 static int __init am335x_register_ehrpwm(int id,
-		struct pwmss_platform_data *pdata) { }
+		struct pwmss_platform_data *pdata) { return 0; }
 static int __init am335x_register_ecap(int id,
-		struct pwmss_platform_data *pdata) { }
+		struct pwmss_platform_data *pdata) { return 0; }
 #endif
 
 static struct resource omap2_pmu_resource = {
@@ -1254,6 +1254,7 @@ static struct platform_device am335x_sgx = {
 	.name	= "sgx",
 	.id	= -1,
 };
+#endif
 
 #if defined (CONFIG_SOC_OMAPTI81XX)
 static void __init ti81xx_video_mux(void)
@@ -1501,11 +1502,8 @@ static void __init ti81xx_video_mux(void)
 		omap_writel(3, 0x48180324);
 	}
 }
-
 #else
 static inline void ti81xx_video_mux(void) {}
-#endif
-
 #endif
 
 /*-------------------------------------------------------------------------*/
@@ -1862,74 +1860,7 @@ static inline void omap_init_ahci(void)
 static inline void omap_init_ahci(void) {}
 #endif
 
-#if defined(CONFIG_ARCH_TI81XX)
-static struct resource dm385_mcasp_resource[] = {
-	{
-		.name = "mcasp",
-		.start = TI81XX_ASP1_BASE,
-		.end = TI81XX_ASP1_BASE + (SZ_1K * 12) - 1,
-		.flags = IORESOURCE_MEM,
-	},
-	/* TX event */
-	{
-		.start = TI81XX_DMA_MCASP1_AXEVT,
-		.end = TI81XX_DMA_MCASP1_AXEVT,
-		.flags = IORESOURCE_DMA,
-	},
-	/* RX event */
-	{
-		.start = TI81XX_DMA_MCASP1_AREVT,
-		.end = TI81XX_DMA_MCASP1_AREVT,
-		.flags = IORESOURCE_DMA,
-	},
-};
-
-static struct resource ti81xx_mcasp_resource[] = {
-	{
-		.name = "mcasp",
-		.start = TI81XX_ASP2_BASE,
-		.end = TI81XX_ASP2_BASE + (SZ_1K * 12) - 1,
-		.flags = IORESOURCE_MEM,
-	},
-	/* TX event */
-	{
-		.start = TI81XX_DMA_MCASP2_AXEVT,
-		.end = TI81XX_DMA_MCASP2_AXEVT,
-		.flags = IORESOURCE_DMA,
-	},
-	/* RX event */
-	{
-		.start = TI81XX_DMA_MCASP2_AREVT,
-		.end = TI81XX_DMA_MCASP2_AREVT,
-		.flags = IORESOURCE_DMA,
-	},
-};
-
-static struct platform_device ti81xx_mcasp_device = {
-	.name = "davinci-mcasp",
-};
-
-void __init ti81xx_register_mcasp(int id, struct snd_platform_data *pdata)
-{
-	if (machine_is_ti8168evm() || machine_is_ti8148evm() || machine_is_chronos14()) {
-		ti81xx_mcasp_device.id = 2;
-		ti81xx_mcasp_device.resource = ti81xx_mcasp_resource;
-		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(ti81xx_mcasp_resource);
-	} else if (machine_is_dm385evm()) {
-		ti81xx_mcasp_device.id = 1;
-		ti81xx_mcasp_device.resource = dm385_mcasp_resource;
-		ti81xx_mcasp_device.num_resources = ARRAY_SIZE(dm385_mcasp_resource);
-	} else {
-		pr_err("%s: platform not supported\n", __func__);
-		return;
-	}
-
-	ti81xx_mcasp_device.dev.platform_data = pdata;
-	platform_device_register(&ti81xx_mcasp_device);
-}
-#endif
-
-#if defined(CONFIG_ARCH_TI81XX) && defined(CONFIG_PCI)
+#if defined(CONFIG_SOC_OMAPTI81XX) && defined(CONFIG_PCI)
 static struct ti81xx_pcie_data ti81xx_pcie_data = {
 	.msi_irq_base	= MSI_IRQ_BASE,
 	.msi_irq_num	= MSI_NR_IRQS,
@@ -1997,6 +1928,9 @@ static inline void ti81xx_init_pcie(void)
 	if (!cpu_is_ti81xx())
 		return;
 
+	pcibios_min_io = TI816X_PCIE_IO_BASE;
+	pcibios_min_mem = TI816X_PCIE_MEM_BASE;
+
 	if (cpu_is_ti816x()) {
 		omap_ctrl_writel(TI816X_PCIE_PLLMUX_25X |
 				TI81XX_PCIE_DEVTYPE_RC,
@@ -2029,10 +1963,13 @@ static inline void ti81xx_init_pcie(void)
 static inline void ti81xx_init_pcie(void) {}
 #endif
 
-#ifdef CONFIG_ARCH_TI814X
+#ifdef CONFIG_SOC_OMAPTI81XX
 static inline void ti814x_enable_i2c2(void)
 {
 	struct clk *fclk;
+
+	if (!cpu_is_ti814x())
+		return;
 
 	fclk = clk_get(NULL, "i2c3_fck");
 	if (!IS_ERR(fclk))
@@ -2042,7 +1979,7 @@ static inline void ti814x_enable_i2c2(void)
 }
 #endif
 
-#ifdef CONFIG_ARCH_TI81XX
+#ifdef CONFIG_SOC_OMAPTI81XX
 static struct resource ti81xx_rtc_resources[] = {
 	{
 		.start	= TI81XX_RTC_BASE,
@@ -2143,7 +2080,6 @@ static int __init omap2_init_devices(void)
 	omap_init_aes();
 	omap_init_vout();
 	omap_init_edma();
-	omap_init_davinci_pcm();
 #if defined (CONFIG_SOC_OMAPAM33XX)
 	am335x_register_pruss_uio(&am335x_pruss_uio_pdata);
 	if (omap3_has_sgx())
@@ -2158,12 +2094,9 @@ static int __init omap2_init_devices(void)
 		ti814x_sata_pllcfg();
 	}
 	ti81xx_init_pcie();
-	ti81xx_video_mux();
-#ifdef CONFIG_ARCH_TI814X
-	ti814x_enable_i2c2();
-#endif
-#endif
 	omap_init_ahci();
+	ti81xx_video_mux();
+	ti814x_enable_i2c2();
 #endif
 	return 0;
 }

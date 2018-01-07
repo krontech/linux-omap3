@@ -530,23 +530,6 @@ static int common_timer_create(struct k_itimer *new_timer)
 	return 0;
 }
 
-static struct k_clock *clockid_to_kclock(const clockid_t id)
-{
-	if (id < 0)
-		return (id & CLOCKFD_MASK) == CLOCKFD ?
-			&clock_posix_dynamic : &clock_posix_cpu;
-
-	if (id >= MAX_CLOCKS || !posix_clocks[id].clock_getres)
-		return NULL;
-	return &posix_clocks[id];
-}
-
-static int common_timer_create(struct k_itimer *new_timer)
-{
-	hrtimer_init(&new_timer->it.real.timer, new_timer->it_clock, 0);
-	return 0;
-}
-
 /* Create a POSIX.1b interval timer. */
 
 SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,

@@ -27,11 +27,12 @@
 #include "pm.h"
 #include "powerdomain.h"
 #include "clockdomain.h"
+#include "common.h"
 #include "cm81xx.h"
+#include "prm81xx.h"
 #include "cm-regbits-81xx.h"
 #include "prm-regbits-81xx.h"
 #include "prm2xxx_3xxx.h"
-#include <mach/omap4-common.h>
 #include <plat/serial.h>
 #include <plat/sram.h>
 
@@ -115,11 +116,6 @@ static int ti81xx_pm_suspend(void)
 	struct power_state *pwrst;
 	int ret = 0;
 
-	if ((wakeup_timer_seconds || wakeup_timer_milliseconds) &&
-		!enter_deep_sleep)
-		omap2_pm_wakeup_on_timer(wakeup_timer_seconds,
-					wakeup_timer_milliseconds);
-
 	if (turnoff_idle_pwrdms) {
 		/* Read current next_pwrsts */
 		list_for_each_entry(pwrst, &pwrst_list, node) {
@@ -167,14 +163,12 @@ static int ti81xx_pm_enter(suspend_state_t suspend_state)
 static int ti81xx_pm_begin(suspend_state_t state)
 {
 	disable_hlt();
-	omap_uart_enable_irqs(0);
 	return 0;
 }
 
 static void ti81xx_pm_end(void)
 {
 	enable_hlt();
-	omap_uart_enable_irqs(1);
 	return;
 }
 
@@ -213,10 +207,10 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
 static int __init clkdms_setup(struct clockdomain *clkdm, void *unused)
 {
 	if (clkdm->flags & CLKDM_CAN_ENABLE_AUTO)
-		omap2_clkdm_allow_idle(clkdm);
+		clkdm_allow_idle(clkdm);
 	else if (clkdm->flags & CLKDM_CAN_FORCE_SLEEP &&
 		atomic_read(&clkdm->usecount) == 0)
-		omap2_clkdm_sleep(clkdm);
+		clkdm_sleep(clkdm);
 	return 0;
 }
 
@@ -227,9 +221,9 @@ static void __init prcm_setup_regs(void)
 							TI81XX_RM_RSTST);
 	omap2_prm_write_mod_reg(0xffffffff, TI81XX_PRM_ALWON_MOD,
 							TI81XX_RM_RSTST);
-	omap2_prm_write_mod_reg(0xffffffff, TI814X_PRM_DSP_MOD,
+	omap2_prm_write_mod_reg(0xffffffff, TI81XX_PRM_ACTIVE_MOD,
 							TI81XX_RM_RSTST);
-	omap2_prm_write_mod_reg(0xffffffff, TI814X_PRM_ALWON2_MOD,
+	omap2_prm_write_mod_reg(0xffffffff, TI81XX_PRM_DEFAULT_MOD,
 							TI81XX_RM_RSTST);
 	omap2_prm_write_mod_reg(0xffffffff, TI814X_PRM_HDVICP_MOD,
 							TI81XX_RM_RSTST);
@@ -237,7 +231,7 @@ static void __init prcm_setup_regs(void)
 							TI81XX_RM_RSTST);
 	omap2_prm_write_mod_reg(0xffffffff, TI814X_PRM_HDVPSS_MOD,
 							TI81XX_RM_RSTST);
-	omap2_prm_write_mod_reg(0xffffffff, TI814X_PRM_GFX_MOD,
+	omap2_prm_write_mod_reg(0xffffffff, TI81XX_PRM_GFX_MOD,
 							TI81XX_RM_RSTST);
 }
 
@@ -253,9 +247,8 @@ void ti81xx_enable_deep_sleep(u32 deep_sleep_enabled)
 	}
 }
 
-#if defined(CONFIG_ARCH_TI814X)
 /* Set DEEPSLEEPZ pin polarity */
-void ti81xx_config_deepsleep_wake_polarity(u32 osc_wake_pol)
+static void ti81xx_config_deepsleep_wake_polarity(u32 osc_wake_pol)
 {
 	u32 v;
 
@@ -263,19 +256,12 @@ void ti81xx_config_deepsleep_wake_polarity(u32 osc_wake_pol)
 	if (!osc_wake_pol) {
 		/* Set polarity to active low */
 		v &= ~(TI814X_DEEPSLEEP_CTRL_DSPOLARITY_MASK);
-		osc_wake_polarity = 0;
 	} else {
 		/* set polarity to active high */
 		v |= (TI814X_DEEPSLEEP_CTRL_DSPOLARITY_MASK);
-		osc_wake_polarity = 1;
 	}
 	__raw_writel(v, TI814X_PLL_CMGC_DEEPSLEEP_CTRL);
 }
-#else
-void ti81xx_config_deepsleep_wake_polarity(u32 osc_wake_pol)
-{
-}
-#endif
 
 void ti81xx_powerdown_idle_pwrdms(u32 pwrdown_idle_pwrdms)
 {
@@ -285,7 +271,7 @@ void ti81xx_powerdown_idle_pwrdms(u32 pwrdown_idle_pwrdms)
 		turnoff_idle_pwrdms = false;
 }
 
-void omap_push_sram_idle(void)
+void ti81xx_push_sram_idle(void)
 {
 	_ti814x_ddr_self_refresh = omap_sram_push(ti814x_cpu_suspend,
 					ti814x_cpu_suspend_sz);
@@ -349,7 +335,8 @@ static int __init ti81xx_pm_init(void)
 				TI81XX_L4_SLOW_IO_ADDRESS(TI81XX_CTRL_BASE);
 
 	ti814x_ddr_dynamic_pwr_down();
-	ti81xx_config_deepsleep_wake_polarity(1); /* 1- active high */
+	if (cpu_is_ti814x())
+		ti81xx_config_deepsleep_wake_polarity(1); /* 1- active high */
 
 	ret = pwrdm_for_each(pwrdms_setup, NULL);
 	if (ret) {

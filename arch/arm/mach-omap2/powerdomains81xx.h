@@ -19,7 +19,7 @@
 #include "prcm-common.h"
 #include "prm2xxx_3xxx.h"
 
-#ifdef CONFIG_ARCH_TI81XX
+#ifdef CONFIG_SOC_OMAPTI81XX
 
 /*
  * TI81XX common
@@ -123,6 +123,6 @@ static struct powerdomain sgx_816x_pwrdm = {
  *
  */
 
-#endif /* CONFIG_ARCH_TI81XX */
+#endif /* CONFIG_SOC_OMAPTI81XX */
 
 #endif

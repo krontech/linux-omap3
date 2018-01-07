@@ -70,28 +70,24 @@ static struct clk secure_32k_ck = {
 	.name		= "secure_32k_ck",
 	.ops		= &clkops_null,
 	.rate		= 32768,
-	.flags		= RATE_IN_TI816X,
 };
 
 static struct clk sys_32k_ck = {
 	.name		= "sys_32k_ck",
 	.ops		= &clkops_null,
 	.rate		= 32768,
-	.flags		= RATE_IN_TI816X,
 };
 
 static struct clk tclkin_ck = {
 	.name		= "tclkin_ck",
 	.ops		= &clkops_null,
 	.rate		= 32768,		/* FIXME */
-	.flags		= RATE_IN_TI816X,
 };
 
 static struct clk sys_clkin_ck = {
 	.name		= "sys_clkin_ck",
 	.ops		= &clkops_null,
 	.rate		= 27000000,
-	.flags		= RATE_IN_TI816X,
 };
 
 /* MAIN FAPLL */
@@ -272,7 +268,7 @@ static struct clk gem_ick = {
 	.name		= "gem_ick",
 	.parent		= &sysclk1_ck,
 	.ops		= &clkops_omap2_dflt,
-	.enable_reg	= TI816X_CM_ACTIVE_GEM_CLKCTRL,
+	.enable_reg	= TI81XX_CM_ACTIVE_GEM_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "active_gem_clkdm",
 	.recalc		= &followparent_recalc,
@@ -338,7 +334,7 @@ static struct clk sgx_ck = {
 	.name		= "sgx_ck",
 	.parent		= &sysclk23_ck,
 	.ops		= &clkops_omap2_dflt,
-	.enable_reg	= TI816X_CM_SGX_SGX_CLKCTRL,
+	.enable_reg	= TI81XX_CM_SGX_SGX_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "sgx_clkdm",
 	.recalc		= &followparent_recalc,
@@ -551,7 +547,7 @@ static struct clk mailbox_ick = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_MAILBOX_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -561,7 +557,7 @@ static struct clk spinbox_ick = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_SPINBOX_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -577,7 +573,7 @@ static struct clk uart1_ick = {
 	.name		= "uart1_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -585,7 +581,7 @@ static struct clk uart2_ick = {
 	.name		= "uart2_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -593,7 +589,7 @@ static struct clk uart3_ick = {
 	.name		= "uart3_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -601,7 +597,7 @@ static struct clk wdt2_ick = {
 	.name		= "wdt2_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -609,7 +605,7 @@ static struct clk mcspi1_ick = {
 	.name		= "mcspi1_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -617,7 +613,7 @@ static struct clk usbotg_ick = {
 	.name		= "usb_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_ti81xx_usb,
-	.enable_reg	= TI816X_CM_DEFAULT_USB_CLKCTRL,
+	.enable_reg	= TI81XX_CM_DEFAULT_USB_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "default_usb_clkdm",
 	.recalc		= &followparent_recalc,
@@ -629,7 +625,7 @@ static struct clk gpt1_ick = {
 	.name		= "gpt1_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -637,7 +633,7 @@ static struct clk gpt2_ick = {
 	.name		= "gpt2_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -645,7 +641,7 @@ static struct clk gpt3_ick = {
 	.name		= "gpt3_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -653,7 +649,7 @@ static struct clk gpt4_ick = {
 	.name		= "gpt4_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -661,7 +657,7 @@ static struct clk gpt5_ick = {
 	.name		= "gpt5_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -669,7 +665,7 @@ static struct clk gpt6_ick = {
 	.name		= "gpt6_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -677,7 +673,7 @@ static struct clk gpt7_ick = {
 	.name		= "gpt7_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -687,7 +683,7 @@ static struct clk gpio1_ick = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_GPIO_0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -697,7 +693,7 @@ static struct clk gpio2_ick = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_GPIO_1_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -707,7 +703,7 @@ static struct clk gpmc_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_GPMC_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -715,7 +711,7 @@ static struct clk i2c1_ick = {
 	.name		= "i2c1_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -723,7 +719,7 @@ static struct clk i2c2_ick = {
 	.name		= "i2c2_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -732,7 +728,7 @@ static struct clk elm_ick = {
 	.name       = "elm_ick",
 	.parent     = &sysclk6_ck,
 	.ops        = &clkops_null,
-	.clkdm_name = "alwon_l3_slow_clkdm",
+	.clkdm_name = "alwon_l3s_clkdm",
 	.recalc     = &followparent_recalc,
 };
 
@@ -740,7 +736,7 @@ static struct clk elm_fck = {
     .name       = "elm_fck",
     .parent     = &sysclk6_ck,
     .ops        = &clkops_null,
-    .clkdm_name = "alwon_l3_slow_clkdm",
+    .clkdm_name = "alwon_l3s_clkdm",
     .recalc     = &followparent_recalc,
 };
 
@@ -748,7 +744,7 @@ static struct clk mmchs1_ick = {
 	.name		= "mmchs1_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -759,7 +755,7 @@ static struct clk sr_hvt_fck = {
 	.ops		= &clkops_omap2_dflt,
 	.enable_reg	= TI81XX_CM_ALWON_SR_0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -770,7 +766,7 @@ static struct clk sr_svt_fck = {
 	.ops		= &clkops_omap2_dflt,
 	.enable_reg	= TI81XX_CM_ALWON_SR_1_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -799,7 +795,7 @@ static struct clk pcie_ck = {
 	.name		= "pcie_ck",
 	.parent		= &sysclk5_ck,
 	.ops		= &clkops_ti81xx_pcie,
-	.enable_reg	= TI816X_CM_DEFAULT_PCI_CLKCTRL,
+	.enable_reg	= TI81XX_CM_DEFAULT_PCI_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "default_pcie_clkdm",
 	.recalc		= &followparent_recalc,
@@ -809,7 +805,7 @@ static struct clk sata_ick = {
 	.name		= "sata_ick",
 	.parent		= &sysclk5_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI816X_CM_DEFAULT_SATA_CLKCTRL,
+	.enable_reg	= TI81XX_CM_DEFAULT_SATA_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "default_l3_med_clkdm",
 	.recalc		= &followparent_recalc,
@@ -839,7 +835,7 @@ static struct clk ducati_ick = {
 	.name		= "ducati_ick",
 	.parent		= &sysclk5_ck,
 	.ops		= &clkops_omap2_dflt,
-	.enable_reg	= TI816X_CM_DEFAULT_DUCATI_CLKCTRL,
+	.enable_reg	= TI81XX_CM_DEFAULT_DUCATI_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clkdm_name	= "default_ducati_clkdm",
 	.recalc		= &followparent_recalc,
@@ -987,7 +983,7 @@ static struct clk uart1_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_UART_0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -997,7 +993,7 @@ static struct clk uart2_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_UART_1_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1007,7 +1003,7 @@ static struct clk uart3_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_UART_2_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1017,7 +1013,7 @@ static struct clk mcspi1_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_SPI_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1027,7 +1023,7 @@ static struct clk i2c1_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI816X_CM_ALWON_I2C_0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1037,7 +1033,7 @@ static struct clk i2c2_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI816X_CM_ALWON_I2C_1_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1047,7 +1043,7 @@ static struct clk mmchs1_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_SDIO_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1153,7 +1149,6 @@ static struct clk audio_pll_clk1_ck = {
 	.name		= "audio_pll_clk1_ck",
 	.ops		= &clkops_null,
 	.rate		= 32768,
-	.flags		= RATE_IN_TI816X,
 };
 
 /* AUDIO FAPLL */
@@ -1416,7 +1411,7 @@ static struct clk gpt1_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER1_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1430,7 +1425,7 @@ static struct clk gpt2_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER2_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1444,7 +1439,7 @@ static struct clk gpt3_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER3_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1458,7 +1453,7 @@ static struct clk gpt4_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER4_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1472,7 +1467,7 @@ static struct clk gpt5_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER5_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1486,7 +1481,7 @@ static struct clk gpt6_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER6_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1500,7 +1495,7 @@ static struct clk gpt7_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI816X_CM_DPLL_TIMER7_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -1510,7 +1505,7 @@ static struct clk wdt2_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_WDTIMER_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1520,7 +1515,7 @@ static struct clk gpio1_dbck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_GPIO_0_CLKCTRL,
 	.enable_bit	= TI81XX_GPIO_0_DBCLK_SHIFT,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1530,7 +1525,7 @@ static struct clk gpio2_dbck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_GPIO_1_CLKCTRL,
 	.enable_bit	= TI81XX_GPIO_1_DBCLK_SHIFT,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1538,7 +1533,7 @@ static struct clk mmchsdb1_fck = {
 	.name		= "mmchsdb1_fck",
 	.parent		= &sysclk18_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1552,7 +1547,7 @@ static struct clk mcasp0_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP0_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.round_rate	= &omap2_clksel_round_rate,
 	.set_rate	= &ti816x_clksel_set_rate,
@@ -1568,7 +1563,7 @@ static struct clk mcasp1_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP1_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.round_rate	= &omap2_clksel_round_rate,
 	.set_rate	= &ti816x_clksel_set_rate,
@@ -1584,7 +1579,7 @@ static struct clk mcasp2_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP2_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.round_rate	= &omap2_clksel_round_rate,
 	.set_rate	= &ti816x_clksel_set_rate,
@@ -1597,7 +1592,7 @@ static struct clk rtc_c32k_fck = {
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_RTC_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1611,7 +1606,7 @@ static struct clk mcbsp_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCBSP_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3_slow_clkdm",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.round_rate	= &omap2_clksel_round_rate,
 	.set_rate	= &ti816x_clksel_set_rate,

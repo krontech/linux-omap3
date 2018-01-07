@@ -71,7 +71,7 @@
 
 enum {
 	MMC_CTRL_VERSION_1 = 0, /* OMAP class devicess */
-	MMC_CTRL_VERSION_2	/* AM33XX/TI81XX class devicess */
+	MMC_CTRL_VERSION_2	/* AM33XX/TI81XX class devices */
 };
 
 struct omap_mmc_dev_attr {

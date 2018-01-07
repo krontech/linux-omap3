@@ -311,7 +311,7 @@ u32 omap2_clksel_round_rate_div(struct clk *clk, unsigned long target_rate,
 	}
 
 	if (!clkr->div) {
-		if (!cpu_is_ti816x() && !cpu_is_ti814x())
+		if (!cpu_is_ti81xx())
 			pr_err("clock: Could not find divisor for target "
 			       "rate %ld for clock %s parent %s\n",
 				target_rate, clk->name, clk->parent->name);
@@ -509,7 +509,7 @@ int omap2_clksel_set_parent(struct clk *clk, struct clk *new_parent)
 	return 0;
 }
 
-#ifdef CONFIG_ARCH_TI81XX
+#ifdef CONFIG_SOC_OMAPTI81XX
 
 /**
  * ti816x_clksel_set_rate() - program clock rate in hardware

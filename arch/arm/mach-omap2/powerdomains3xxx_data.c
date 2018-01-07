@@ -18,7 +18,6 @@
 
 #include "powerdomain.h"
 #include "powerdomains2xxx_3xxx_data.h"
-#include "powerdomains81xx.h"
 
 #include "prcm-common.h"
 #include "prm2xxx_3xxx.h"
@@ -284,23 +283,6 @@ static struct powerdomain *powerdomains_omap3430es2_es3_0[] __initdata = {
 	NULL
 };
 
-/* As powerdomains are added or removed above, this list must also be changed */
-static struct powerdomain *powerdomains_ti81xx[] __initdata = {
-	&alwon_81xx_pwrdm,
-	&gem_814x_pwrdm,
-	&ivahd_814x_pwrdm,
-	&hdvpss_814x_pwrdm,
-	&sgx_814x_pwrdm,
-	&isp_814x_pwrdm,
-	&active_816x_pwrdm,
-	&default_816x_pwrdm,
-	&ivahd0_816x_pwrdm,
-	&ivahd1_816x_pwrdm,
-	&ivahd2_816x_pwrdm,
-	&sgx_816x_pwrdm,
-	NULL
-};
-
 /* also includes 3630ES1.1+ */
 static struct powerdomain *powerdomains_omap3430es3_1plus[] __initdata = {
 	&core_3xxx_es3_1_pwrdm,
@@ -335,9 +317,4 @@ void __init omap3xxx_powerdomains_init(void)
 		WARN(1, "OMAP3 powerdomain init: unknown chip type\n");
 
 	pwrdm_complete_init();
-}
-
-void __init ti81xx_powerdomains_init(void)
-{
-	pwrdm_init(powerdomains_ti81xx, &ti81xx_pwrdm_operations);
 }

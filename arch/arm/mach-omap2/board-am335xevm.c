@@ -1613,10 +1613,10 @@ static void mcasp1_init(int evm_id, int profile)
 	setup_pin_mux(mcasp1_pin_mux);
 	switch (evm_id) {
 	case EVM_SK:
-		am335x_register_mcasp(&am335x_evm_sk_snd_data1, 1);
+		omap3_register_mcasp(&am335x_evm_sk_snd_data1, 1);
 		break;
 	default:
-		am335x_register_mcasp(&am335x_evm_snd_data1, 1);
+		omap3_register_mcasp(&am335x_evm_snd_data1, 1);
 	}
 
 	return;

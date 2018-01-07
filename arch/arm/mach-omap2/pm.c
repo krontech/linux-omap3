@@ -60,7 +60,7 @@ static void omap2_init_processor_devices(void)
 		_init_omap_device("dsp");
 		_init_omap_device("iva");
 	} else if (cpu_is_ti81xx()) {
-		_init_omap_device("l3_slow", &l3_dev);
+		_init_omap_device("l3_slow");
 	} else {
 		_init_omap_device("l3_main");
 	}

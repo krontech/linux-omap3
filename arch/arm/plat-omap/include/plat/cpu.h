@@ -105,14 +105,14 @@ static inline int is_omap ##subclass (void)		\
 	return (GET_OMAP_SUBCLASS == (id)) ? 1 : 0;	\
 }
 
-#define IS_TI_SUBCLASS(subclass, id)			\
-static inline int is_ti ##subclass (void)		\
+#define IS_AM_SUBCLASS(subclass, id)			\
+static inline int is_am ##subclass (void)		\
 {							\
 	return (GET_OMAP_SUBCLASS == (id)) ? 1 : 0;	\
 }
 
-#define IS_AM_SUBCLASS(subclass, id)			\
-static inline int is_am ##subclass (void)		\
+#define IS_TI_SUBCLASS(subclass, id)			\
+static inline int is_ti ##subclass (void)		\
 {							\
 	return (GET_OMAP_SUBCLASS == (id)) ? 1 : 0;	\
 }
@@ -124,7 +124,6 @@ IS_OMAP_CLASS(24xx, 0x24)
 IS_OMAP_CLASS(34xx, 0x34)
 IS_OMAP_CLASS(44xx, 0x44)
 IS_AM_CLASS(33xx, 0x33)
-
 IS_TI_CLASS(81xx, 0x81)
 
 IS_OMAP_SUBCLASS(242x, 0x242)
@@ -404,7 +403,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define cpu_class_is_omap1()	(cpu_is_omap7xx() || cpu_is_omap15xx() || \
 				cpu_is_omap16xx())
 #define cpu_class_is_omap2()	(cpu_is_omap24xx() || cpu_is_omap34xx() || \
-				cpu_is_omap44xx() || cpu_is_ti81xx())
+				cpu_is_omap44xx())
 
 /* Various silicon revisions for omap2 */
 #define OMAP242X_CLASS		0x24200024

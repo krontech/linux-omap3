@@ -766,7 +766,7 @@ static void __init ti8148_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
-	ti81xx_register_mcasp(0, &ti8148_evm_snd_data);
+	omap3_register_mcasp(&ti8148_evm_snd_data, 2);
 
 	omap2_hsmmc_init(mmc);
 
@@ -803,18 +803,12 @@ static void __init ti8148_evm_init(void)
 				   ti8148_evm_lsi_phy_fixup);
 }
 
-static void __init ti8148_evm_map_io(void)
-{
-	omap2_set_globals_ti814x();
-	ti81xx_map_common_io();
-}
-
 MACHINE_START(TI8148EVM, "ti8148evm")
 	/* Maintainer: Texas Instruments */
 	.boot_params	= 0x80000100,
-	.map_io		= ti8148_evm_map_io,
+	.map_io		= omap3_map_io,
 	.reserve         = ti81xx_reserve,
-	.init_irq	= ti8148_evm_init_irq,
+	.init_irq	= omap3_init_irq,
 	.init_machine	= ti8148_evm_init,
 	.timer		= &omap_timer,
 MACHINE_END

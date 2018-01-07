@@ -263,7 +263,7 @@ void am35x_set_mode(u8 musb_mode)
 	omap_ctrl_writel(devconf2, AM35XX_CONTROL_DEVCONF2);
 }
 
-void ti81xx_musb_phy_power(u8 id, u8 on)
+void ti81xx_musb_phy_power(u8 id, u8 on , bool wkup)
 {
 	void __iomem *scm_base = NULL;
 	u32 usbphycfg;
@@ -288,24 +288,24 @@ void ti81xx_musb_phy_power(u8 id, u8 on)
 						TI816X_USBPHY0_NORMAL_MODE;
 			usbphycfg &= ~TI816X_USBPHY_REFCLK_OSC;
 		} else if (cpu_is_ti814x()) {
-			usbphycfg &= ~(TI814X_USBPHY_CM_PWRDN
-				| TI814X_USBPHY_OTG_PWRDN
-				| TI814X_USBPHY_DMPULLUP
-				| TI814X_USBPHY_DPPULLUP
-				| TI814X_USBPHY_DPINPUT
-				| TI814X_USBPHY_DMINPUT
-				| TI814X_USBPHY_DATA_POLARITY);
-			usbphycfg |= (TI814X_USBPHY_SRCONDM
-				| TI814X_USBPHY_SINKONDP
-				| TI814X_USBPHY_CHGISINK_EN
-				| TI814X_USBPHY_CHGVSRC_EN
-				| TI814X_USBPHY_CDET_EXTCTL
-				| TI814X_USBPHY_DPOPBUFCTL
-				| TI814X_USBPHY_DMOPBUFCTL
-				| TI814X_USBPHY_DPGPIO_PD
-				| TI814X_USBPHY_DMGPIO_PD
-				| TI814X_USBPHY_OTGVDET_EN
-				| TI814X_USBPHY_OTGSESSEND_EN);
+			usbphycfg &= ~(USBPHY_CM_PWRDN
+				| USBPHY_OTG_PWRDN
+				| USBPHY_DMPULLUP
+				| USBPHY_DPPULLUP
+				| TI81XX_USBPHY_DPINPUT
+				| TI81XX_USBPHY_DMINPUT
+				| USBPHY_DATA_POLARITY);
+			usbphycfg |= (USBPHY_SRCONDM
+				| USBPHY_SINKONDP
+				| USBPHY_CHGISINK_EN
+				| USBPHY_CHGVSRC_EN
+				| USBPHY_CDET_EXTCTL
+				| TI81XX_USBPHY_DPOPBUFCTL
+				| TI81XX_USBPHY_DMOPBUFCTL
+				| USBPHY_DPGPIO_PD
+				| USBPHY_DMGPIO_PD
+				| USBPHY_OTGVDET_EN
+				| USBPHY_OTGSESSEND_EN);
 		} else if (cpu_is_am33xx()) {
 			usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
 			usbphycfg |= (USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN);
@@ -317,16 +317,15 @@ void ti81xx_musb_phy_power(u8 id, u8 on)
 					TI816X_USBPHY0_NORMAL_MODE)
 					| TI816X_USBPHY_REFCLK_OSC);
 		else if (cpu_is_ti814x())
-			usbphycfg |= TI814X_USBPHY_CM_PWRDN
-				| TI814X_USBPHY_OTG_PWRDN;
+			usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
 		else if (cpu_is_am33xx()) {
 			usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
-		if (wkup)
-			usbwkupctrl |= id ? AM33XX_USB1_WKUP_CTRL_ENABLE :
-							AM33XX_USB0_WKUP_CTRL_ENABLE;
-		else
-			usbwkupctrl &= id ? ~AM33XX_USB1_WKUP_CTRL_ENABLE :
-							~AM33XX_USB0_WKUP_CTRL_ENABLE;
+			if (wkup)
+				usbwkupctrl |= id ? AM33XX_USB1_WKUP_CTRL_ENABLE :
+								AM33XX_USB0_WKUP_CTRL_ENABLE;
+			else
+				usbwkupctrl &= id ? ~AM33XX_USB1_WKUP_CTRL_ENABLE :
+								~AM33XX_USB0_WKUP_CTRL_ENABLE;
 		}
 	}
 	__raw_writel(usbphycfg, scm_base + (id ? USBCTRL1 : USBCTRL0));

@@ -114,6 +114,8 @@ obj-$(CONFIG_ARCH_OMAP3)		+= $(voltagedomain-common) \
 					   voltagedomains3xxx_data.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= $(voltagedomain-common) \
 					   voltagedomains33xx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= $(voltagedomain-common) \
+					   voltagedomains81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= $(voltagedomain-common) \
 					   voltagedomains44xx_data.o
 
@@ -130,13 +132,11 @@ obj-$(CONFIG_ARCH_OMAP3)		+= $(powerdomain-common) \
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= prminst44xx.o \
 					   powerdomain44xx.o \
 					   powerdomains33xx_data.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= prminst44xx.o \
+					   powerdomains81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= $(powerdomain-common) \
 					   powerdomain44xx.o \
 					   powerdomains44xx_data.o
-obj-$(CONFIG_SOC_OMAPTI81XX)		+= $(powerdomain-common) \
-					   powerdomain2xxx_3xxx.o \
-					   powerdomains3xxx_data.o \
-					   powerdomains2xxx_3xxx_data.o
 
 # PRCM clockdomain control
 obj-$(CONFIG_ARCH_OMAP2)		+= clockdomain.o \
@@ -150,7 +150,7 @@ obj-$(CONFIG_ARCH_OMAP3)		+= clockdomain.o \
 					   clockdomains3xxx_data.o
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= clockdomain44xx.o \
 					   clockdomains33xx_data.o
-obj-$(CONFIG_SOC_OMAPTI81XX)		+= clockdomain44xx.o
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= clockdomain44xx.o \
 					   clockdomains81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= clockdomain.o \
 					   clockdomain44xx.o \
@@ -313,13 +313,3 @@ obj-y					+= $(smsc911x-m) $(smsc911x-y)
 obj-$(CONFIG_ARCH_OMAP4)		+= hwspinlock.o
 
 obj-y					+= common-board-devices.o twl-common.o
-
-ifeq ($(CONFIG_MACH_OMAP3_BEAGLE),y)
-beagle-camera-$(CONFIG_VIDEO_OMAP3)	:= board-omap3beagle-camera.o
-obj-y					+= $(beagle-camera-m) $(beagle-camera-y)
-endif
-
-ifeq ($(CONFIG_MACH_OMAP3EVM),y)
-evm-camera-$(CONFIG_VIDEO_OMAP3)	:= board-omap3evm-camera.o
-obj-y					+= $(evm-camera-m) $(evm-camera-y)
-endif

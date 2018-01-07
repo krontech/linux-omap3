@@ -478,14 +478,6 @@ static struct omap_musb_board_data musb_board_data = {
 	.instances	= 1,
 };
 
-static void __init dm385_evm_init_irq(void)
-{
-	omap2_init_common_infrastructure();
-	omap2_init_common_devices(NULL, NULL);
-	omap_init_irq();
-	gpmc_init();
-}
-
 #ifdef CONFIG_SND_SOC_TI81XX_HDMI
 static struct snd_hdmi_platform_data dm385_snd_hdmi_pdata = {
 	.dma_addr = TI81xx_HDMI_WP + HDMI_WP_AUDIO_DATA,
@@ -550,7 +542,7 @@ static void __init dm385_evm_init(void)
 	omap_serial_init();
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
-	ti81xx_register_mcasp(0, &dm385_evm_snd_data);
+	omap3_register_mcasp(&dm385_evm_snd_data, 1);
 
 	omap2_hsmmc_init(mmc);
 
@@ -591,9 +583,9 @@ static void __init dm385_evm_map_io(void)
 MACHINE_START(DM385EVM, "dm385evm")
 	/* Maintainer: Texas Instruments */
 	.boot_params	= 0x80000100,
-	.map_io		= dm385_evm_map_io,
+	.map_io		= omap3_map_io,
 	.reserve         = ti81xx_reserve,
-	.init_irq	= dm385_evm_init_irq,
+	.init_irq	= omap3_init_irq,
 	.init_machine	= dm385_evm_init,
 	.timer		= &omap_timer,
 MACHINE_END

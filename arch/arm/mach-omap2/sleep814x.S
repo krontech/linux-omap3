@@ -22,7 +22,7 @@
 #include <mach/io.h>
 
 #include "cm2xxx_3xxx.h"
-#include "prm2xxx_3xxx.h"
+#include "prm81xx.h"
 #include "cm-regbits-81xx.h"
 #include "control.h"
 #include "cm81xx.h"

@@ -463,22 +463,20 @@ static int __devinit omap2_mbox_probe(struct platform_device *pdev)
 
 	if (false)
 		;
-	else if (cpu_is_omap34xx() && !cpu_is_am33xx() || !cpu_is_ti81xx()) {
-		list = omap3_mboxes;
-
-		list[0]->irq = platform_get_irq(pdev, 0);
-	} else if (cpu_is_am33xx()) {
+	else if (cpu_is_am33xx()) {
 		list = am33xx_mboxes;
 
 		list[0]->irq = platform_get_irq(pdev, 0);
-	}
-	else if (cpu_is_ti81xx()) {
+	} else if (cpu_is_ti81xx()) {
 		list = ti81xx_mboxes;
 
 		list[0]->irq = list[1]->irq = list[2]->irq =
 			platform_get_irq_byname(pdev, "mbox");
-	}
-	else if (cpu_is_omap2430()) {
+	} else if (cpu_is_omap34xx()) {
+		list = omap3_mboxes;
+
+		list[0]->irq = platform_get_irq(pdev, 0);
+	} else if (cpu_is_omap2430()) {
 		list = omap2_mboxes;
 
 		list[0]->irq = platform_get_irq(pdev, 0);
