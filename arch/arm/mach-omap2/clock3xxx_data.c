@@ -3524,14 +3524,6 @@ int __init omap3xxx_clk_init(void)
 	} else if (cpu_is_omap3630()) {
 		cpu_mask = (RATE_IN_34XX | RATE_IN_36XX);
 		cpu_clkflg = CK_36XX;
-	} else if (cpu_is_ti816x()) {
-		cpu_mask = RATE_IN_TI816X;
-		cpu_clkflg = CK_TI816X;
-	} else if (cpu_is_am33xx()) {
-		am33xx_clk_init();
-		return 0;
-	} else if (cpu_is_ti814x()) {
-		cpu_mask = RATE_IN_TI814X;
 	} else if (cpu_is_omap34xx()) {
 		if (omap_rev() == OMAP3430_REV_ES1_0) {
 			cpu_mask = RATE_IN_3430ES1;

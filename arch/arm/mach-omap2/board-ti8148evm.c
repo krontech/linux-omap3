@@ -47,7 +47,6 @@
 #include <plat/gpmc.h>
 #include <plat/nand.h>
 #include <plat/hdmi_lib.h>
-#include <mach/board-ti814x.h>
 
 #include "board-flash.h"
 #include "clock.h"
@@ -117,6 +116,8 @@ static struct i2c_board_info __initdata ti814x_i2c_boardinfo1[] = {
 #define VPS_VC_IO_EXP_THS7368_FILTER2_MASK  (0x80u)
 #define VPS_VC_IO_EXP_THS7368_FILTER_SHIFT  (0x06u)
 
+#define VPS_SEL_TVP7002_DECODER	0
+#define VPS_SEL_SIL9135_DECODER	1
 
 static const struct i2c_device_id pcf8575_video_id[] = {
 	{ "pcf8575_1", 0 },
@@ -149,19 +150,6 @@ static struct i2c_driver pcf8575_driver = {
 	.id_table       = pcf8575_video_id,
 };
 
-int ti814x_pcf8575_init(void)
-{
-	i2c_add_driver(&pcf8575_driver);
-	return 0;
-}
-EXPORT_SYMBOL(ti814x_pcf8575_init);
-
-int ti814x_pcf8575_exit(void)
-{
-	i2c_del_driver(&pcf8575_driver);
-	return 0;
-}
-EXPORT_SYMBOL(ti814x_pcf8575_exit);
 #define VPS_VC_IO_EXP_RESET_DEV_MASK        (0x0Fu)
 #define VPS_VC_IO_EXP_SEL_VIN0_S1_MASK      (0x04u)
 #define VPS_VC_IO_EXP_THS7368_DISABLE_MASK  (0x10u)
@@ -169,7 +157,8 @@ EXPORT_SYMBOL(ti814x_pcf8575_exit);
 #define VPS_VC_IO_EXP_THS7368_FILTER1_MASK  (0x40u)
 #define VPS_VC_IO_EXP_THS7368_FILTER2_MASK  (0x80u)
 #define VPS_VC_IO_EXP_THS7368_FILTER_SHIFT  (0x06u)
-int vps_ti814x_select_video_decoder(int vid_decoder_id)
+
+static int vps_ti814x_select_video_decoder(int vid_decoder_id)
 {
 	int ret = 0;
 	struct i2c_msg msg = {
@@ -188,10 +177,10 @@ int vps_ti814x_select_video_decoder(int vid_decoder_id)
 			__func__, __LINE__, ret);
 	return ret;
 }
-EXPORT_SYMBOL(vps_ti814x_select_video_decoder);
 
 #define I2C_RETRY_COUNT 10u
-int vps_ti814x_set_tvp7002_filter(enum fvid2_standard standard)
+
+static int vps_ti814x_set_tvp7002_filter(enum fvid2_standard standard)
 {
 	int filter_sel;
 	int ret;
@@ -265,7 +254,88 @@ int vps_ti814x_set_tvp7002_filter(enum fvid2_standard standard)
 	}
 	return ret;
 }
-EXPORT_SYMBOL(vps_ti814x_set_tvp7002_filter);
+
+/* Video Input Support */
+struct ti81xxvin_interface tvp7002_pdata = {
+	.clk_polarity = 0,
+	.hs_polarity = 0,
+	.vs_polarity = 1,
+	.fid_polarity = 0,
+	.sog_polarity = 0,
+};
+static struct ti81xxvin_subdev_info hdvpss_capture_subdevs[] = {
+	{
+		.name	= TVP7002_INST0,
+		.board_info = {
+			/* TODO Find the correct address
+				of the TVP7002 connected */
+			I2C_BOARD_INFO("tvp7002", 0x5d),
+			.platform_data = &tvp7002_pdata,
+		},
+		.vip_port_cfg = {
+			.ctrlChanSel = VPS_VIP_CTRL_CHAN_SEL_15_8,
+			.ancChSel8b = VPS_VIP_ANC_CH_SEL_DONT_CARE,
+			.pixClkEdgePol = VPS_VIP_PIX_CLK_EDGE_POL_RISING,
+			.invertFidPol = 0,
+			.embConfig = {
+				.errCorrEnable = 1,
+				.srcNumPos = VPS_VIP_SRC_NUM_POS_DONT_CARE,
+				.isMaxChan3Bits = 0,
+			},
+			.disConfig = {
+				.fidSkewPostCnt = 0,
+				.fidSkewPreCnt = 0,
+				.lineCaptureStyle =
+					VPS_VIP_LINE_CAPTURE_STYLE_DONT_CARE,
+				.fidDetectMode =
+					VPS_VIP_FID_DETECT_MODE_DONT_CARE,
+				.actvidPol = VPS_VIP_POLARITY_DONT_CARE,
+				.vsyncPol =  VPS_VIP_POLARITY_DONT_CARE,
+				.hsyncPol = VPS_VIP_POLARITY_DONT_CARE,
+			}
+		},
+		.video_capture_mode =
+		   VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_EMBEDDED_SYNC,
+		.video_if_mode = VPS_CAPT_VIDEO_IF_MODE_16BIT,
+		.input_data_format = FVID2_DF_YUV422P,
+		.ti81xxvin_select_decoder = vps_ti814x_select_video_decoder,
+		.ti81xxvin_set_mode = vps_ti814x_set_tvp7002_filter,
+	},
+	{
+		.name	= TVP7002_INST1,
+		.board_info = {
+			I2C_BOARD_INFO("tvp7002", 0x5c),
+			.platform_data = &tvp7002_pdata,
+		},
+		.vip_port_cfg = {
+			.ctrlChanSel = VPS_VIP_CTRL_CHAN_SEL_15_8,
+			.ancChSel8b = VPS_VIP_ANC_CH_SEL_DONT_CARE,
+			.pixClkEdgePol = VPS_VIP_PIX_CLK_EDGE_POL_RISING,
+			.invertFidPol = 0,
+			.embConfig = {
+				.errCorrEnable = 1,
+				.srcNumPos = VPS_VIP_SRC_NUM_POS_DONT_CARE,
+				.isMaxChan3Bits = 0,
+			},
+			.disConfig = {
+				.fidSkewPostCnt = 0,
+				.fidSkewPreCnt = 0,
+				.lineCaptureStyle =
+					VPS_VIP_LINE_CAPTURE_STYLE_DONT_CARE,
+				.fidDetectMode =
+					VPS_VIP_FID_DETECT_MODE_DONT_CARE,
+				.actvidPol = VPS_VIP_POLARITY_DONT_CARE,
+				.vsyncPol =  VPS_VIP_POLARITY_DONT_CARE,
+				.hsyncPol = VPS_VIP_POLARITY_DONT_CARE,
+			}
+		},
+		.video_capture_mode =
+		   VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_EMBEDDED_SYNC,
+		.video_if_mode = VPS_CAPT_VIDEO_IF_MODE_16BIT,
+		.input_data_format = FVID2_DF_YUV422P,
+	},
+};
+
 /* Touchscreen platform data */
 static struct qt602240_platform_data ts_platform_data = {
 	.x_line		= 18,
@@ -676,16 +746,47 @@ static struct omap_musb_board_data musb_board_data = {
 	.instances	= 1,
 };
 
-static void __init ti8148_evm_init_irq(void)
-{
-	omap2_init_common_infrastructure();
-	omap2_init_common_devices(NULL, NULL);
-	omap_init_irq();
-	gpmc_init();
-}
+static struct vps_platform_data hdvpss_pdata = {
+	.cpu = CPU_DM814X,
+	.numvencs = 3,
+	.vencmask = (1 << VPS_DC_MAX_VENC) - 1 - VPS_DC_VENC_HDCOMP
+};
 
+static struct platform_device hdvpss_device = {
+	.name = "vpss",
+	.id = -1,
+	.dev = {
+		.platform_data = &hdvpss_pdata,
+	},
+};
 
-#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+static struct platform_device ti81xx_hdmi_device = {
+	.name	= "TI81XX_HDMI",
+	.id		= -1,
+};
+
+static u64 ti81xxfb_dma_mask = ~(u32)0;
+static struct ti81xxfb_platform_data ti81xxfb_config;
+
+static struct platform_device ti81xx_fb_device = {
+	.name		= "ti81xxfb",
+	.id		= -1,
+	.dev = {
+		.dma_mask		= &ti81xxfb_dma_mask,
+		.coherent_dma_mask	= ~(u32)0,
+		.platform_data		= &ti81xxfb_config,
+	},
+	.num_resources = 0,
+};
+
+static struct resource ti81xx_vidout_resource[VPS_DISPLAY_INST_MAX] = {};
+static struct platform_device ti81xx_vidout_device = {
+	.name		= "t81xx_vidout",
+	.resource       = &ti81xx_vidout_resource[0],
+	.num_resources  = ARRAY_SIZE(ti81xx_vidout_resource),
+	.id             = -1,
+};
+
 static struct snd_hdmi_platform_data ti8148_snd_hdmi_pdata = {
 	.dma_addr = TI81xx_HDMI_WP + HDMI_WP_AUDIO_DATA,
 	.channel = 53,
@@ -708,6 +809,10 @@ static struct platform_device ti8148_hdmi_codec_device = {
 };
 
 static struct platform_device *ti8148_devices[] __initdata = {
+	&hdvpss_device,
+	&ti81xx_fb_device,
+	&ti81xx_vidout_device,
+	&ti81xx_hdmi_video_device,
 	&ti8148_hdmi_audio_device,
 	&ti8148_hdmi_codec_device,
 };
@@ -718,6 +823,7 @@ static struct platform_device *ti8148_devices[] __initdata = {
  * setting sysclk20 as the parent of hdmi_i2s_ck
  * ToDo:
  */
+#ifdef CONFIG_SND_SOC_TI81XX_HDMI
 void __init ti8148_hdmi_clk_init(void)
 {
 	int ret = 0;
@@ -740,7 +846,6 @@ void __init ti8148_hdmi_clk_init(void)
 	clk_put(parent);
 	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
 }
-
 #endif
 
 #define LSI_PHY_ID		0x0282F014
@@ -767,6 +872,8 @@ static void __init ti8148_evm_init(void)
 	ti814x_tsc_init();
 	ti814x_evm_i2c_init();
 	omap3_register_mcasp(&ti8148_evm_snd_data, 2);
+	i2c_add_driver(&pcf8575_driver);
+	ti81xx_register_hdvpss(hdvpss_capture_subdevs, ARRAY_SIZE(hdvpss_capture_subdevs));
 
 	omap2_hsmmc_init(mmc);
 

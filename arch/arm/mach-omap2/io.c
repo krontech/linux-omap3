@@ -457,6 +457,7 @@ void __init am35xx_init_early(void)
 	omap3_init_early();
 }
 
+#ifdef CONFIG_SOC_OMAPTI81XX
 void __init ti81xx_init_early(void)
 {
 	omap2_set_globals_ti81xx();
@@ -469,9 +470,11 @@ void __init ti81xx_init_early(void)
 	omap3xxx_clockdomains_init();
 	ti81xx_hwmod_init();
 	omap_hwmod_init_postsetup();
-	omap3xxx_clk_init();
+	ti81xx_clk_init();
 }
+#endif
 
+#ifdef CONFIG_SOC_OMAPAM33XX
 void __init am33xx_init_early(void)
 {
 	omap2_set_globals_am33xx();
@@ -485,8 +488,9 @@ void __init am33xx_init_early(void)
 	am33xx_clockdomains_init();
 	am33xx_hwmod_init();
 	omap_hwmod_init_postsetup();
-	omap3xxx_clk_init();
+	am33xx_clk_init();
 }
+#endif
 #endif
 
 #ifdef CONFIG_ARCH_OMAP4

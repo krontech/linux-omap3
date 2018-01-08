@@ -133,6 +133,7 @@ obj-$(CONFIG_SOC_OMAPAM33XX)		+= prminst44xx.o \
 					   powerdomain44xx.o \
 					   powerdomains33xx_data.o
 obj-$(CONFIG_SOC_OMAPTI81XX)		+= prminst44xx.o \
+					   powerdomain44xx.o \
 					   powerdomains81xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= $(powerdomain-common) \
 					   powerdomain44xx.o \
@@ -173,7 +174,7 @@ obj-$(CONFIG_ARCH_OMAP3)		+= $(clock-common) clock3xxx.o \
 obj-$(CONFIG_SOC_OMAPAM33XX)		+= clock33xx_data.o
 obj-$(CONFIG_ARCH_OMAP4)		+= $(clock-common) clock44xx_data.o \
 					   dpll3xxx.o dpll44xx.o
-obj-$(CONFIG_SOC_OMAPTI81XX)		+= clock81xx.o ti81xx_vpss.o \
+obj-$(CONFIG_SOC_OMAPTI81XX)		+= clock81xx.o \
 					   clock814x_data.o adpll_ti814x.o \
 					   clock816x_data.o fapll_ti816x.o 
 
@@ -225,6 +226,10 @@ obj-$(CONFIG_PCI)                       += pcie-ti81xx.o
 
 ifeq ($(CONFIG_PCI_DEBUG),y)
 CFLAGS_pcie-ti81xx.o += -DDEBUG
+endif
+
+ifneq ($(CONFIG_SOC_OMAPTI81XX),)
+obj-y					+= ti81xx_vpss.o
 endif
 
 # Specific board support

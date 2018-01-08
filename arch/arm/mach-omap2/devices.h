@@ -13,9 +13,11 @@
 #define __ARCH_ARM_MACH_OMAP_DEVICES_H
 
 struct isp_platform_data;
+struct ti81xxvin_subdev_info;
 
 int omap3_init_camera(struct isp_platform_data *pdata);
 int omap3_register_mcasp(struct snd_platform_data *pdata, int ctrl_nr);
+int ti81xx_register_hdvpss(struct ti81xxvin_subdev_info *subdevs, int subdev_nr);
 
 #ifdef CONFIG_SOC_OMAPAM33XX
 extern int __init am33xx_register_mfd_tscadc(struct mfd_tscadc_board *pdata);

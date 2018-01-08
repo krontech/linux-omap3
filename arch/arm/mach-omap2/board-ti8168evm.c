@@ -52,7 +52,6 @@
 #include "mux.h"
 #include "hsmmc.h"
 #include "board-flash.h"
-#include <mach/board-ti816x.h>
 
 static struct omap_musb_board_data musb_board_data = {
 	.set_phy_power	= ti81xx_musb_phy_power,
@@ -297,6 +296,25 @@ static unsigned char pcf8575_2_port[2] = {0xFF, 0x2F};
 
 static struct i2c_client *ths7353_client;
 
+#define VPS_SEL_TVP7002_DECODER	0
+#define VPS_SEL_SIL9135_DECODER	1
+
+enum ti816x_ths_filter_ctrl {
+	TI816X_THSFILTER_ENABLE_MODULE = 0,
+	TI816X_THSFILTER_BYPASS_MODULE,
+	TI816X_THSFILTER_DISABLE_MODULE
+};
+
+/* \brief Enum for selecting filter for component input/output in THS7360 */
+enum ti816x_ths7360_sf_ctrl {
+	TI816X_THS7360_DISABLE_SF = 0,
+	TI816X_THS7360_BYPASS_SF,
+	TI816X_THS7360_SF_SD_MODE,
+	TI816X_THS7360_SF_ED_MODE,
+	TI816X_THS7360_SF_HD_MODE,
+	TI816X_THS7360_SF_TRUE_HD_MODE
+};
+
 int vps_ti816x_select_video_decoder(int vid_decoder_id)
 {
 	int ret = 0;
@@ -317,7 +335,7 @@ int vps_ti816x_select_video_decoder(int vid_decoder_id)
 			__func__, __LINE__, ret);
 	return ret;
 }
-EXPORT_SYMBOL(vps_ti816x_select_video_decoder);
+
 #define I2C_RETRY_COUNT 10u
 int vps_ti816x_set_tvp7002_filter(enum fvid2_standard standard)
 {
@@ -476,7 +494,7 @@ int vps_ti816x_set_tvp7002_filter(enum fvid2_standard standard)
 	return status;
 #endif
 }
-EXPORT_SYMBOL(vps_ti816x_set_tvp7002_filter);
+
 int pcf8575_ths7375_enable(enum ti816x_ths_filter_ctrl ctrl)
 {
 	struct i2c_msg msg = {
@@ -491,7 +509,6 @@ int pcf8575_ths7375_enable(enum ti816x_ths_filter_ctrl ctrl)
 
 	return i2c_transfer(pcf8575_1_client->adapter, &msg, 1);
 }
-EXPORT_SYMBOL(pcf8575_ths7375_enable);
 
 int pcf8575_ths7360_sd_enable(enum ti816x_ths_filter_ctrl ctrl)
 {
@@ -518,7 +535,6 @@ int pcf8575_ths7360_sd_enable(enum ti816x_ths_filter_ctrl ctrl)
 	msg.buf = pcf8575_1_port;
 	return i2c_transfer(pcf8575_1_client->adapter, &msg, 1);
 }
-EXPORT_SYMBOL(pcf8575_ths7360_sd_enable);
 
 int pcf8575_ths7360_hd_enable(enum ti816x_ths7360_sf_ctrl ctrl)
 {
@@ -558,7 +574,6 @@ int pcf8575_ths7360_hd_enable(enum ti816x_ths7360_sf_ctrl ctrl)
 	return ret_val;
 
 }
-EXPORT_SYMBOL(pcf8575_ths7360_hd_enable);
 
 static int pcf8575_video_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
@@ -594,21 +609,6 @@ static struct i2c_driver pcf8575_driver = {
 	.remove         = pcf8575_video_remove,
 	.id_table       = pcf8575_video_id,
 };
-
-int ti816x_pcf8575_init(void)
-{
-	i2c_add_driver(&pcf8575_driver);
-	return 0;
-}
-EXPORT_SYMBOL(ti816x_pcf8575_init);
-
-int ti816x_pcf8575_exit(void)
-{
-	i2c_del_driver(&pcf8575_driver);
-	return 0;
-}
-EXPORT_SYMBOL(ti816x_pcf8575_exit);
-/* FIX ME: Check on the Bit Value */
 
 #define TI816X_EVM_CIR_UART BIT(5)
 
@@ -851,6 +851,7 @@ static void __init ti8168_evm_init(void)
 	omap_serial_init();
 	ti816x_evm_i2c_init();
 	i2c_add_driver(&ti816xevm_cpld_driver);
+	i2c_add_driver(&pcf8575_driver);
 	omap3_register_mcasp(&ti8168_evm_snd_data, 2);
 	ti816x_spi_init();
 	/* initialize usb */

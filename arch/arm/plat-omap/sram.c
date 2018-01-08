@@ -371,13 +371,17 @@ static inline int omap34xx_sram_init(void)
 
 static inline int am33xx_sram_init(void)
 {
+#ifdef CONFIG_SOC_OMAPAM33XX
 	am33xx_push_sram_idle();
+#endif
 	return 0;
 }
 
 static int __init ti814x_sram_init(void)
 {
+#ifdef CONFIG_SOC_OMAPTI81XX
 	ti81xx_push_sram_idle();
+#endif
 	return 0;
 }
 

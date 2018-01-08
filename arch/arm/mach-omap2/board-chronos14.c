@@ -47,7 +47,11 @@
 #include <plat/gpmc.h>
 #include <plat/nand.h>
 #include <plat/hdmi_lib.h>
-#include <mach/board-ti814x.h>
+
+#include <plat/ti81xx-vpss.h>
+#include <linux/vps_capture.h>
+#include <linux/ti81xxfb.h>
+#include <linux/ti81xx.h>
 
 #include "board-flash.h"
 #include "clock.h"
@@ -86,26 +90,94 @@ static struct omap2_hsmmc_info mmc[] = {
 	{}	/* Terminator */
 };
 
-/* Legacy cruft from the TI8148 EVM that the HDVPSS drivers wont build without. */
-int ti814x_pcf8575_init(void)
-{
-	return 0;
-}
-
-int ti814x_pcf8575_exit(void)
-{
-	return 0;
-}
-
-int vps_ti814x_select_video_decoder(int vid_decoder_id)
-{
-	return 0;
-}
-
-int vps_ti814x_set_tvp7002_filter(enum fvid2_standard standard)
-{
-	return 0;
-}
+/* Video Input Support */
+/*
+ * FIXME: This doesn't actually work due to broken dependencies on
+ * the tvp7002, which doesn't actually exist on the Chronos board.
+ * We don't care too much, since we're really just using OMX to do
+ * the video capture.
+ */
+int vps_ti814x_select_video_decoder(int vid_decoder_id) {return 0;}
+int vps_ti814x_set_tvp7002_filter(enum fvid2_standard standard) {return 0;}
+struct ti81xxvin_interface tvp7002_pdata = {
+	.clk_polarity = 0,
+	.hs_polarity = 0,
+	.vs_polarity = 1,
+	.fid_polarity = 0,
+	.sog_polarity = 0,
+};
+static struct ti81xxvin_subdev_info hdvpss_capture_subdevs[] = {
+	{
+		.name	= TVP7002_INST0,
+		.board_info = {
+			/* TODO Find the correct address
+				of the TVP7002 connected */
+			I2C_BOARD_INFO("tvp7002", 0x5d),
+			.platform_data = &tvp7002_pdata,
+		},
+		.vip_port_cfg = {
+			.ctrlChanSel = VPS_VIP_CTRL_CHAN_SEL_15_8,
+			.ancChSel8b = VPS_VIP_ANC_CH_SEL_DONT_CARE,
+			.pixClkEdgePol = VPS_VIP_PIX_CLK_EDGE_POL_RISING,
+			.invertFidPol = 0,
+			.embConfig = {
+				.errCorrEnable = 1,
+				.srcNumPos = VPS_VIP_SRC_NUM_POS_DONT_CARE,
+				.isMaxChan3Bits = 0,
+			},
+			.disConfig = {
+				.fidSkewPostCnt = 0,
+				.fidSkewPreCnt = 0,
+				.lineCaptureStyle =
+					VPS_VIP_LINE_CAPTURE_STYLE_DONT_CARE,
+				.fidDetectMode =
+					VPS_VIP_FID_DETECT_MODE_DONT_CARE,
+				.actvidPol = VPS_VIP_POLARITY_DONT_CARE,
+				.vsyncPol =  VPS_VIP_POLARITY_DONT_CARE,
+				.hsyncPol = VPS_VIP_POLARITY_DONT_CARE,
+			}
+		},
+		.video_capture_mode =
+		   VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_EMBEDDED_SYNC,
+		.video_if_mode = VPS_CAPT_VIDEO_IF_MODE_16BIT,
+		.input_data_format = FVID2_DF_YUV422P,
+		.ti81xxvin_select_decoder = vps_ti814x_select_video_decoder,
+		.ti81xxvin_set_mode = vps_ti814x_set_tvp7002_filter,
+	},
+	{
+		.name	= TVP7002_INST1,
+		.board_info = {
+			I2C_BOARD_INFO("tvp7002", 0x5c),
+			.platform_data = &tvp7002_pdata,
+		},
+		.vip_port_cfg = {
+			.ctrlChanSel = VPS_VIP_CTRL_CHAN_SEL_15_8,
+			.ancChSel8b = VPS_VIP_ANC_CH_SEL_DONT_CARE,
+			.pixClkEdgePol = VPS_VIP_PIX_CLK_EDGE_POL_RISING,
+			.invertFidPol = 0,
+			.embConfig = {
+				.errCorrEnable = 1,
+				.srcNumPos = VPS_VIP_SRC_NUM_POS_DONT_CARE,
+				.isMaxChan3Bits = 0,
+			},
+			.disConfig = {
+				.fidSkewPostCnt = 0,
+				.fidSkewPreCnt = 0,
+				.lineCaptureStyle =
+					VPS_VIP_LINE_CAPTURE_STYLE_DONT_CARE,
+				.fidDetectMode =
+					VPS_VIP_FID_DETECT_MODE_DONT_CARE,
+				.actvidPol = VPS_VIP_POLARITY_DONT_CARE,
+				.vsyncPol =  VPS_VIP_POLARITY_DONT_CARE,
+				.hsyncPol = VPS_VIP_POLARITY_DONT_CARE,
+			}
+		},
+		.video_capture_mode =
+		   VPS_CAPT_VIDEO_CAPTURE_MODE_SINGLE_CH_NON_MUX_EMBEDDED_SYNC,
+		.video_if_mode = VPS_CAPT_VIDEO_IF_MODE_16BIT,
+		.input_data_format = FVID2_DF_YUV422P,
+	},
+};
 
 /* Touchscreen platform data */
 static struct mxt_platform_data ts_platform_data = {
@@ -155,7 +227,6 @@ static struct i2c_board_info __initdata i2c_boardinfo_bus3[] = {
 	{
 		I2C_BOARD_INFO("ft5x06-ts", 0x38),
 	},
-
 };
 
 static void __init chronos14_tsc_init(void)
@@ -230,12 +301,6 @@ static struct spi_board_info __initdata spi_slave_info[] = {
 	},
 };
 
-static void __init chronos14_spi_init(void)
-{
-	spi_register_board_info(spi_slave_info,
-				ARRAY_SIZE(spi_slave_info));
-}
-
 static struct omap_musb_board_data musb_board_data = {
 	.interface_type		= MUSB_INTERFACE_ULPI,
 #ifdef CONFIG_USB_MUSB_OTG
@@ -249,7 +314,47 @@ static struct omap_musb_board_data musb_board_data = {
 	.instances	= 1,
 };
 
-#ifdef CONFIG_SND_SOC_TI81XX_HDMI
+static struct vps_platform_data hdvpss_pdata = {
+	.cpu = CPU_DM814X,
+	.numvencs = 3,
+	.vencmask = (1 << VPS_DC_MAX_VENC) - 1 - VPS_DC_VENC_HDCOMP
+};
+
+static struct platform_device hdvpss_device = {
+	.name = "vpss",
+	.id = -1,
+	.dev = {
+		.platform_data = &hdvpss_pdata,
+	},
+};
+
+static struct platform_device ti81xx_hdmi_device = {
+	.name	= "TI81XX_HDMI",
+	.id		= -1,
+};
+
+static u64 ti81xxfb_dma_mask = ~(u32)0;
+static struct ti81xxfb_platform_data ti81xxfb_config;
+
+static struct platform_device ti81xx_fb_device = {
+	.name		= "ti81xxfb",
+	.id		= -1,
+	.dev = {
+		.dma_mask		= &ti81xxfb_dma_mask,
+		.coherent_dma_mask	= ~(u32)0,
+		.platform_data		= &ti81xxfb_config,
+	},
+	.num_resources = 0,
+};
+
+static struct resource ti81xx_vidout_resource[VPS_DISPLAY_INST_MAX] = {};
+static struct platform_device ti81xx_vidout_device = {
+	.name		= "t81xx_vidout",
+	.resource       = &ti81xx_vidout_resource[0],
+	.num_resources  = ARRAY_SIZE(ti81xx_vidout_resource),
+	.id             = -1,
+};
+
 static struct snd_hdmi_platform_data snd_hdmi_pdata = {
 	.dma_addr = TI81xx_HDMI_WP + HDMI_WP_AUDIO_DATA,
 	.channel = 53,
@@ -271,17 +376,13 @@ static struct platform_device hdmi_codec_device = {
 	.id     = -1,
 };
 
-static struct platform_device *chronos14_devices[] __initdata = {
-	&hdmi_audio_device,
-	&hdmi_codec_device,
-};
-
 /*
  * HDMI Audio Auto CTS MCLK configuration.
  * sysclk20, sysclk21, sysclk21 and CLKS(external)
  * setting sysclk20 as the parent of hdmi_i2s_ck
  * ToDo:
  */
+#ifdef CONFIG_SND_SOC_TI81XX_HDMI
 static void __init chronos14_hdmi_clk_init(void)
 {
 	int ret = 0;
@@ -304,8 +405,18 @@ static void __init chronos14_hdmi_clk_init(void)
 	clk_put(parent);
 	pr_debug("{{HDMI Audio MCLK setup completed}}\n");
 }
-
+#else
+static inline void chronos14_hdmi_clk_init(void) {}
 #endif
+
+static struct platform_device *chronos14_devices[] __initdata = {
+	&hdvpss_device,
+	&ti81xx_fb_device,
+	&ti81xx_vidout_device,
+	&ti81xx_hdmi_device,
+	&hdmi_audio_device,
+	&hdmi_codec_device,
+};
 
 #define LSI_PHY_ID		0x0282F014
 #define LSI_PHY_MASK		0xffffffff
@@ -376,7 +487,6 @@ static int mmc0_power_init(void)
 
 	return 0;
 }
-
 
 #include <asm/termios.h>
 #include <linux/syscalls.h>
@@ -464,16 +574,14 @@ static void __init chronos14_init(void)
 
 	pm_power_off = camera_power_off;
 
-	/* initialize usb */
-	usb_musb_init(&musb_board_data);
-
-	chronos14_spi_init();
-#ifdef CONFIG_SND_SOC_TI81XX_HDMI
 	/*setup the clokc for HDMI MCLK*/
 	chronos14_hdmi_clk_init();
 	__raw_writel(0x0, DSS_HDMI_RESET);
+
+	usb_musb_init(&musb_board_data);
+	spi_register_board_info(spi_slave_info, ARRAY_SIZE(spi_slave_info));
+	ti81xx_register_hdvpss(hdvpss_capture_subdevs, ARRAY_SIZE(hdvpss_capture_subdevs));
 	platform_add_devices(chronos14_devices, ARRAY_SIZE(chronos14_devices));
-#endif
 	regulator_use_dummy_regulator();
 
 	/* LSI Gigabit Phy fixup */

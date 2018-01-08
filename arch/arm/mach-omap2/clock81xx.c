@@ -17,6 +17,8 @@
 #include <linux/clk.h>
 
 #include <plat/prcm.h>
+#include <plat/ti81xx.h>
+#include <plat/cpu.h>
 
 #include "clock.h"
 #include "clock81xx.h"
@@ -114,3 +116,15 @@ const struct clkops clkops_ti81xx_usb = {
 	.enable         = ti81xx_usb_clk_enable,
 	.disable        = ti81xx_usb_clk_disable,
 };
+
+int __init ti81xx_clk_init(void)
+{
+	/* This is just a big gross hack until we can merge the 814x and 816x clock data files.*/
+	if (cpu_is_ti814x())
+		return ti814x_clk_init();
+	if (cpu_is_ti816x())
+		return ti816x_clk_init();
+
+	WARN(1, "clock: could not identify TI81XX variant\n");
+	return 0;
+}

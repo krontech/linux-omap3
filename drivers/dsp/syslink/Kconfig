@@ -1,18 +1,18 @@
 menuconfig Sys_Link
 	bool "Sys_Link"
-	depends on ARCH_OMAP4 || ARCH_OMAP3 ||ARCH_TI81XX
+	depends on ARCH_OMAP4 || ARCH_OMAP3 || SOC_OMAPTI81XX
 	default y
 
 if Sys_Link
 
 config  SYSLINK_MULTIPROC
         bool
-		depends on ARCH_OMAP3430 || ARCH_OMAP4 ||ARCH_TI81XX
+		depends on ARCH_OMAP3430 || ARCH_OMAP4 || SOC_OMAPTI81XX
 		default n
 
 config SYSLINK_NOTIFY
 		tristate "SysLink Notify"
-		depends on ARCH_OMAP3430 || ARCH_OMAP4 ||ARCH_TI81XX
+		depends on ARCH_OMAP3430 || ARCH_OMAP4 || SOC_OMAPTI81XX
 		default y
 		select OMAP_MBOX_FWK
 		select SYSLINK_MULTIPROC

@@ -43,8 +43,6 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-ioctl.h>
 #include <mach/capt.h>
-#include <mach/board-ti816x.h>
-#include <mach/board-ti814x.h>
 #include <linux/ti81xxvin.h>
 #include "ti81xxvin_pvt.h"
 

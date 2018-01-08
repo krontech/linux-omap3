@@ -16,8 +16,9 @@
 #ifndef __ARCH_ARM_MACH_OMAP2_CLOCK81XX_H
 #define __ARCH_ARM_MACH_OMAP2_CLOCK81XX_H
 
-int ti816x_clk_init(void);
+int ti81xx_clk_init(void);
 int ti814x_clk_init(void);
+int ti816x_clk_init(void);
 int ti816x_fapll_init(void);
 
 extern const struct clkops clkops_ti81xx_dflt_wait;

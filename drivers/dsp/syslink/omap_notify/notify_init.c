@@ -82,7 +82,7 @@ MODULE_PARM_DESC(dsp_notify_va, "Specify the slave virtual address where the "
 				"notify driver for dsp will be created."
 				" ignore notify driver creation  is not"
 				" required at kernel boot time ");
-#if defined(CONFIG_ARCH_TI81XX)
+#if defined(CONFIG_SOC_OMAPTI81XX)
 /* notify slave virtual address of videom3*/
 static  int  videom3_notify_va ;
 module_param_named(videom3_sva, videom3_notify_va, int,
@@ -102,13 +102,6 @@ MODULE_PARM_DESC(vpssm3_notify_va, "Specify the slave virtual address where the"
 				"required at kernel boot time ");
 #endif
 
-/* IOMMU Exported function */
-extern
-void
-iopgtable_lookup_entry(struct iommu *obj, u32 da, u32 **ppgd, u32 **ppte);
-
-
-
 struct notify_map_table_info {
 	u32    actualAddress;
 	/*!< Actual address( physical address) */
@@ -122,7 +115,9 @@ struct notify_map_table_info {
 
 struct omap_notify {
 	char           name[32];
-	struct iommu *mmu_handle;
+	const char 		*mmu_name;
+	struct device 	*mmu_device;
+	struct iommu_domain *mmu_domain;
 	struct clk   *clk_handle;
 	u32    map_index;
 	u16    rproc_id;
@@ -131,36 +126,36 @@ struct omap_notify {
 
 #if defined(CONFIG_ARCH_OMAP3430)
 /* DSP */
-struct omap_notify notify_dsp_info = {
+static struct omap_notify notify_dsp_info = {
 	.name	= "DSP", /* same as multiproc name for dsp */
-	.mmu_handle = NULL,
+	.mmu_name = "iva2",
 	.clk_handle = NULL,
 	.map_index  = 0
 };
 struct omap_notify *omap3_notify[] = { &notify_dsp_info, NULL };
 #endif
 
-#if defined(CONFIG_ARCH_TI81XX)
+#if defined(CONFIG_SOC_OMAPTI81XX)
 /* DSP */
-struct omap_notify notify_dsp_info = {
+static struct omap_notify notify_dsp_info = {
 	.name	= "DSP", /* same as multiproc name for dsp */
-	.mmu_handle = NULL,
+	.mmu_name	= NULL,
 	.clk_handle = NULL,
 	.map_index  = 0
 };
 
 /* VideoM3 */
-struct omap_notify notify_video_info = {
+static struct omap_notify notify_video_info = {
 	.name	= "VIDEO-M3", /* same as multiproc name for dsp */
-	.mmu_handle = NULL,
+	.mmu_name = NULL,
 	.clk_handle = NULL,
 	.map_index  = 0
 };
 
 /* VpssM3 */
-struct omap_notify notify_vpss_info = {
+static struct omap_notify notify_vpss_info = {
 	.name	= "VPSS-M3", /* same as multiproc name for dsp */
-	.mmu_handle = NULL,
+	.mmu_name = NULL,
 	.clk_handle = NULL,
 	.map_index  = 0
 };
@@ -253,14 +248,11 @@ exit:
  *              size.
  */
 int
-notify_add_mmu_entry(void *mmu_handle, u32 slave_virt_addr, u32 size)
+notify_add_mmu_entry(struct iommu_domain *domain, u32 slave_virt_addr, u32 size)
 {
-	s32                     status = 0;
-	u32  *ppgd = NULL;
-	u32  *ppte = NULL;
-	s32                     cur_size;
-	u32                     master_phys_addr;
-	struct iotlb_entry tlb_entry;
+	s32	status = 0;
+	s32 cur_size;
+	u32 master_phys_addr;
 
 	/* Align the addresses to page size */
 	size += ((u32)slave_virt_addr & (PAGE_SIZE_4KB - 1));
@@ -275,43 +267,20 @@ notify_add_mmu_entry(void *mmu_handle, u32 slave_virt_addr, u32 size)
 	/* Check every page if exists */
 	do {
 		/* Lookup if the entry exists */
-
-		iopgtable_lookup_entry(mmu_handle,
-					slave_virt_addr,
-					(u32 **) &ppgd,
-					(u32 **) &ppte);
-		if (!*ppgd || !*ppte) {
-			/* Entry doesnot exists, insert this page */
-			tlb_entry.pgsz  = MMU_CAM_PGSZ_4K;
+		phys_addr_t map = iommu_iova_to_phys(domain, slave_virt_addr);
+		if (map != master_phys_addr) {
+			/* TODO: Do these matter after porting to the generic IOMMU API? */
+#if 0
 			tlb_entry.prsvd  = MMU_CAM_PRESERVE;
 			tlb_entry.valid  = MMU_CAM_VALID;
 			tlb_entry.elsz = MMU_RAM_ELSZ_16;
 			tlb_entry.endian = MMU_RAM_ENDIAN_LITTLE;
 			tlb_entry.mixed = MMU_RAM_DEFAULT;
-			tlb_entry.da = slave_virt_addr;
-			tlb_entry.pa = master_phys_addr;
-			if (iopgtable_store_entry(mmu_handle, &tlb_entry)) {
-					printk(KERN_ERR "ERROR in "
-					"notify_add_mmu_entry\n");
+#endif
+			if (iommu_map(domain, slave_virt_addr, master_phys_addr,
+				get_order(PAGE_SIZE_4KB), IOMMU_READ | IOMMU_WRITE) != 0) {
+				printk(KERN_ERR "ERROR in notify_add_mmu_entry\n");
 				status = -1;
-			}
-		} else if (*ppgd && *ppte) {
-			if (master_phys_addr != (*ppte & IOPTE_MASK)) {
-				/* Entry doesnot exists, insert this page */
-				tlb_entry.pgsz  = MMU_CAM_PGSZ_4K;
-				tlb_entry.prsvd = MMU_CAM_PRESERVE;
-				tlb_entry.valid = MMU_CAM_VALID;
-				tlb_entry.elsz  = MMU_RAM_ELSZ_16;
-				tlb_entry.endian = MMU_RAM_ENDIAN_LITTLE;
-				tlb_entry.mixed  = MMU_RAM_DEFAULT;
-				tlb_entry.da = slave_virt_addr;
-				tlb_entry.pa = master_phys_addr;
-				if (iopgtable_store_entry(mmu_handle,
-								&tlb_entry)) {
-						printk(KERN_ERR "ERROR in"
-						"notify_add_mmu_entry\n");
-					status = -1;
-				}
 			}
 		}
 		cur_size -= PAGE_SIZE_4KB;
@@ -348,22 +317,39 @@ static int __init notify_init(void)
 		list = omap3_notify;
 		notifies = list;
 		OMAP3530PWR_on();
-		list[0]->mmu_handle = iommu_get("iva2");
-		if (list[0]->mmu_handle == NULL) {
-			printk(KERN_ERR "notify_init: iommu_get failed for"
-				"iva2\n");
-			goto setup_fail;
-		}
-
 	}
 #endif
-#if defined(CONFIG_ARCH_TI81XX)
+#if defined(CONFIG_SOC_OMAPTI81XX)
 	else if (cpu_is_ti81xx()) {
 		list = ti81xx_notify;
 		notifies = list;
 	/* FIX Me Add mmu handles to do mappings  */
 	}
 #endif
+
+	if (list[0]->mmu_name) {
+		/* Setup the IOMMU */
+		list[0]->mmu_device = omap_find_iommu_device(list[0]->mmu_name);
+		if (list[0]->mmu_device == NULL) {
+			printk(KERN_ERR "notify_init: iommu_get failed for %s\n",
+					list[0]->mmu_name);
+			goto setup_fail;
+		}
+		list[0]->mmu_domain = iommu_domain_alloc(list[0]->mmu_device->bus);
+		if (!list[0]->mmu_domain) {
+			printk(KERN_ERR "notify_init: iommu_get failed for %s\n",
+					list[0]->mmu_name);
+			goto setup_fail;
+		}
+		if (iommu_attach_device(list[0]->mmu_domain, list[0]->mmu_device) != 0) {
+			printk(KERN_ERR "notify_init: iommu_get failed for %s\n",
+					list[0]->mmu_name);
+			iommu_domain_free(list[0]->mmu_domain);
+			list[0]->mmu_domain = NULL;
+			goto setup_fail;
+		}
+	}
+
 	notify_setup(NULL);
 
 	/* Create notify drivers based on configuration*/
@@ -390,14 +376,14 @@ static int __init notify_init(void)
 				notify_map_info[i].actualAddress);
 		notify_map_info[i].size = memreq;
 
-		if (cpu_is_omap343x()) {
-			notify_add_mmu_entry(list[0]->mmu_handle,
+		if (list[0]->mmu_domain) {
+			notify_add_mmu_entry(list[0]->mmu_domain,
 					notify_map_info[i].actualAddress,
 					notify_map_info[i].size);
 		}
 	}
 
-#if defined(CONFIG_ARCH_TI81XX)
+#if defined(CONFIG_SOC_OMAPTI81XX)
 	if (cpu_is_ti81xx()) {
 		/* check if memory is provided to create notify with other
 		 * procs.
@@ -469,6 +455,11 @@ notify_attach_fail:
 
 	}
 
+	if (list[0]->mmu_domain) {
+		iommu_detach_device(list[0]->mmu_domain, list[0]->mmu_device);
+		iommu_domain_free(list[0]->mmu_domain);
+	}
+
 setup_fail:
 	if (!notify_map_info)
 		kfree(notify_map_info);
@@ -500,8 +491,10 @@ static void __exit notify_exit(void)
 		if (notifies[i]->attached == true)
 			notify_detach(notifies[i]->rproc_id);
 
-		if (notifies[i]->mmu_handle)
-			iommu_put(notifies[i]->mmu_handle);
+		if (notifies[i]->mmu_domain) {
+			iommu_detach_device(notifies[i]->mmu_domain, notifies[i]->mmu_device);
+			iommu_domain_free(notifies[i]->mmu_domain);
+		}
 	}
 }
 

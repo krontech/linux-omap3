@@ -31,7 +31,6 @@
 #include <linux/kobject.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
-#include <mach/board-ti816x.h>
 
 #include "core.h"
 #include "system.h"
@@ -1505,6 +1504,11 @@ static ssize_t blender_mode_store(struct dc_blender_info *binfo,
 
 	venc_info.modeinfo[idx].minfo.standard = mid;
 	dc_get_timing(mid, &venc_info.modeinfo[idx].minfo);
+
+	/* FIXME: This code isn't appropriate in this driver, and ought to
+	 * get abstracted out by the platform data or something.
+	 */
+#if 0
 	if ((v_pdata->cpu == CPU_DM816X) && (!def_i2cmode)) {
 		if ((binfo->idx == HDCOMP) && (binfo->isdeviceon == true)) {
 			if ((mid == FVID2_STD_1080P_60) ||
@@ -1521,6 +1525,8 @@ static ssize_t blender_mode_store(struct dc_blender_info *binfo,
 
 		}
 	}
+#endif
+
 	r = size;
 exit:
 	dc_unlock(binfo->dctrl);
@@ -2645,9 +2651,6 @@ int __init vps_dc_init(struct platform_device *pdev,
 	int size = 0, offset = 0;
 	VPSSDBG("dctrl init\n");
 
-	if ((v_pdata->cpu == CPU_DM816X) && (!def_i2cmode))
-		ti816x_pcf8575_init();
-
 	dc_payload_info = kzalloc(sizeof(struct vps_payload_info),
 				  GFP_KERNEL);
 
@@ -2875,6 +2878,13 @@ int __init vps_dc_init(struct platform_device *pdev,
 		VPSSERR("Failed to set venc mode.\n");
 		goto cleanup;
 	}
+
+	/*
+	 * FIXME: This code isn't appropriate here, and should get
+	 * abstracted out via a callback in the platform data or
+	 * something.
+	 */
+#if 0
 	/*set the the THS filter, device is still registered even
 	if THS setup is failed*/
 	if ((v_pdata->cpu == CPU_DM816X) && (!def_i2cmode)) {
@@ -2899,6 +2909,8 @@ int __init vps_dc_init(struct platform_device *pdev,
 
 		}
 	}
+#endif
+
 	return 0;
 cleanup:
 	vps_dc_deinit(pdev);
@@ -2964,9 +2976,6 @@ int __exit vps_dc_deinit(struct platform_device *pdev)
 		}
 		dc_handle = NULL;
 	}
-
-	if ((v_pdata->cpu == CPU_DM816X) && (!def_i2cmode))
-		ti816x_pcf8575_exit();
 
 	return r;
 }

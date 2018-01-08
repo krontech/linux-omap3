@@ -215,7 +215,7 @@ void __init ti81xx_powerdomains_init(void)
 {
 	if (!cpu_is_ti81xx())
 		return;
-	pwrdm_register_platform_funcs(&ti81xx_pwrdm_operations);
+	pwrdm_register_platform_funcs(&omap4_pwrdm_operations);
 	pwrdm_register_pwrdms(powerdomains_ti81xx);
 
 	if (cpu_is_ti816x())

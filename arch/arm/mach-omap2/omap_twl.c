@@ -74,16 +74,6 @@ static bool __initdata twl_sr_enable_autoinit;
 
 static unsigned long twl4030_vsel_to_uv(const u8 vsel)
 {
-	/*
-	 * The smartreflex bit on twl4030 needs to be enabled by
-	 * default irrespective of whether smartreflex module is
-	 * enabled on the OMAP side or not. This is because without
-	 * this bit enabled the voltage scaling through
-	 * vp forceupdate does not function properly on OMAP3.
-	 */
-	if (twl_sr_enable_autoinit)
-		omap3_twl_set_sr_bit(1);
-
 	return (((vsel * 125) + 6000)) * 100;
 }
 

@@ -45,7 +45,6 @@
 #include <plat/gpmc.h>
 #include <plat/nand.h>
 #include <plat/hdmi_lib.h>
-#include <mach/board-ti814x.h>
 
 #include "board-flash.h"
 #include "clock.h"
