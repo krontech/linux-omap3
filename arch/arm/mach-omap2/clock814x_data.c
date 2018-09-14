@@ -94,7 +94,7 @@ static struct clk tclkin_ck = {
 };
 
 static struct clk osc0_clkin_ck = {
-	.name		= "osc0_clkin_ck",
+	.name		= "sys_ck", /* also 'osc0 output' */
 	.ops		= &clkops_null,
 	.rate		= 20000000,
 };
@@ -729,44 +729,44 @@ static struct clk gem_ick = {
 /* TPTC0 Clock(final) */
 static struct clk tptc0_ick = {
 	.name		= "tptc0_ick",
+	.clkdm_name	= "alwon_l3m_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_TPTC0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_med_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
 /* TPTC1 Clock(final) */
 static struct clk tptc1_ick = {
 	.name		= "tptc1_ick",
+	.clkdm_name	= "alwon_l3m_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_TPTC1_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_med_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
 /* TPTC2 Clock(final) */
 static struct clk tptc2_ick = {
 	.name		= "tptc2_ick",
+	.clkdm_name	= "alwon_l3m_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_TPTC2_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_med_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
 /* TPTC3 Clock(final) */
 static struct clk tptc3_ick = {
 	.name		= "tptc3_ick",
+	.clkdm_name	= "alwon_l3m_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_TPTC3_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3_med_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -784,20 +784,20 @@ static struct clk ivahd0_sl2_ick = {
 /* TPCC Clock(final) */
 static struct clk tpcc_ick = {
 	.name		= "tpcc_ick",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_TPCC_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
 /* FDIF interface clok(final) */
 static struct clk fdif_ick = {
 	.name		= "fdif_ick",
+	.clkdm_name	= "default_l3m_clkdm",
 	.parent		= &sysclk4_ck,
 	.ops		= &clkops_null,
-	.clkdm_name	= "default_l3m_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -942,15 +942,6 @@ static struct clk ocmc_ram_ick = {
 	.clkdm_name	= "alwon_ocmc_clkdm",
 	.recalc		= &followparent_recalc,
 	.flags		= ENABLE_ON_INIT,
-};
-
-/* MMCHS2 Clock(final) */
-static struct clk mmchs3_ick = {
-	.name		= "mmchs3_ick",
-	.parent		= &sysclk5_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
 };
 
 /* CPSW Clock(final) */
@@ -1184,84 +1175,6 @@ static struct clk sdio_ick = {
 	.recalc		= &followparent_recalc,
 };
 
-/*
- * Points to note about timer conventions:
- * 1) We are referring dmtimers as gptimers to match omap convention
- * 2) Skipping gptimer1 as it is secure mode timer.
- */
-
-/* General TIMER1 Clock(final) */
-static struct clk gpt1_ick = {
-	.name		= "gpt1_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER2 Clock(final) */
-static struct clk gpt2_ick = {
-	.name		= "gpt2_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER3 Clock(final) */
-static struct clk gpt3_ick = {
-	.name		= "gpt3_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER4 Clock(final) */
-static struct clk gpt4_ick = {
-	.name		= "gpt4_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER5 Clock(final) */
-static struct clk gpt5_ick = {
-	.name		= "gpt5_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER6 Clock(final) */
-static struct clk gpt6_ick = {
-	.name		= "gpt6_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER7 Clock(final) */
-static struct clk gpt7_ick = {
-	.name		= "gpt7_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* General TIMER8 Clock(final) */
-static struct clk gpt8_ick = {
-	.name		= "gpt8_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
 /* GPIO1 Clock(final), feeding to 2, 3 and 4 instances of GPIO */
 static struct clk gpio234_ick = {
 	.name		= "gpio234_ick",
@@ -1450,13 +1363,13 @@ static struct clk pata_ick = {
 };
 
 /* Mail Box Clock(final) */
-static struct clk mailbox_ick = {
-	.name		= "mailbox_ick",
+static struct clk mailbox_fck = {
+	.name		= "mailbox_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
 	.enable_reg	= TI81XX_CM_ALWON_MAILBOX_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &followparent_recalc,
 };
 
@@ -1516,8 +1429,8 @@ static struct clk sr4_ick = {
 };
 
 /* USB0 Clock(final) */
-static struct clk usbotg_ick = {
-	.name		= "usb_ick",
+static struct clk usbotg_fck = {
+	.name		= "usbotg_fck",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_ti81xx_usb,
 	.enable_reg	= TI81XX_CM_DEFAULT_USB_CLKCTRL,
@@ -1557,24 +1470,6 @@ static struct clk elm_ick = {
 
 static struct clk elm_fck = {
 	.name		= "elm_fck",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* MMCHS0 Clock(final) */
-static struct clk mmchs1_ick = {
-	.name		= "mmchs1_ick",
-	.parent		= &sysclk6_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* MMCHS1 Clock(final) */
-static struct clk mmchs2_ick = {
-	.name		= "mmchs2_ick",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
 	.clkdm_name	= "alwon_l3s_clkdm",
@@ -2079,39 +1974,6 @@ static struct clk sysclk8_ck = {
 	.recalc		= &followparent_recalc,
 };
 
-/* MMC0 Functional Clock(final) */
-static struct clk mmchs1_fck = {
-	.name		= "mmchs1_fck",
-	.parent		= &sysclk8_ck,
-	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI814X_CM_ALWON_MMCHS_0_CLKCTRL,
-	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* MMC1 Functional Clock(final) */
-static struct clk mmchs2_fck = {
-	.name		= "mmchs2_fck",
-	.parent		= &sysclk8_ck,
-	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI814X_CM_ALWON_MMCHS_1_CLKCTRL,
-	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* MMC2 Functional Clock(final) */
-static struct clk mmchs3_fck = {
-	.name		= "mmchs3_fck",
-	.parent		= &sysclk8_ck,
-	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI814X_CM_ALWON_MMCHS_2_CLKCTRL,
-	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
 static const struct clksel uart456_mux_sel[] = {
 	{ .parent = &sysclk8_ck, .rates = div_1_0_rates },
 	{ .parent = &sysclk10_ck, .rates = div_1_1_rates },
@@ -2143,7 +2005,7 @@ static struct clk uart5_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel		= uart456_mux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_MCBSP_UART_CLKSRC,
-	.clksel_mask	= TI814X_UART3_MASK,
+	.clksel_mask	= TI814X_UART4_MASK,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.set_rate	= &ti814x_clksel_set_rate,
@@ -2158,7 +2020,7 @@ static struct clk uart6_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel		= uart456_mux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_MCBSP_UART_CLKSRC,
-	.clksel_mask	= TI814X_UART3_MASK,
+	.clksel_mask	= TI814X_UART5_MASK,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.set_rate	= &ti814x_clksel_set_rate,
@@ -3028,8 +2890,9 @@ static struct clk mcbsp_fck = {
 };
 
 /* Mcasp0 aux_clk out (PRCM out) */
-static struct clk mcasp1_fck = {
-	.name		= "mcasp1_fck",
+static struct clk mcasp0_fck = {
+	.name		= "mcasp0_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.init		= &omap2_init_clksel_parent,
 	.clksel		= audio_prcm_mux_sel,
 	.ops		= &clkops_ti81xx_dflt_wait,
@@ -3037,14 +2900,14 @@ static struct clk mcasp1_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP0_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.set_rate       = &ti814x_clksel_set_rate,
 };
 
 /* Mcasp1 aux_clk out (PRCM out) */
-static struct clk mcasp2_fck = {
-	.name		= "mcasp2_fck",
+static struct clk mcasp1_fck = {
+	.name		= "mcasp1_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.init		= &omap2_init_clksel_parent,
 	.clksel		= audio_prcm_mux_sel,
 	.ops		= &clkops_ti81xx_dflt_wait,
@@ -3052,14 +2915,14 @@ static struct clk mcasp2_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP1_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.set_rate       = &ti814x_clksel_set_rate,
 };
 
 /* Mcasp2 aux_clk out (PRCM out) */
-static struct clk mcasp3_fck = {
-	.name		= "mcasp3_fck",
+static struct clk mcasp2_fck = {
+	.name		= "mcasp2_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
 	.init		= &omap2_init_clksel_parent,
 	.clksel		= audio_prcm_mux_sel,
 	.ops		= &clkops_ti81xx_dflt_wait,
@@ -3067,7 +2930,6 @@ static struct clk mcasp3_fck = {
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.clksel_reg	= TI81XX_CM_DPLL_AUDIOCLK_MCASP2_CLKSEL,
 	.clksel_mask	= TI81XX_CLKSEL_0_1_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
 	.set_rate       = &ti814x_clksel_set_rate,
 };
@@ -3200,33 +3062,6 @@ static struct clk rtc_fck = {
 	.recalc		= &followparent_recalc,
 };
 
-/* clk32 for MMC0 debounce clk (MUX out) */
-static struct clk mmchs1_dbck = {
-	.name		= "mmchs1_dbck",
-	.parent		= &sysclk18_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* clk32 for MMC1 debounce clk (MUX out) */
-static struct clk mmchs2_dbck = {
-	.name		= "mmchs2_dbck",
-	.parent		= &sysclk18_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
-/* clk32 for MMC0 debounce clk (MUX out) */
-static struct clk mmchs3_dbck = {
-	.name		= "mmchs3_dbck",
-	.parent		= &sysclk18_ck,
-	.ops		= &clkops_null,
-	.clkdm_name	= "alwon_l3s_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
 /* Sync Timer clk (MUX out) */
 static struct clk sync_timer_fck = {
 	.name		= "sync_timer_fck",
@@ -3254,7 +3089,8 @@ static struct clk arm_oper_fck = {
 	.recalc		= &followparent_recalc,
 };
 
-static const struct clksel gpt0to7_fclk_mux_sel[] = {
+
+static const struct clksel timer1to7_clkmux_sel[] = {
 	{ .parent = &sysclk18_ck, .rates = div_1_0_rates },
 	{ .parent = &xref0_ck, .rates = div_1_1_rates },
 	{ .parent = &xref1_ck, .rates = div_1_2_rates },
@@ -3265,92 +3101,155 @@ static const struct clksel gpt0to7_fclk_mux_sel[] = {
 	{ .parent = NULL}
 };
 
-/* GM Timer Func Clocks */
-static struct clk gpt1_fck = {
-	.name		= "gpt1_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer1_ick = {
+	.name		= "timer1_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer1_fck = {
+	.name		= "timer1_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &osc0_clkin_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER1_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt2_fck = {
-	.name		= "gpt2_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer2_ick = {
+	.name		= "timer2_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer2_fck = {
+	.name		= "timer2_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER2_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt3_fck = {
-	.name		= "gpt3_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer3_ick = {
+	.name		= "timer3_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer3_fck = {
+	.name		= "timer3_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER3_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt4_fck = {
-	.name		= "gpt4_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer4_ick = {
+	.name		= "timer4_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer4_fck = {
+	.name		= "timer4_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER4_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt5_fck = {
-	.name		= "gpt5_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer5_ick = {
+	.name		= "timer5_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer5_fck = {
+	.name		= "timer5_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER5_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt6_fck = {
-	.name		= "gpt6_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer6_ick = {
+	.name		= "timer6_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer6_fck = {
+	.name		= "timer6_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER6_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt7_fck = {
-	.name		= "gpt7_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer7_ick = {
+	.name		= "timer7_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer7_fck = {
+	.name		= "timer7_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER7_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
-static struct clk gpt8_fck = {
-	.name		= "gpt8_fck",
-	.init		= &omap2_init_clksel_parent,
+static struct clk timer8_ick = {
+	.name		= "timer8_ick",
+	.parent		= &sysclk6_ck,
 	.ops		= &clkops_null,
-	.clksel		= gpt0to7_fclk_mux_sel,
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk timer8_fck = {
+	.name		= "timer8_fck",
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.parent		= &sysclk18_ck,
+	.init		= &omap2_init_clksel_parent,
+	.clksel		= timer1to7_clkmux_sel,
 	.clksel_reg	= TI814X_PLL_CMGC_DMTIMER_CLKSRC,
 	.clksel_mask	= TI814X_DMTIMER8_CLKS_MASK,
-	.clkdm_name	= "alwon_l3s_clkdm",
+	.ops		= &clkops_null,
 	.recalc		= &omap2_clksel_recalc,
 };
 
@@ -3524,6 +3423,85 @@ static struct clk mcasp6_ahx_ck = {
 	.clksel_mask	= TI814X_MCASP5_AHCLKX_MASK,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.recalc		= &omap2_clksel_recalc,
+};
+
+/* MMC Clocks(final) */
+static struct clk mmc0_ick = {
+	.name		= "mmc0_ick",
+	.parent		= &sysclk6_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc1_ick = {
+	.name		= "mmc1_ick",
+	.parent		= &sysclk6_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc2_ick = {
+	.name		= "mmc2_ick",
+	.parent		= &sysclk5_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc0_fck = {
+	.name		= "mmc0_fck",
+	.parent		= &sysclk8_ck,
+	.ops		= &clkops_ti81xx_dflt_wait,
+	.enable_reg	= TI814X_CM_ALWON_MMCHS_0_CLKCTRL,
+	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc1_fck = {
+	.name		= "mmc1_fck",
+	.parent		= &sysclk8_ck,
+	.ops		= &clkops_ti81xx_dflt_wait,
+	.enable_reg	= TI814X_CM_ALWON_MMCHS_1_CLKCTRL,
+	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc2_fck = {
+	.name		= "mmc2_fck",
+	.parent		= &sysclk8_ck,
+	.ops		= &clkops_ti81xx_dflt_wait,
+	.enable_reg	= TI814X_CM_ALWON_MMCHS_2_CLKCTRL,
+	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc0_dbck = {
+	.name		= "mmc0_dbck",
+	.parent		= &sysclk18_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc1_dbck = {
+	.name		= "mmc1_dbck",
+	.parent		= &sysclk18_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
+static struct clk mmc2_dbck = {
+	.name		= "mmc2_dbck",
+	.parent		= &sysclk18_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
 };
 
 /************************** SERDES & Ethernet Clocking ************************/
@@ -3791,6 +3769,17 @@ static struct clk emac_gmii_fck = {
 	.recalc		= &followparent_recalc,
 };
 
+
+static struct clk cpgmac0_ick = {
+	.name		= "cpgmac0_ick",
+	.clkdm_name	= "alwon_l3m_clkdm",
+	.parent		= &sysclk5_ck,
+	.ops		= &clkops_ti81xx_dflt_wait,
+	.enable_reg	= TI81XX_CM_ETHERNET_CLKSTCTRL,
+	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
+	.recalc		= &followparent_recalc,
+};
+
 /************ Watchdog, Secure timer and Sync timer Functional clocking *******/
 
 static const struct clksel wdt0to1_fclk_mux_sel[] = {
@@ -3940,7 +3929,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"rcosc_32k_ck",			&rcosc_32k_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sys_32k_clkin_ck",		&sys_32k_clkin_ck,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"tclkin_ck",			&tclkin_ck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"osc0_clkin_ck",		&osc0_clkin_ck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"sys_ck",			&osc0_clkin_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"osc1_clkin_ck",		&osc1_clkin_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"rtc_divider_ck",		&rtc_divider_ck,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"osc1_x1_ck",			&osc1_x1_ck,			CK_TI814X | CK_DM385),
@@ -4002,7 +3991,6 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"fdif_fck",			&fdif_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"dap_ick",			&dap_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"ocmc_ram_ick",			&ocmc_ram_ick,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.2",	"ick",				&mmchs3_ick,			CK_TI814X | CK_DM385),
 	CLK("cpsw.0",		NULL,				&cpsw_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gem_trc_fck",			&gem_trc_fck,			CK_TI814X),
 	CLK(NULL,		"mcasp4_ick",			&mcasp4_ick,			CK_TI814X),
@@ -4027,14 +4015,14 @@ static struct omap_clk ti814x_clks[] = {
 	CLK("omap2_mcspi.3",	"ick",				&mcspi3_ick,			CK_TI814X),
 	CLK("omap2_mcspi.4",	"ick",				&mcspi4_ick,			CK_TI814X),
 	CLK(NULL,		"sdio_ick",			&sdio_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt1_ick",			&gpt1_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt2_ick",			&gpt2_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt3_ick",			&gpt3_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt4_ick",			&gpt4_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt5_ick",			&gpt5_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt6_ick",			&gpt6_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt7_ick",			&gpt7_ick,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt8_ick",			&gpt8_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt1_ick",			&timer1_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt2_ick",			&timer2_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt3_ick",			&timer3_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt4_ick",			&timer4_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt5_ick",			&timer5_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt6_ick",			&timer6_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt7_ick",			&timer7_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt8_ick",			&timer8_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gpio234_ick",			&gpio234_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gpio1_ick",			&gpio1_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gpio2_ick",			&gpio2_ick,			CK_TI814X | CK_DM385),
@@ -4054,19 +4042,17 @@ static struct omap_clk ti814x_clks[] = {
 	CLK("omap_wdt",		"wdt2_ick",			&wdt2_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sync_timer_ick",		&sync_timer_ick,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"pata_ick",			&pata_ick,			CK_TI814X),
-	CLK(NULL,		"mailbox_ick",			&mailbox_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"mailbox_fck",			&mailbox_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"spinbox_ick",			&spinbox_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr1_ick",			&sr1_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr2_ick",			&sr2_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr3_ick",			&sr3_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr4_ick",			&sr4_ick,			CK_TI814X),
-	CLK("ti81xx-usbss",	"usb_ick",			&usbotg_ick,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"usbotg_fck",			&usbotg_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mmu_cfg_ick",			&mmu_cfg_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"p1500_ick",			&p1500_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"elm_ick",			&elm_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"elm_fck",			&elm_fck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.0",	"ick",				&mmchs1_ick,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.1",	"ick",				&mmchs2_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"atl_ick",			&atl_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"fdif_enb_ck",			&fdif_enb_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"rtc_c32k_ick",			&rtc_c32k_ick,			CK_TI814X | CK_DM385),
@@ -4108,9 +4094,15 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"uart3_fck",			&uart3_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"hdmi_cec_dcc_fck",		&hdmi_cec_dcc_fck,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"sysclk8_ck",			&sysclk8_ck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.0",	"fck",				&mmchs1_fck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.1",	"fck",				&mmchs2_fck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.2",	"fck",				&mmchs3_fck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.0",	"ick",				&mmc0_ick,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.1",	"ick",				&mmc1_ick,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.2",	"ick",				&mmc2_ick,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.0",	"fck",				&mmc0_fck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.1",	"fck",				&mmc1_fck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.2",	"fck",				&mmc2_fck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.0",	"dbck",				&mmc0_dbck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.1",	"dbck",				&mmc1_dbck,			CK_TI814X | CK_DM385),
+	CLK("omap_hsmmc.2",	"dbck",				&mmc2_dbck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"uart4_fck",			&uart4_fck,			CK_TI814X),
 	CLK(NULL,		"uart5_fck",			&uart5_fck,			CK_TI814X),
 	CLK(NULL,		"uart6_fck",			&uart6_fck,			CK_TI814X),
@@ -4164,9 +4156,9 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"sysclk22_ck",			&sysclk22_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"audio_prcm1_out_ck",		&audio_prcm1_out_ck,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"mcbsp_fck",			&mcbsp_fck,			CK_TI814X | CK_DM385),
-	CLK("davinci-mcasp.0",	NULL,				&mcasp1_fck,			CK_TI814X | CK_DM385),
-	CLK("davinci-mcasp.1",	NULL,				&mcasp2_fck,			CK_TI814X | CK_DM385),
-	CLK("davinci-mcasp.2",	NULL,				&mcasp3_fck,			CK_TI814X),
+	CLK("davinci-mcasp.0",	NULL,				&mcasp0_fck,			CK_TI814X | CK_DM385),
+	CLK("davinci-mcasp.1",	NULL,				&mcasp1_fck,			CK_TI814X | CK_DM385),
+	CLK("davinci-mcasp.2",	NULL,				&mcasp2_fck,			CK_TI814X),
 	CLK(NULL,		"hdmi_i2s_ck",			&hdmi_i2s_ck,			CK_TI814X | CK_DM385),
 	CLK("hdmi-dai",		NULL,				&hdmi_i2s_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"tppss_tso_fck",		&tppss_tso_fck,			CK_TI814X),
@@ -4177,20 +4169,17 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"gpio3_dbck",			&gpio3_dbck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gpio4_dbck",			&gpio4_dbck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"rtc_fck",			&rtc_fck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.0",	"mmchs1_dbck",			&mmchs1_dbck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.1",	"mmchs2_dbck",			&mmchs2_dbck,			CK_TI814X | CK_DM385),
-	CLK("mmci-omap-hs.2",	"mmchs3_dbck",			&mmchs3_dbck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sync_timer_fck",		&sync_timer_fck,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"bandgaps_fck",			&bandgaps_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"arm_oper_fck",			&arm_oper_fck,			CK_TI814X),
-	CLK(NULL,		"gpt1_fck",			&gpt1_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt2_fck",			&gpt2_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt3_fck",			&gpt3_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt4_fck",			&gpt4_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt5_fck",			&gpt5_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt6_fck",			&gpt6_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt7_fck",			&gpt7_fck,			CK_TI814X | CK_DM385),
-	CLK(NULL,		"gpt8_fck",			&gpt8_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt1_fck",			&timer1_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt2_fck",			&timer2_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt3_fck",			&timer3_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt4_fck",			&timer4_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt5_fck",			&timer5_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt6_fck",			&timer6_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt7_fck",			&timer7_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"gpt8_fck",			&timer8_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mcasp_auxclk_mux0_ck",		&mcasp_auxclk_mux0_ck,		CK_TI814X),
 	CLK("davinci-mcasp.3",	NULL,				&mcasp4_fck,			CK_TI814X),
 	CLK("davinci-mcasp.4",	NULL,				&mcasp5_fck,			CK_TI814X),
@@ -4228,6 +4217,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"gmac0to1_mux_out_ck",		&gmac0to1_mux_out_ck,		CK_DM385),
 	CLK(NULL,		"emac_rmii_fck",		&emac_rmii_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"emac_gmii_fck",		&emac_gmii_fck,			CK_TI814X | CK_DM385),
+	CLK("cpsw.0",		"cpgmac0_ick",			&cpgmac0_ick,			CK_TI814X | CK_DM385),
 	CLK("omap_wdt",		"wdt1_fck",			&wdt1_fck,			CK_TI814X | CK_DM385),
 	CLK("omap_wdt",		"wdt2_fck",			&wdt2_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"dummy_clk_ck",			&dummy_clk_ck,			CK_DM385),

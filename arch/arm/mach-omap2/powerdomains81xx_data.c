@@ -29,7 +29,7 @@ static struct powerdomain alwon_81xx_pwrdm = {
 	.name			= "alwon_pwrdm",
 	.voltdm			= { .name = "core" },
 	.prcm_offs		= TI81XX_PRM_ALWON_MOD,
-	.prcm_partition	= TI81XX_PRM_PARTITION,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_ON,
 };
 
@@ -42,7 +42,7 @@ static struct powerdomain default_81xx_pwrdm = {
 	.name			= "default_pwrdm",
 	.voltdm			= { .name = "core" },
 	.prcm_offs		= TI81XX_PRM_DEFAULT_MOD,
-	.prcm_partition	= TI81XX_PRM_PARTITION,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
 };
 
@@ -50,7 +50,7 @@ static struct powerdomain active_81xx_pwrdm = {
 	.name			= "active_pwrdm",
 	.voltdm			= { .name = "active" },
 	.prcm_offs		= TI81XX_PRM_ACTIVE_MOD,
-	.prcm_partition	= TI81XX_PRM_PARTITION,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
 	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
@@ -93,7 +93,7 @@ static struct powerdomain ivahd_814x_pwrdm = {
 	.prcm_offs		= TI814X_PRM_HDVICP_MOD,
 	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
-	.pwrsts_logic_ret = PWRSTS_OFF,
+	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
 	.pwrstst_offs		= TI81XX_PM_PWSTST_OFFSET,
 	.flags			= PWRDM_HAS_LOWPOWERSTATECHANGE,
@@ -113,7 +113,7 @@ static struct powerdomain hdvpss_814x_pwrdm = {
 	.prcm_offs		= TI814X_PRM_HDVPSS_MOD,
 	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
-	.pwrsts_logic_ret = PWRSTS_OFF,
+	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
 	.pwrstst_offs		= TI81XX_PM_PWSTST_OFFSET,
 	.flags			= PWRDM_HAS_LOWPOWERSTATECHANGE,
@@ -130,6 +130,7 @@ static struct powerdomain isp_814x_pwrdm = {
 	.name			= "isp_pwrdm",
 	.voltdm			= { .name = "core" },
 	.prcm_offs		= TI814X_PRM_ISP_MOD,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
 	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
@@ -151,6 +152,7 @@ static struct powerdomain ivahd0_816x_pwrdm = {
 	.name			= "ivahd0_pwrdm",
 	.voltdm			= { .name = "core" },
 	.prcm_offs		= TI816X_PRM_IVAHD0_MOD,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
 	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
@@ -162,6 +164,7 @@ static struct powerdomain ivahd1_816x_pwrdm = {
 	.name			= "ivahd1_pwrdm",
 	.voltdm			= { .name = "core" },
 	.prcm_offs		= TI816X_PRM_IVAHD1_MOD,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
 	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
@@ -170,10 +173,11 @@ static struct powerdomain ivahd1_816x_pwrdm = {
 };
 
 static struct powerdomain ivahd2_816x_pwrdm = {
-	.name		  = "ivahd2_pwrdm",
+	.name			= "ivahd2_pwrdm",
 	.voltdm			= { .name = "core" },
-	.prcm_offs	  = TI816X_PRM_IVAHD2_MOD,
-	.pwrsts		  = PWRSTS_OFF_ON,
+	.prcm_offs		= TI816X_PRM_IVAHD2_MOD,
+	.prcm_partition		= TI81XX_PRM_PARTITION,
+	.pwrsts			= PWRSTS_OFF_ON,
 	.pwrsts_logic_ret	= PWRSTS_OFF,
 	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
 	.pwrstst_offs		= TI81XX_PM_PWSTST_OFFSET,

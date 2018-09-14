@@ -67,9 +67,9 @@
 
 /*
  * Maximum number of clockdomains that can be associated with a powerdomain.
- * CORE powerdomain on DM385 is the worst case
+ * ALWON powerdomain on TI81XX is the worst case
  */
-#define PWRDM_MAX_CLKDMS	12
+#define PWRDM_MAX_CLKDMS	15
 
 /* XXX A completely arbitrary number. What is reasonable here? */
 #define PWRDM_TRANSITION_BAILOUT 100000

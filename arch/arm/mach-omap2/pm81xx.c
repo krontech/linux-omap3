@@ -332,7 +332,7 @@ static int __init ti81xx_pm_init(void)
 
 	suspend_cfg_addr_list[PLL_BASE] = TI814X_PLL_REGADDR(0);
 	suspend_cfg_addr_list[CTRL_BASE] =
-				TI81XX_L4_SLOW_IO_ADDRESS(TI81XX_CTRL_BASE);
+				OMAP2_L4_IO_ADDRESS(TI81XX_CTRL_BASE);
 
 	ti814x_ddr_dynamic_pwr_down();
 	if (cpu_is_ti814x())

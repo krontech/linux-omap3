@@ -67,6 +67,11 @@ static u32 *am33xx_cm_bases[] = {
 	[AM33XX_PRM_PARTITION]			= AM33XX_L4_WK_IO_ADDRESS(AM33XX_PRM_BASE),
 };
 
+static u32 *ti81xx_cm_bases[] = {
+	[OMAP4430_INVALID_PRCM_PARTITION]	= 0,
+	[TI81XX_PRM_PARTITION]			= OMAP2_L4_IO_ADDRESS(TI81XX_PRCM_BASE),
+};
+
 /* Private functions */
 
 /**
@@ -364,5 +369,8 @@ void __init omap44xx_cminst_init(void)
 	} else if (cpu_is_am33xx()) {
 		_cm_bases = am33xx_cm_bases;
 		max_cm_partitions = ARRAY_SIZE(am33xx_cm_bases);
+	} else if (cpu_is_ti81xx()) {
+		_cm_bases = ti81xx_cm_bases;
+		max_cm_partitions = ARRAY_SIZE(ti81xx_cm_bases);
 	}
 }

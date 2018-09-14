@@ -81,7 +81,7 @@ static int __init omap3_l3_init(void)
 	 * To avoid code running on other OMAPs in
 	 * multi-omap builds
 	 */
-	if (!(cpu_is_omap34xx()) || (cpu_is_am33xx()))
+	if (!(cpu_is_omap34xx()) || (cpu_is_am33xx()) || (cpu_is_ti81xx()))
 		return -ENODEV;
 
 	l = snprintf(oh_name, L3_MODULES_MAX_LEN, "l3_main");

@@ -75,8 +75,8 @@
 #define IOPAGE_MASK     IOPTE_MASK
 
 /* notify slave virtual address of dsp*/
-static  int  dsp_notify_va ;
-module_param_named(dsp_sva, dsp_notify_va, int,
+static  unsigned long  dsp_notify_va ;
+module_param_named(dsp_sva, dsp_notify_va, ulong,
 			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(dsp_notify_va, "Specify the slave virtual address where the "
 				"notify driver for dsp will be created."
@@ -84,8 +84,8 @@ MODULE_PARM_DESC(dsp_notify_va, "Specify the slave virtual address where the "
 				" required at kernel boot time ");
 #if defined(CONFIG_SOC_OMAPTI81XX)
 /* notify slave virtual address of videom3*/
-static  int  videom3_notify_va ;
-module_param_named(videom3_sva, videom3_notify_va, int,
+static  unsigned long  videom3_notify_va ;
+module_param_named(videom3_sva, videom3_notify_va, ulong,
 			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(videom3_notify_va, "Specify the slave virtual address where"
 				"the notify driver for video m3 will be "
@@ -93,8 +93,8 @@ MODULE_PARM_DESC(videom3_notify_va, "Specify the slave virtual address where"
 				"required at kernel boot time ");
 
 /* notify slave virtual address of vpssm3*/
-static  int  vpssm3_notify_va ;
-module_param_named(vpssm3_sva, vpssm3_notify_va, int,
+static  unsigned long  vpssm3_notify_va ;
+module_param_named(vpssm3_sva, vpssm3_notify_va, ulong,
 			S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(vpssm3_notify_va, "Specify the slave virtual address where the"
 				"notify driver for vpssm3 will be created."

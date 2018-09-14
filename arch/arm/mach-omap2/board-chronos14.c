@@ -596,9 +596,10 @@ MACHINE_START(CHRONOS14, "chronos1.4")
 	/* Maintainer: Kron Technologies */
 	.atag_offset	= 0x100,
 	.reserve	= ti81xx_reserve,
-	.map_io		= ti81xx_map_io,
+	.map_io		= omap3_map_io,
 	.init_early	= ti81xx_init_early,
 	.init_irq	= ti81xx_init_irq,
+	.handle_irq	= omap3_intc_handle_irq,
 	.init_machine	= chronos14_init,
 	.timer		= &omap3_timer,
 MACHINE_END
@@ -612,9 +613,10 @@ MACHINE_START(TI8148EVM, "chronos1.4-evm")
 	/* Maintainer: Kron Technologies */
 	.atag_offset	= 0x100,
 	.reserve	= ti81xx_reserve,
-	.map_io		= ti81xx_map_io,
+	.map_io		= omap3_map_io,
 	.init_early	= ti81xx_init_early,
 	.init_irq	= ti81xx_init_irq,
+	.handle_irq	= omap3_intc_handle_irq,
 	.init_machine	= chronos14_init,
 	.timer		= &omap3_timer,
 MACHINE_END
