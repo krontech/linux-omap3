@@ -28,6 +28,7 @@
 #include <linux/i2c/pcf857x.h>
 #include <linux/i2c/atmel_mxt_ts.h>
 #include <linux/regulator/machine.h>
+#include <linux/regulator/fixed.h>
 #include <linux/mfd/tps65910.h>
 #include <linux/clk.h>
 #include <linux/err.h>
@@ -71,6 +72,67 @@ static struct omap_board_mux board_mux[] __initdata = {
 #else
 #define board_mux     NULL
 #endif
+
+static struct regulator_consumer_supply vmmc0_supply[] = {
+	REGULATOR_SUPPLY("vmmc", "omap_hsmmc.0"),
+};
+static struct regulator_consumer_supply vmmc1_supply[] = {
+	REGULATOR_SUPPLY("vmmc", "omap_hsmmc.1"),
+};
+
+static struct regulator_init_data vmmc0_data = {
+	.constraints = {
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(vmmc0_supply),
+	.consumer_supplies = vmmc0_supply,
+};
+static struct regulator_init_data vmmc1_data = {
+	.constraints = {
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(vmmc1_supply),
+	.consumer_supplies = vmmc1_supply,
+};
+
+static struct fixed_voltage_config vmmc0_config = {
+	.supply_name = "vmmc",
+	.microvolts = 3300000, /* 3.3V */
+	.gpio = 32,
+	.startup_delay = 70000, /* 70msec */
+	.enable_high = 1,
+	.enabled_at_boot = 0,
+	.init_data = &vmmc0_data,
+};
+static struct fixed_voltage_config vmmc1_config = {
+	.supply_name = "vmmc",
+	.microvolts = 3300000, /* 3.3V */
+	.gpio = -1,
+	.startup_delay = 70000, /* 70msec */
+	.enable_high = 1,
+	.enabled_at_boot = 0,
+	.init_data = &vmmc1_data,
+};
+
+enum fixed_regulator_id {
+	FIXED_REG_ID_VMMC0 = 0,
+	FIXED_REG_ID_VMMC1,
+};
+
+static struct platform_device vmmc0_device = {
+	.name		= "reg-fixed-voltage",
+	.id		= FIXED_REG_ID_VMMC0,
+	.dev = {
+		.platform_data = &vmmc0_config,
+	},
+};
+static struct platform_device vmmc1_device = {
+	.name		= "reg-fixed-voltage",
+	.id		= FIXED_REG_ID_VMMC1,
+	.dev = {
+		.platform_data = &vmmc1_config,
+	},
+};
 
 static struct omap2_hsmmc_info mmc[] = {
 	{
@@ -410,6 +472,8 @@ static inline void chronos14_hdmi_clk_init(void) {}
 #endif
 
 static struct platform_device *chronos14_devices[] __initdata = {
+	&vmmc0_device,
+	&vmmc1_device,
 	&hdvpss_device,
 	&ti81xx_fb_device,
 	&ti81xx_vidout_device,
@@ -466,24 +530,6 @@ static int init_lcd_backlight(void)
 
 	gpio_export(18, true);
 	gpio_direction_output(18, 1);
-
-	return 0;
-}
-
-static int mmc0_power_init(void)
-{
-	int ret;
-
-	//Turn on SD0Pwr line to enable SD card power
-	ret = gpio_request(32+0, "sd0Pwr");
-	if (ret) {
-		printk(KERN_ERR "%s: failed to request GPIO for SD0 Power"
-			": %d\n", __func__, ret);
-		return ret;
-	}
-
-	gpio_export(32+0, true);
-	gpio_direction_output(32+0, 1);
 
 	return 0;
 }
@@ -568,8 +614,6 @@ static void __init chronos14_init(void)
 	chronos14_tsc_init();
 	chronos14_i2c_init();
 	omap3_register_mcasp(&snd_data, 2);
-
-	mmc0_power_init();
 	omap2_hsmmc_init(mmc);
 
 	pm_power_off = camera_power_off;
