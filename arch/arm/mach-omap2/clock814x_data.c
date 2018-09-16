@@ -1362,6 +1362,17 @@ static struct clk pata_ick = {
 	.recalc		= &followparent_recalc,
 };
 
+/* USB OTG Clock(final) */
+static struct clk usbotg_ick = {
+	.name		= "usbotg_ick",
+	.parent		= &sysclk6_ck,
+	.ops		= &clkops_ti81xx_usb,
+	.enable_reg	= TI81XX_CM_DEFAULT_USB_CLKCTRL,
+	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
+	.clkdm_name	= "default_usb_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
 /* Mail Box Clock(final) */
 static struct clk mailbox_fck = {
 	.name		= "mailbox_fck",
@@ -4048,6 +4059,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"sr2_ick",			&sr2_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr3_ick",			&sr3_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr4_ick",			&sr4_ick,			CK_TI814X),
+	CLK(NULL,		"usbotg_ick",			&usbotg_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"usbotg_fck",			&usbotg_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mmu_cfg_ick",			&mmu_cfg_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"p1500_ick",			&p1500_ick,			CK_TI814X | CK_DM385),
