@@ -1343,7 +1343,7 @@ static struct omap_uart_port_info *of_get_uart_port_info(struct device *dev)
 static int serial_omap_probe(struct platform_device *pdev)
 {
 	struct uart_omap_port	*up;
-	struct resource		*mem, *irq, *dma_tx, *dma_rx;
+	struct resource		*mem, *irq;
 	struct omap_uart_port_info *omap_up_info = pdev->dev.platform_data;
 	int ret = -ENOSPC;
 
@@ -1366,18 +1366,6 @@ static int serial_omap_probe(struct platform_device *pdev)
 				pdev->dev.driver->name)) {
 		dev_err(&pdev->dev, "memory region already claimed\n");
 		return -EBUSY;
-	}
-
-	dma_rx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
-	if (!dma_rx) {
-		ret = -EINVAL;
-		goto err;
-	}
-
-	dma_tx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
-	if (!dma_tx) {
-		ret = -EINVAL;
-		goto err;
 	}
 
 	up = kzalloc(sizeof(*up), GFP_KERNEL);
@@ -1423,10 +1411,22 @@ static int serial_omap_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "No clock speed specified: using default:"
 						"%d\n", DEFAULT_CLK_SPEED);
 	}
-	up->uart_dma.uart_base = mem->start;
 	up->errata = omap_up_info->errata;
 
 	if (omap_up_info->dma_enabled) {
+		struct resource *dma_tx, *dma_rx;
+		dma_rx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
+		if (!dma_rx) {
+			ret = -EINVAL;
+			goto err;
+		}
+
+		dma_tx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
+		if (!dma_tx) {
+			ret = -EINVAL;
+			goto err;
+		}
+		up->uart_dma.uart_base = mem->start;
 		up->uart_dma.uart_dma_tx = dma_tx->start;
 		up->uart_dma.uart_dma_rx = dma_rx->start;
 		up->use_dma = 1;
