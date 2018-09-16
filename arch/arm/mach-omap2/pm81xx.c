@@ -192,8 +192,12 @@ static int __init pwrdms_setup(struct powerdomain *pwrdm, void *unused)
 	pwrst = kmalloc(sizeof(struct power_state), GFP_ATOMIC);
 	if (!pwrst)
 		return -ENOMEM;
+
 	pwrst->pwrdm = pwrdm;
-	pwrst->next_state = PWRDM_POWER_OFF;
+	if (pwrdm->pwrsts & PWRSTS_OFF)
+		pwrst->next_state = PWRDM_POWER_OFF;
+	else
+		pwrst->next_state = PWRDM_POWER_ON;
 	list_add(&pwrst->node, &pwrst_list);
 
 	return pwrdm_set_next_pwrst(pwrst->pwrdm, pwrst->next_state);

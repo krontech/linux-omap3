@@ -31,6 +31,8 @@ static struct powerdomain alwon_81xx_pwrdm = {
 	.prcm_offs		= TI81XX_PRM_ALWON_MOD,
 	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_ON,
+	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
+	.pwrstst_offs		= TI81XX_PM_PWSTST_OFFSET,
 };
 
 /*
@@ -44,6 +46,8 @@ static struct powerdomain default_81xx_pwrdm = {
 	.prcm_offs		= TI81XX_PRM_DEFAULT_MOD,
 	.prcm_partition		= TI81XX_PRM_PARTITION,
 	.pwrsts			= PWRSTS_OFF_ON,
+	.pwrstctrl_offs		= TI81XX_PM_PWSTCTRL_OFFSET,
+	.pwrstst_offs		= TI81XX_PM_PWSTST_OFFSET,
 };
 
 static struct powerdomain active_81xx_pwrdm = {
