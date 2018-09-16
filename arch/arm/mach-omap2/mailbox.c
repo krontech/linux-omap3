@@ -470,8 +470,7 @@ static int __devinit omap2_mbox_probe(struct platform_device *pdev)
 	} else if (cpu_is_ti81xx()) {
 		list = ti81xx_mboxes;
 
-		list[0]->irq = list[1]->irq = list[2]->irq =
-			platform_get_irq_byname(pdev, "mbox");
+		list[0]->irq = platform_get_irq(pdev, 0);
 	} else if (cpu_is_omap34xx()) {
 		list = omap3_mboxes;
 
