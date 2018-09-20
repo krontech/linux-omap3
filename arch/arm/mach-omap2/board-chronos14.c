@@ -471,6 +471,39 @@ static void __init chronos14_hdmi_clk_init(void)
 static inline void chronos14_hdmi_clk_init(void) {}
 #endif
 
+static void __init chronos14_eth_clk_init(void)
+{
+	struct clk *rgmii_clk;
+	struct clk *parent, *child;
+	int ret = 0;
+
+	/* Configure the CPTS reference clock mux */
+	parent = clk_get(NULL, "audio_dpll_ck");
+	if (IS_ERR(parent))
+		pr_err("Unable to get [audio_dpll_ck] clk\n");
+
+	child = clk_get(NULL, "cpts_rft_clk_ck");
+	if (IS_ERR(child))
+		pr_err("Unable to get [cpts_rft_clk_ck] clk\n");
+	
+	/* Configure for 250MHz clock */
+	ret = clk_set_rate(parent, 250000000);
+	if (ret < 0)
+		pr_err("Unable to set configure PLL [audio_dpll_ck]\n");
+
+	ret = clk_set_parent(child, parent);
+	if (ret < 0)
+		pr_err("Unable to select parent clk [cpts_rft_clk_ck]\n");
+
+	rgmii_clk = clk_get(NULL, "emac_rgmii_fck");
+	if (IS_ERR(rgmii_clk)) {
+		pr_err("Cannot clk_get rgmii_clk\n");
+	}
+	else {
+		clk_enable(rgmii_clk);
+	}
+}
+
 static struct platform_device *chronos14_devices[] __initdata = {
 	&vmmc0_device,
 	&vmmc1_device,
@@ -615,10 +648,12 @@ static void __init chronos14_init(void)
 	chronos14_i2c_init();
 	omap3_register_mcasp(&snd_data, 2);
 	omap2_hsmmc_init(mmc);
+	am33xx_cpsw_init(AM33XX_CPSW_MODE_RGMII, NULL, NULL);
 
 	pm_power_off = camera_power_off;
 
-	/*setup the clokc for HDMI MCLK*/
+	/* Setup clocks trees. */
+	chronos14_eth_clk_init();
 	chronos14_hdmi_clk_init();
 	__raw_writel(0x0, DSS_HDMI_RESET);
 
@@ -640,7 +675,7 @@ MACHINE_START(CHRONOS14, "chronos1.4")
 	/* Maintainer: Kron Technologies */
 	.atag_offset	= 0x100,
 	.reserve	= ti81xx_reserve,
-	.map_io		= omap3_map_io,
+	.map_io		= ti81xx_map_io,
 	.init_early	= ti81xx_init_early,
 	.init_irq	= ti81xx_init_irq,
 	.handle_irq	= omap3_intc_handle_irq,
@@ -657,7 +692,7 @@ MACHINE_START(TI8148EVM, "chronos1.4-evm")
 	/* Maintainer: Kron Technologies */
 	.atag_offset	= 0x100,
 	.reserve	= ti81xx_reserve,
-	.map_io		= omap3_map_io,
+	.map_io		= ti81xx_map_io,
 	.init_early	= ti81xx_init_early,
 	.init_irq	= ti81xx_init_irq,
 	.handle_irq	= omap3_intc_handle_irq,

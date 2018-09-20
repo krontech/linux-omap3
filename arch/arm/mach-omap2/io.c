@@ -182,9 +182,15 @@ static struct map_desc omap34xx_io_desc[] __initdata = {
 #ifdef CONFIG_SOC_OMAPTI81XX
 static struct map_desc omapti81xx_io_desc[] __initdata = {
 	{
-		.virtual	= L4_34XX_VIRT,
-		.pfn		= __phys_to_pfn(L4_34XX_PHYS),
-		.length		= L4_34XX_SIZE,
+		.virtual	= L4_SLOW_81XX_VIRT,
+		.pfn		= __phys_to_pfn(L4_SLOW_81XX_PHYS),
+		.length		= L4_SLOW_81XX_SIZE,
+		.type		= MT_DEVICE
+	},
+	{
+		.virtual	= L4_FAST_81XX_VIRT,
+		.pfn		= __phys_to_pfn(L4_FAST_81XX_PHYS),
+		.length		= L4_FAST_81XX_SIZE,
 		.type		= MT_DEVICE
 	}
 };

@@ -29,6 +29,7 @@
 
 #include "omap_hwmod_common_data.h"
 
+#include "common.h"
 #include "control.h"
 #include "cm81xx.h"
 #include "wd_timer.h"
@@ -297,12 +298,17 @@ static struct omap_hwmod ti814x_timer2_hwmod;
 static struct omap_hwmod ti814x_timer3_hwmod;
 static struct omap_hwmod ti814x_timer4_hwmod;
 static struct omap_hwmod ti814x_timer5_hwmod;
+static struct omap_hwmod ti814x_timer6_hwmod;
+static struct omap_hwmod ti814x_timer7_hwmod;
+static struct omap_hwmod ti814x_timer8_hwmod;
 
 static struct omap_hwmod ti816x_timer1_hwmod;
 static struct omap_hwmod ti816x_timer2_hwmod;
 static struct omap_hwmod ti816x_timer3_hwmod;
 static struct omap_hwmod ti816x_timer4_hwmod;
 static struct omap_hwmod ti816x_timer5_hwmod;
+static struct omap_hwmod ti816x_timer6_hwmod;
+static struct omap_hwmod ti816x_timer7_hwmod;
 
 /* L4 SLOW -> GPIO1 */
 static struct omap_hwmod_addr_space ti81xx_gpio1_addrs[] = {
@@ -504,8 +510,6 @@ static struct omap_hwmod_ocp_if ti81xx_l4_slow__i2c4 = {
 	.user           = OCP_USER_MPU,
 };
 
-/* Master interfaces on the MPU device */
-
 /* cpgmac0 */
 static struct omap_hwmod_class_sysconfig ti814x_cpgmac_sysc = {
 	.rev_offs	= 0x0,
@@ -521,7 +525,6 @@ static struct omap_hwmod_class_sysconfig ti814x_cpgmac_sysc = {
 static struct omap_hwmod_class ti814x_cpgmac0_hwmod_class = {
 	.name		= "cpsw",
 	.sysc		= &ti814x_cpgmac_sysc,
-//	.reset		= ti814x_cpgmac_reset, /* TODO: Is reset needed, or is that just an am33xx thing? */
 };
 
 /* Used by driver */
@@ -529,7 +532,7 @@ struct omap_hwmod_addr_space ti814x_cpgmac0_addr_space[] = {
 	/* cpsw ss */
 	{
 		.pa_start	= 0x4A100000,
-		.pa_end		= 0x4A100000 + SZ_2K - 1,
+		.pa_end		= 0x4A100024 - 1,
 		.flags		= ADDR_MAP_ON_INIT,
 	},
 	/* cpsw wr */
@@ -552,7 +555,7 @@ struct omap_hwmod_addr_space ti814x_cpsw_sl1_addr_space[] = {
 	/* cpsw sl1 */
 	{
 		.pa_start	= 0x4A100700,
-		.pa_end		= 0x4A100700 + SZ_32 - 1,
+		.pa_end		= 0x4A100700 + SZ_64 - 1,
 		.flags		= ADDR_TYPE_RT,
 	},
 	{ }
@@ -569,7 +572,7 @@ struct omap_hwmod_addr_space ti814x_cpsw_sl2_addr_space[] = {
 	/* cpsw sl2 */
 	{
 		.pa_start	= 0x4A100740,
-		.pa_end		= 0x4A100740 + SZ_32 - 1,
+		.pa_end		= 0x4A100740 + SZ_64 - 1,
 		.flags		= ADDR_TYPE_RT,
 	},
 	{ }
@@ -586,7 +589,7 @@ struct omap_hwmod_addr_space ti814x_cpsw_cpdma_addr_space[] = {
 	/* cpsw cpdma */
 	{
 		.pa_start	= 0x4A100100,
-		.pa_end		= 0x4A100100 + SZ_32 - 1,
+		.pa_end		= 0x4A100100 + SZ_512 - 1,
 		.flags		= ADDR_TYPE_RT,
 	},
 	{ }
@@ -622,7 +625,7 @@ static struct omap_hwmod ti814x_cpgmac0_hwmod = {
 	.main_clk	= "cpgmac0_ick",
 	.prcm		= {
 		.omap4	= {
-			.clkctrl_offs	= TI81XX_CM_ETHERNET_CLKSTCTRL_OFFSET,
+			.clkctrl_offs	= TI81XX_CM_ALWON_ETHERNET_0_CLKCTRL_OFFSET,
 			.modulemode	= MODULEMODE_SWCTRL,
 		},
 	},
@@ -2517,7 +2520,7 @@ static struct omap_hwmod ti816x_timer4_hwmod = {
 
 /* timer5 */
 static struct omap_hwmod_irq_info ti81xx_timer5_irqs[] = {
-	{ .irq = 92 },
+	{ .irq = 93 },
 	{ .irq = -1 }
 };
 
@@ -2576,6 +2579,168 @@ static struct omap_hwmod ti816x_timer5_hwmod = {
 	.slaves		= ti816x_timer5_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti816x_timer5_slaves),
 	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET),
+};
+
+/* timer6 */
+static struct omap_hwmod_irq_info ti81xx_timer6_irqs[] = {
+	{ .irq = 94 },
+	{ .irq = -1 }
+};
+
+static struct omap_hwmod_addr_space ti81xx_timer6_addr_space[] = {
+	{
+		.pa_start	= 0x48048000,
+		.pa_end		= 0x48048000 + SZ_1K - 1,
+		.flags		= ADDR_TYPE_RT
+	},
+	{ }
+};
+
+static struct omap_hwmod_ocp_if ti814x_l4_slow__timer6 = {
+	.master		= &ti81xx_l4_slow_hwmod,
+	.slave		= &ti814x_timer6_hwmod,
+	.clk		= "timer6_ick",
+	.addr		= ti81xx_timer6_addr_space,
+	.user		= OCP_USER_MPU,
+};
+static struct omap_hwmod_ocp_if *ti814x_timer6_slaves[] = {
+	&ti814x_l4_slow__timer6,
+};
+static struct omap_hwmod ti814x_timer6_hwmod = {
+	.name		= "timer6",
+	.class		= &ti81xx_timer_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti81xx_timer6_irqs,
+	.main_clk	= "timer6_fck",
+	.slaves		= ti814x_timer6_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti814x_timer6_slaves),
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+};
+
+static struct omap_hwmod_ocp_if ti816x_l4_slow__timer6 = {
+	.master		= &ti81xx_l4_slow_hwmod,
+	.slave		= &ti816x_timer6_hwmod,
+	.clk		= "timer6_ick",
+	.addr		= ti81xx_timer6_addr_space,
+	.user		= OCP_USER_MPU,
+};
+static struct omap_hwmod_ocp_if *ti816x_timer6_slaves[] = {
+	&ti816x_l4_slow__timer6,
+};
+static struct omap_hwmod ti816x_timer6_hwmod = {
+	.name		= "timer6",
+	.class		= &ti81xx_timer_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti81xx_timer6_irqs,
+	.main_clk	= "timer6_fck",
+	.prcm		= {
+		.omap4	= {
+			.clkctrl_offs	= TI816X_CM_ALWON_TIMER_5_CLKCTRL_OFFSET,
+			.modulemode	= MODULEMODE_SWCTRL,
+		},
+	},
+	.slaves		= ti816x_timer6_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti816x_timer6_slaves),
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET),
+};
+
+/* timer7 */
+static struct omap_hwmod_irq_info ti81xx_timer7_irqs[] = {
+	{ .irq = 95 },
+	{ .irq = -1 }
+};
+
+static struct omap_hwmod_addr_space ti81xx_timer7_addr_space[] = {
+	{
+		.pa_start	= 0x4804a000,
+		.pa_end		= 0x4804a000 + SZ_1K - 1,
+		.flags		= ADDR_TYPE_RT
+	},
+	{ }
+};
+
+static struct omap_hwmod_ocp_if ti814x_l4_slow__timer7 = {
+	.master		= &ti81xx_l4_slow_hwmod,
+	.slave		= &ti814x_timer7_hwmod,
+	.clk		= "timer7_ick",
+	.addr		= ti81xx_timer7_addr_space,
+	.user		= OCP_USER_MPU,
+};
+static struct omap_hwmod_ocp_if *ti814x_timer7_slaves[] = {
+	&ti814x_l4_slow__timer7,
+};
+static struct omap_hwmod ti814x_timer7_hwmod = {
+	.name		= "timer7",
+	.class		= &ti81xx_timer_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti81xx_timer7_irqs,
+	.main_clk	= "timer7_fck",
+	.slaves		= ti814x_timer7_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti814x_timer7_slaves),
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+};
+
+static struct omap_hwmod_ocp_if ti816x_l4_slow__timer7 = {
+	.master		= &ti81xx_l4_slow_hwmod,
+	.slave		= &ti816x_timer7_hwmod,
+	.clk		= "timer7_ick",
+	.addr		= ti81xx_timer7_addr_space,
+	.user		= OCP_USER_MPU,
+};
+static struct omap_hwmod_ocp_if *ti816x_timer7_slaves[] = {
+	&ti816x_l4_slow__timer7,
+};
+static struct omap_hwmod ti816x_timer7_hwmod = {
+	.name		= "timer7",
+	.class		= &ti81xx_timer_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti81xx_timer7_irqs,
+	.main_clk	= "timer7_fck",
+	.prcm		= {
+		.omap4	= {
+			.clkctrl_offs	= TI816X_CM_ALWON_TIMER_6_CLKCTRL_OFFSET,
+			.modulemode	= MODULEMODE_SWCTRL,
+		},
+	},
+	.slaves		= ti816x_timer7_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti816x_timer7_slaves),
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET),
+};
+
+/* timer8 */
+static struct omap_hwmod_irq_info ti814x_timer8_irqs[] = {
+	{ .irq = 11 },
+	{ .irq = -1 }
+};
+
+static struct omap_hwmod_addr_space ti814x_timer8_addr_space[] = {
+	{
+		.pa_start	= 0x481c1000,
+		.pa_end		= 0x481c1000 + SZ_1K - 1,
+		.flags		= ADDR_TYPE_RT
+	},
+	{ }
+};
+
+static struct omap_hwmod_ocp_if ti814x_l4_slow__timer8 = {
+	.master		= &ti81xx_l4_slow_hwmod,
+	.slave		= &ti814x_timer8_hwmod,
+	.clk		= "timer8_ick",
+	.addr		= ti814x_timer8_addr_space,
+	.user		= OCP_USER_MPU,
+};
+static struct omap_hwmod_ocp_if *ti814x_timer8_slaves[] = {
+	&ti814x_l4_slow__timer8,
+};
+static struct omap_hwmod ti814x_timer8_hwmod = {
+	.name		= "timer8",
+	.class		= &ti81xx_timer_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti814x_timer8_irqs,
+	.main_clk	= "timer8_fck",
+	.slaves		= ti814x_timer8_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti814x_timer8_slaves),
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
 };
 
 /* tpcc */
@@ -2891,6 +3056,9 @@ static __initdata struct omap_hwmod *ti814x_hwmods[] = {
 	&ti814x_timer3_hwmod,
 	&ti814x_timer4_hwmod,
 	&ti814x_timer5_hwmod,
+	&ti814x_timer6_hwmod,
+	&ti814x_timer7_hwmod,
+	&ti814x_timer8_hwmod,
 	/* watchdog timer class */
 	&ti814x_wd_timer1_hwmod,
 	NULL,
@@ -2903,6 +3071,8 @@ static __initdata struct omap_hwmod *ti816x_hwmods[] = {
 	&ti816x_timer3_hwmod,
 	&ti816x_timer4_hwmod,
 	&ti816x_timer5_hwmod,
+	&ti816x_timer6_hwmod,
+	&ti816x_timer7_hwmod,
 	/* watchdog timer class */
 	&ti816x_wd_timer2_hwmod,
 	NULL,

@@ -202,6 +202,31 @@
 
 /*
  * ----------------------------------------------------------------------------
+ * TI81XX specific IO mapping
+ * ----------------------------------------------------------------------------
+ */
+/*
+ * Need to look at the Size 4M for L4.
+ * VPOM3430 was not working for Int controller
+ */
+
+#define L4_SLOW_81XX_PHYS	L4_SLOW_81XX_BASE
+						/* 0x48000000 --> 0xfa000000 */
+#define L4_SLOW_81XX_VIRT	(L4_SLOW_81XX_PHYS + OMAP2_L4_IO_OFFSET)
+#define L4_SLOW_81XX_SIZE	SZ_4M
+
+#define L4_FAST_81XX_PHYS	L4_FAST_81XX_BASE
+						/* 0x4a000000 --> 0xfc000000 */
+#define L4_FAST_81XX_VIRT	(L4_FAST_81XX_PHYS + OMAP2_L4_IO_OFFSET)
+#define L4_FAST_81XX_SIZE	SZ_4M
+
+#define TI81XX_L2_MC_PHYS	0x55000000
+						/* 0x55000000 --> upto 1MB */
+#define TI81XX_L2_MC_VIRT	(TI81XX_L2_MC_PHYS + TI81XX_L2_MC_IO_OFFSET)
+#define TI81XX_L2_MC_SIZE	SZ_1M
+
+/*
+ * ----------------------------------------------------------------------------
  * Omap4 specific IO mapping
  * ----------------------------------------------------------------------------
  */
@@ -250,14 +275,6 @@
 						/* 0x4e000000 --> 0xfd300000 */
 #define OMAP44XX_DMM_SIZE	SZ_1M
 #define OMAP44XX_DMM_VIRT	(OMAP44XX_EMIF2_VIRT + OMAP44XX_EMIF2_SIZE)
-
-/*
- * TI81XX Specific I/O Mapping
- */
-#define TI81XX_L2_MC_PHYS	0x55000000
-						/* 0x55000000 --> upto 1MB */
-#define TI81XX_L2_MC_VIRT	(TI81XX_L2_MC_PHYS + TI81XX_L2_MC_IO_OFFSET)
-#define TI81XX_L2_MC_SIZE	SZ_1M
 
 /*
  * ----------------------------------------------------------------------------

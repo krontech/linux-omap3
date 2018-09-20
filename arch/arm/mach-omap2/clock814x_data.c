@@ -944,17 +944,6 @@ static struct clk ocmc_ram_ick = {
 	.flags		= ENABLE_ON_INIT,
 };
 
-/* CPSW Clock(final) */
-static struct clk cpsw_ick = {
-	.name		= "cpsw_ick",
-	.parent		= &sysclk5_ck,
-	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI81XX_CM_ALWON_ETHERNET_0_CLKCTRL,
-	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
-	.clkdm_name	= "alwon_ethernet_clkdm",
-	.recalc		= &followparent_recalc,
-};
-
 /* DSP Trace Fun Clock(final) */
 static struct clk gem_trc_fck = {
 	.name		= "gem_trc_fck",
@@ -3780,13 +3769,21 @@ static struct clk emac_gmii_fck = {
 	.recalc		= &followparent_recalc,
 };
 
+/* RGMII 250MHz ref clk */
+static struct clk emac_rgmii_fck = {
+	.name		= "emac_rgmii_fck",
+	.parent		= &cpts_rft_clk_ck,
+	.ops		= &clkops_null,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.recalc		= &followparent_recalc,
+};
 
 static struct clk cpgmac0_ick = {
 	.name		= "cpgmac0_ick",
-	.clkdm_name	= "alwon_l3m_clkdm",
+	.clkdm_name	= "alwon_ethernet_clkdm",
 	.parent		= &sysclk5_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
-	.enable_reg	= TI81XX_CM_ETHERNET_CLKSTCTRL,
+	.enable_reg	= TI81XX_CM_ALWON_ETHERNET_0_CLKCTRL,
 	.enable_bit	= TI81XX_MODULEMODE_SWCTRL,
 	.recalc		= &followparent_recalc,
 };
@@ -4002,7 +3999,6 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"fdif_fck",			&fdif_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"dap_ick",			&dap_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"ocmc_ram_ick",			&ocmc_ram_ick,			CK_TI814X | CK_DM385),
-	CLK("cpsw.0",		NULL,				&cpsw_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gem_trc_fck",			&gem_trc_fck,			CK_TI814X),
 	CLK(NULL,		"mcasp4_ick",			&mcasp4_ick,			CK_TI814X),
 	CLK(NULL,		"mcasp5_ick",			&mcasp5_ick,			CK_TI814X),
@@ -4229,6 +4225,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"gmac0to1_mux_out_ck",		&gmac0to1_mux_out_ck,		CK_DM385),
 	CLK(NULL,		"emac_rmii_fck",		&emac_rmii_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"emac_gmii_fck",		&emac_gmii_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL, 		"emac_rgmii_fck",		&emac_rgmii_fck,		CK_TI814X | CK_DM385),
 	CLK("cpsw.0",		"cpgmac0_ick",			&cpgmac0_ick,			CK_TI814X | CK_DM385),
 	CLK("omap_wdt",		"wdt1_fck",			&wdt1_fck,			CK_TI814X | CK_DM385),
 	CLK("omap_wdt",		"wdt2_fck",			&wdt2_fck,			CK_TI814X | CK_DM385),

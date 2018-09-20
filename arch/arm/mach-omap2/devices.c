@@ -2276,7 +2276,11 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 		return -EINVAL;
 	}
 
-	writel(gmii_sel, AM33XX_CTRL_REGADDR(AM33XX_CONTROL_GMII_SEL_OFFSET));
+	if (cpu_is_am33xx()) {
+		writel(gmii_sel, AM33XX_CTRL_REGADDR(AM33XX_CONTROL_GMII_SEL_OFFSET));
+	} else {
+		writel(gmii_sel, TI81XX_CTRL_REGADDR(AM33XX_CONTROL_GMII_SEL_OFFSET));
+	}
 
 	if (phy_id0 != NULL)
 		pdata->slave_data[0].phy_id = phy_id0;
