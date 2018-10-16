@@ -45,15 +45,15 @@ void __init omap2_i2c_mux_pins(int bus_id)
 
 	if (machine_is_chronos14() && bus_id == 3) {
 		sprintf(mux_name, "vin0_fld0_mux0.i2c2_scl_mux3");
-		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+		omap_mux_init_signal(mux_name, TI814X_INPUT_EN);
 		sprintf(mux_name, "vin0_de0_mux0.i2c2_sda_mux1");
-		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+		omap_mux_init_signal(mux_name, TI814X_INPUT_EN);
 	}
 	else if (cpu_is_ti814x() && bus_id == 3) {
 		sprintf(mux_name, "uart0_dcdn.i2c2_scl_mux0");
-		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+		omap_mux_init_signal(mux_name, TI814X_INPUT_EN);
 		sprintf(mux_name, "uart0_dsrn.i2c2_sda_mux0");
-		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
+		omap_mux_init_signal(mux_name, TI814X_INPUT_EN);
 	} else {
 		sprintf(mux_name, "i2c%i_scl.i2c%i_scl", bus_id, bus_id);
 		omap_mux_init_signal(mux_name, OMAP_PIN_INPUT);
