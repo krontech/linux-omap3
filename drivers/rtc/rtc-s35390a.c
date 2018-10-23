@@ -254,6 +254,9 @@ static int s35390a_alarm_irq_enable(struct i2c_client *client, unsigned enabled)
 	char buf[3], sts;
 	int err, i;
 
+	if (client->irq <= 0)
+		return -EINVAL;
+
 	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, &sts, sizeof(sts));
 	if (err) {
 		dev_err(&client->dev, "%s: failed to read STS2 reg\n",
@@ -382,6 +385,9 @@ static int s35390a_update_irq_enable(struct i2c_client *client,
 {
 	struct s35390a *s35390a = i2c_get_clientdata(client);
 	char buf[1];
+
+	if (client->irq <= 0)
+		return -EINVAL;
 
 	if (s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf)) < 0)
 		return -EIO;
