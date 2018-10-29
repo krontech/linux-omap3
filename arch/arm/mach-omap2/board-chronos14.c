@@ -523,10 +523,26 @@ static int chronos14_lsi_phy_fixup(struct phy_device *phydev)
 {
 	unsigned int val;
 
+	printk("%s: applying LSI PHY fixup\n", __func__);
+
 	/* This enables TX_CLK-ing in case of 10/100MBps operation */
 	val = phy_read(phydev, PHY_CONFIG_REG);
 	phy_write(phydev, PHY_CONFIG_REG, (val | BIT(5)));
 
+	return 0;
+}
+
+#define MICREL_PHY_ID	0x00221611
+#define MICREL_PHY_MASK	0xffffffff
+
+static int chronos14_micrel_phy_fixup(struct phy_device *phydev)
+{
+	printk("%s: applying Micrel PHY fixup\n", __func__);
+
+	phy_write(phydev, 0x104, 0xf0f0);	/* RGMII Clock and Control Pad Pkew. */
+	phy_write(phydev, 0x105, 0);		/* RGMII RX Data Pad Skew */
+	phy_write(phydev, 0x106, 0);		/* RGMII TX Data Pad Skew */
+	
 	return 0;
 }
 
@@ -649,6 +665,8 @@ static void __init chronos14_init(void)
 	omap3_register_mcasp(&snd_data, 2);
 	omap2_hsmmc_init(mmc);
 	am33xx_cpsw_init(AM33XX_CPSW_MODE_RGMII, NULL, NULL);
+	phy_register_fixup_for_uid(MICREL_PHY_ID, MICREL_PHY_MASK, chronos14_micrel_phy_fixup);
+	phy_register_fixup_for_uid(LSI_PHY_ID, LSI_PHY_MASK, chronos14_lsi_phy_fixup);
 
 	pm_power_off = camera_power_off;
 
@@ -663,9 +681,6 @@ static void __init chronos14_init(void)
 	platform_add_devices(chronos14_devices, ARRAY_SIZE(chronos14_devices));
 	regulator_use_dummy_regulator();
 
-	/* LSI Gigabit Phy fixup */
-	phy_register_fixup_for_uid(LSI_PHY_ID, LSI_PHY_MASK,
-				   chronos14_lsi_phy_fixup);
 
 	/* Turn on LCD backlight */
 	init_lcd_backlight();

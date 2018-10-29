@@ -2180,7 +2180,7 @@ static struct cpsw_platform_data ti814x_cpsw_pdata = {
 	.gigabit_en		= 1,
 	.host_port_num		= 0,
 	.no_bd_ram		= false,
-	.version		= CPSW_VERSION_2,
+	.version		= CPSW_VERSION_1,
 };
 
 static struct mdio_platform_data am33xx_cpsw_mdiopdata = {
@@ -2268,7 +2268,10 @@ int am33xx_cpsw_init(enum am33xx_cpsw_mac_mode mode, unsigned char *phy_id0,
 		gmii_sel = AM33XX_RMII_MODE_EN;
 		break;
 	case AM33XX_CPSW_MODE_RGMII:
-		gmii_sel = AM33XX_RGMII_MODE_EN;
+		if (cpu_is_ti81xx())
+			gmii_sel = TI81XX_RGMII_MODE_EN;
+		else
+			gmii_sel = AM33XX_RGMII_MODE_EN;
 		pdata->slave_data[0].phy_if = PHY_INTERFACE_MODE_RGMII;
 		pdata->slave_data[1].phy_if = PHY_INTERFACE_MODE_RGMII;
 		break;
