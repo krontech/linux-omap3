@@ -129,20 +129,8 @@ struct clksel {
  * @recal_st_bit: bitshift of the PRM_IRQSTATUS_* bit for recalibration IRQs
  * @flags: DPLL type/features (see below)
  * @dpll_id: Integer value used for uniquely identifying an ADPLL
- * @div_m2n_reg: register containing the DPLL M2 and N bitfields
- * @div_m2_mask: mask of the DPLL M2 bitfield in @div_m2n_reg
- * @div_n_mask: mask of the DPLL N bitfield in @div_m2n_reg
  * @post_div_m2: fixed m2 value for this DPLL
- * @frac_mult_reg: register containing the fractional part of multiplier(m)
- * @frac_mult_mask: mask of the fractional part bitfield in @fract_mult_reg
  * @last_rounded_frac_m: cache of the last Fract M result of _round_rate()
- * @bypass_bit: bitshift for entering bypass mode in @control_reg
- * @byp_clk_src_bit:bitshift for selecting source clk in bypass @control_reg
- * @stby_ret_bit: bitshift for entering stand-by-ret mode in @control_reg
- * @stop_mode_bit: bitshift for entering stop-mode in @control_reg
- * @soft_reset_bit: bitshift for resetting the DPLL logic (TINITZ)@control_reg
- * @load_mn_reg: register for loading M and N values (TENABLE)
- * @load_m2n2_reg: register for loading M2 and N2 values (TENABLEDIV)
  * @dco_freq_sel: DCO FREQ selection mode for ADPLLLJs
  *
  * Possible values for @flags:
@@ -186,21 +174,10 @@ struct dpll_data {
 	u8			recal_st_bit;
 	/* data fields required by TI814X ADPLLs */
 	u8			dpll_id;
-	void __iomem		*div_m2n_reg;
-	u32			div_m2_mask;
-	u32			div_n_mask;
 	u8			pre_div_n;
 	u8			post_div_m2;
-	void __iomem		*frac_mult_reg;
-	u32			frac_mult_mask;
 	u32			last_rounded_frac_m;
 	u8			last_rounded_m2;
-	u32			bypass_bit;
-	u8			byp_clk_src_bit;
-	u8			stby_ret_bit;
-	u8			stop_mode_bit;
-	void __iomem		*load_mn_reg;
-	void __iomem		*load_m2n2_reg;
 	u8			dco_freq_sel;
 #  endif
 	u8			flags;
