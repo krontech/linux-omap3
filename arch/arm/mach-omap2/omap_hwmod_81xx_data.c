@@ -2116,7 +2116,7 @@ static struct omap_mmc_dev_attr ti81xx_mmc0_dev_attr = {
 };
 
 static struct omap_hwmod ti81xx_mmc0_hwmod = {
-	.name		= "mmc0",
+	.name		= "mmc1",
 	.class		= &ti81xx_mmc_hwmod_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_mmc0_irqs,

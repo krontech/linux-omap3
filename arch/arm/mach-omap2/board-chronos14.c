@@ -101,7 +101,7 @@ static struct fixed_voltage_config vmmc0_config = {
 	.gpio = 32,
 	.startup_delay = 70000, /* 70msec */
 	.enable_high = 1,
-	.enabled_at_boot = 0,
+	.enabled_at_boot = 1,
 	.init_data = &vmmc0_data,
 };
 static struct fixed_voltage_config vmmc1_config = {
@@ -110,7 +110,7 @@ static struct fixed_voltage_config vmmc1_config = {
 	.gpio = -1,
 	.startup_delay = 70000, /* 70msec */
 	.enable_high = 1,
-	.enabled_at_boot = 0,
+	.enabled_at_boot = 1,
 	.init_data = &vmmc1_data,
 };
 
@@ -138,16 +138,16 @@ static struct omap2_hsmmc_info mmc[] = {
 	{
 		.mmc		= 2,
 		.caps		= MMC_CAP_4_BIT_DATA,
-		.gpio_cd	= -EINVAL, /* Dedicated pins for CD and WP */
+		.gpio_cd	= 38,
 		.gpio_wp	= -EINVAL,
-		.ocr_mask	= MMC_VDD_33_34,
+		.ocr_mask	= MMC_VDD_32_33 | MMC_VDD_33_34, /* 3V3 */
 	},
 	{
 		.mmc		= 1,
 		.caps		= MMC_CAP_4_BIT_DATA,
 		.gpio_cd	= 14,
 		.gpio_wp	= 13,
-		.ocr_mask	= MMC_VDD_33_34,
+		.ocr_mask	= MMC_VDD_32_33 | MMC_VDD_33_34, /* 3V3 */
 	},
 	{}	/* Terminator */
 };
@@ -363,15 +363,10 @@ static struct spi_board_info __initdata spi_slave_info[] = {
 	},
 };
 
+/* Chronos1.4 has USB0 in host mode and USB1 in peripheral mode. */
 static struct omap_musb_board_data musb_board_data = {
 	.interface_type		= MUSB_INTERFACE_ULPI,
-#ifdef CONFIG_USB_MUSB_OTG
-	.mode           = MUSB_OTG,
-#elif defined(CONFIG_USB_MUSB_HDRC_HCD)
-	.mode           = MUSB_HOST,
-#elif defined(CONFIG_USB_GADGET_MUSB_HDRC)
-	.mode           = MUSB_PERIPHERAL,
-#endif
+	.mode		= (MUSB_PERIPHERAL << 4) | MUSB_HOST,
 	.power		= 500,
 	.instances	= 1,
 };
