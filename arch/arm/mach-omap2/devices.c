@@ -970,25 +970,6 @@ static const s8 am33xx_queue_priority_mapping[][2] = {
 	{-1, -1}
 };
 
-/* Four Transfer Controllers on TI81XX */
-static const s8 ti81xx_queue_tc_mapping[][2] = {
-	/* {event queue no, TC no} */
-	{0, 0},
-	{1, 1},
-	{2, 2},
-	{3, 3},
-	{-1, -1}
-};
-
-static const s8 ti81xx_queue_priority_mapping[][2] = {
-	/* {event queue no, Priority} */
-	{0, 0},
-	{1, 1},
-	{2, 2},
-	{3, 3},
-	{-1, -1}
-};
-
 static struct event_to_channel_map am33xx_xbar_event_mapping[] = {
 	/* {xbar event no, Channel} */
 	{1, 12},	/* SDTXEVT1 -> MMCHS2 */
@@ -1010,6 +991,61 @@ static struct event_to_channel_map am33xx_xbar_event_mapping[] = {
 	{17, -1},
 	{18, -1},
 	{19, -1},
+	{20, -1},
+	{21, -1},
+	{22, -1},
+	{23, -1},
+	{24, -1},
+	{25, -1},
+	{26, -1},
+	{27, -1},
+	{28, -1},
+	{29, -1},
+	{30, -1},
+	{31, -1},
+	{-1, -1}
+};
+
+/* Four Transfer Controllers on TI81XX */
+static const s8 ti81xx_queue_tc_mapping[][2] = {
+	/* {event queue no, TC no} */
+	{0, 0},
+	{1, 1},
+	{2, 2},
+	{3, 3},
+	{-1, -1}
+};
+
+static const s8 ti81xx_queue_priority_mapping[][2] = {
+	/* {event queue no, Priority} */
+	{0, 0},
+	{1, 1},
+	{2, 2},
+	{3, 3},
+	{-1, -1}
+};
+
+static struct event_to_channel_map ti81xx_xbar_event_mapping[] = {
+	/* {xbar event no, Channel} */
+	{1, -1},
+	{2, -1},
+	{3, -1},
+	{4, -1},
+	{5, -1},
+	{6, -1},
+	{7, -1},
+	{8, -1},
+	{9, -1},
+	{10, -1},
+	{11, -1},
+	{12, -1},
+	{13, -1},
+	{14, -1},
+	{15, -1},
+	{16, 20},	/* SPI2.TX0 -> SPI0.TX2 */
+	{17, 21},	/* SPI2.RX0 -> SPI0.RX2 */
+	{18, 22},	/* SPI2.TX1 -> SPI0.TX3 */
+	{19, 23},	/* SPI2.RX2 -> SPI0.RX3 */
 	{20, -1},
 	{21, -1},
 	{22, -1},
@@ -1130,7 +1166,7 @@ static struct edma_soc_info ti814x_edma_info[] = {
 		.queue_priority_mapping	= ti81xx_queue_priority_mapping,
 		.is_xbar		= 1,
 		.n_events		= 95,
-		.xbar_event_mapping	= am33xx_xbar_event_mapping,
+		.xbar_event_mapping	= ti81xx_xbar_event_mapping,
 		.map_xbar_channel	= map_xbar_event_to_channel,
 	},
 };

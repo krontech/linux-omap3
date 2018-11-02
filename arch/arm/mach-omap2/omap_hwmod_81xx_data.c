@@ -1838,6 +1838,15 @@ static struct omap_hwmod_class ti81xx_mcspi_class = {
 	.rev = OMAP4_MCSPI_REV,
 };
 
+/*
+ * HACK: We actually have a variable number of chipselects
+ * per MCSPI peripheral, but we don't have enough DMA channels
+ * to go around.
+ */
+static struct omap2_mcspi_dev_attr mcspi_attrib = {
+	.num_chipselect = 2,
+};
+
 /* mcspi1 */
 static struct omap_hwmod_irq_info ti81xx_spi1_irqs[] = {
 	{ .irq = 65 },
@@ -1849,10 +1858,12 @@ struct omap_hwmod_dma_info ti81xx_spi1_edma_reqs[] = {
 	{ .name = "tx0", .dma_req = 16 },
 	{ .name = "rx1", .dma_req = 19 },
 	{ .name = "tx1", .dma_req = 18 },
+#if 0 /* Leaving these DMA channels alone for the EDMA crossbar. */
 	{ .name = "rx2", .dma_req = 21 },
 	{ .name = "tx2", .dma_req = 20 },
 	{ .name = "rx3", .dma_req = 23 },
 	{ .name = "tx3", .dma_req = 22 },
+#endif
 	{ .dma_req = -1 }
 };
 
@@ -1868,7 +1879,7 @@ static struct omap_hwmod_addr_space ti81xx_mcspi1_addr_space[] = {
 static struct omap_hwmod_ocp_if ti81xx_l4_slow__mcspi1 = {
 	.master		= &ti81xx_l4_slow_hwmod,
 	.slave		= &ti81xx_mcspi1_hwmod,
-	.clk		= "mcspi1_ick",
+	.clk		= "mcspi_ick",
 	.addr		= ti81xx_mcspi1_addr_space,
 	.user		= OCP_USER_MPU,
 };
@@ -1877,25 +1888,21 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi1_slaves[] = {
 	&ti81xx_l4_slow__mcspi1,
 };
 
-static struct omap2_mcspi_dev_attr mcspi1_attrib = {
-	.num_chipselect = 4,
-};
 
 static struct omap_hwmod ti81xx_mcspi1_hwmod = {
 	.name		= "mcspi1",
 	.class		= &ti81xx_mcspi_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi1_irqs,
-	.main_clk	= "mcspi1_fck",
+	.main_clk	= "mcspi_fck",
 	.sdma_reqs	= ti81xx_spi1_edma_reqs,
 	.prcm		= {
 		.omap4	= {
-			/* HACK: It seems like this clkctrl_reg is shared by all the devices. */
 			.clkctrl_offs = TI81XX_CM_ALWON_SPI_CLKCTRL_OFFSET,
 			.modulemode	= MODULEMODE_SWCTRL,
 		},
 	},
-	.dev_attr	= &mcspi1_attrib,
+	.dev_attr	= &mcspi_attrib,
 	.slaves		= ti81xx_mcspi1_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_mcspi1_slaves),
 };
@@ -1926,7 +1933,7 @@ static struct omap_hwmod_addr_space ti81xx_mcspi2_addr_space[] = {
 static struct omap_hwmod_ocp_if ti81xx_l4_slow__mcspi2 = {
 	.master		= &ti81xx_l4_slow_hwmod,
 	.slave		= &ti81xx_mcspi2_hwmod,
-	.clk		= "mcspi2_ick",
+	.clk		= "mcspi_ick",
 	.addr		= ti81xx_mcspi2_addr_space,
 	.user		= OCP_USER_MPU,
 };
@@ -1935,25 +1942,20 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi2_slaves[] = {
 	&ti81xx_l4_slow__mcspi2,
 };
 
-static struct omap2_mcspi_dev_attr mcspi2_attrib = {
-	.num_chipselect = 2,
-};
-
 static struct omap_hwmod ti81xx_mcspi2_hwmod = {
 	.name		= "mcspi2",
 	.class		= &ti81xx_mcspi_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi2_irqs,
-	.main_clk	= "mcspi2_fck",
+	.main_clk	= "mcspi_fck",
 	.sdma_reqs	= ti81xx_spi2_edma_reqs,
 	.prcm		= {
 		.omap4	= {
-			/* HACK: It seems like this clkctrl_reg is shared by all the devices. */
 			.clkctrl_offs = TI81XX_CM_ALWON_SPI_CLKCTRL_OFFSET,
 			.modulemode	= MODULEMODE_SWCTRL,
 		},
 	},
-	.dev_attr	= &mcspi2_attrib,
+	.dev_attr	= &mcspi_attrib,
 	.slaves		= ti81xx_mcspi2_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_mcspi2_slaves),
 };
@@ -1962,6 +1964,15 @@ static struct omap_hwmod ti81xx_mcspi2_hwmod = {
 static struct omap_hwmod_irq_info ti81xx_spi3_irqs[] = {
 	{ .irq = 126 },
 	{ .irq = -1 }
+};
+
+/* EDMA channels borrowed from spi1 via the EDMA crossbar. */
+struct omap_hwmod_dma_info ti81xx_spi3_edma_reqs[] = {
+	{ .name = "tx0", .dma_req = 79 },
+	{ .name = "rx0", .dma_req = 80 },
+	{ .name = "tx1", .dma_req = 81 },
+	{ .name = "rx1", .dma_req = 82 },
+	{ .dma_req = -1 }
 };
 
 static struct omap_hwmod_addr_space ti81xx_mcspi3_addr_space[] = {
@@ -1976,7 +1987,7 @@ static struct omap_hwmod_addr_space ti81xx_mcspi3_addr_space[] = {
 static struct omap_hwmod_ocp_if ti81xx_l4_slow__mcspi3 = {
 	.master		= &ti81xx_l4_slow_hwmod,
 	.slave		= &ti81xx_mcspi3_hwmod,
-	.clk		= "mcspi3_ick",
+	.clk		= "mcspi_ick",
 	.addr		= ti81xx_mcspi3_addr_space,
 	.user		= OCP_USER_MPU,
 };
@@ -1985,33 +1996,31 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi3_slaves[] = {
 	&ti81xx_l4_slow__mcspi3,
 };
 
-static struct omap2_mcspi_dev_attr mcspi3_attrib = {
-	.num_chipselect = 2,
-};
-
 static struct omap_hwmod ti81xx_mcspi3_hwmod = {
 	.name		= "mcspi3",
 	.class		= &ti81xx_mcspi_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi3_irqs,
-	.main_clk	= "mcspi3_fck",
+	.main_clk	= "mcspi_fck",
+	.sdma_reqs	= ti81xx_spi3_edma_reqs,
 	.prcm		= {
 		.omap4	= {
-			/* HACK: It seems like this clkctrl_reg is shared by all the devices. */
 			.clkctrl_offs = TI81XX_CM_ALWON_SPI_CLKCTRL_OFFSET,
 			.modulemode	= MODULEMODE_SWCTRL,
 		},
 	},
-	.dev_attr	= &mcspi3_attrib,
+	.dev_attr	= &mcspi_attrib,
 	.slaves		= ti81xx_mcspi3_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_mcspi3_slaves),
 };
 
-/* SPI4 */
+/* mcspi4 */
 static struct omap_hwmod_irq_info ti81xx_spi4_irqs[] = {
 	{ .irq = 127 },
 	{ .irq = -1 }
 };
+
+/* TODO: No EDMA channel available for spi4. */
 
 static struct omap_hwmod_addr_space ti81xx_mcspi4_addr_space[] = {
 	{
@@ -2025,7 +2034,7 @@ static struct omap_hwmod_addr_space ti81xx_mcspi4_addr_space[] = {
 static struct omap_hwmod_ocp_if ti81xx_l4_slow__mcspi4 = {
 	.master		= &ti81xx_l4_slow_hwmod,
 	.slave		= &ti81xx_mcspi4_hwmod,
-	.clk		= "mcspi4_ick",
+	.clk		= "mcspi_ick",
 	.addr		= ti81xx_mcspi4_addr_space,
 	.user		= OCP_USER_MPU,
 };
@@ -2043,10 +2052,9 @@ static struct omap_hwmod ti81xx_mcspi4_hwmod = {
 	.class		= &ti81xx_mcspi_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi4_irqs,
-	.main_clk	= "mcspi4_fck",
+	.main_clk	= "mcspi_fck",
 	.prcm		= {
 		.omap4	= {
-			/* HACK: It seems like this clkctrl_reg is shared by all the devices. */
 			.clkctrl_offs = TI81XX_CM_ALWON_SPI_CLKCTRL_OFFSET,
 			.modulemode	= MODULEMODE_SWCTRL,
 		},
@@ -2055,7 +2063,6 @@ static struct omap_hwmod ti81xx_mcspi4_hwmod = {
 	.slaves		= ti81xx_mcspi4_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_mcspi4_slaves),
 };
-
 
 /* 'mmc' class */
 static struct omap_hwmod_class_sysconfig ti81xx_mmc_sysc = {
