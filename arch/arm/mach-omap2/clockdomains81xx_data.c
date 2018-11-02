@@ -33,6 +33,15 @@
  */
 
 /* Common for 81xx */
+static struct clockdomain alwon_l3_81xx_clkdm = {
+	.name		= "alwon_l3_clkdm",
+	.pwrdm		= { .name = "alwon_pwrdm" },
+	.cm_inst	= TI81XX_CM_ALWON_MOD,
+	.prcm_partition	= TI81XX_PRM_PARTITION,
+	.clkdm_offs	= TI81XX_CM_ALWON_L3_CLKCTRL_OFFSET,
+	.clktrctrl_mask	= TI81XX_CLKTRCTRL_MASK,
+	.flags		= (CLKDM_CAN_SWSUP | CLKDM_NO_AUTODEPS),
+};
 
 static struct clockdomain alwon_l3_slow_81xx_clkdm = {
 	.name		= "alwon_l3s_clkdm",
@@ -275,6 +284,7 @@ static struct clockdomain ivahd2_816x_clkdm = {
 
 static struct clockdomain *clockdomains_ti81xx[] __initdata = {
 	&alwon_mpu_81xx_clkdm,
+	&alwon_l3_81xx_clkdm,
 	&alwon_l3_slow_81xx_clkdm,
 	&alwon_l3_med_81xx_clkdm,
 	&alwon_l3_fast_81xx_clkdm,

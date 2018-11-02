@@ -130,6 +130,20 @@ static struct omap_hwmod_ocp_if ti81xx_alwon_l3_med__l4_fast;
 static struct omap_hwmod_ocp_if ti81xx_mpu__alwon_l3_slow;
 static struct omap_hwmod_ocp_if ti81xx_mpu__alwon_l3_med;
 
+/* L3 main interconnect */
+static struct omap_hwmod ti81xx_l3_main_hwmod = {
+	.name		= "l3_main",
+	.class		= &l3_hwmod_class,
+	.clkdm_name	= "alwon_l3_clkdm",
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET),
+	.prcm		= {
+		.omap4	= {
+			.clkctrl_offs	= DM81XX_CM_ALWON_L3_CLKCTRL,
+			.modulemode	= MODULEMODE_SWCTRL,
+		},
+	},
+};
+
 /* L3 Interconnect entries clocked at 125, 250 and 500MHz */
 static struct omap_hwmod_ocp_if *ti81xx_l3_slow_slaves[] = {
 	&ti81xx_mpu__alwon_l3_slow,
@@ -242,7 +256,6 @@ static struct omap_hwmod_ocp_if ti81xx_mpu__alwon_l3_slow = {
 	.user	= OCP_USER_MPU,
 };
 
-/* L3 med peripheral interface running at 200MHz */
 static struct omap_hwmod_ocp_if ti81xx_mpu__alwon_l3_med = {
 	.master	= &ti81xx_mpu_hwmod,
 	.slave	= &ti81xx_alwon_l3m_hwmod,
@@ -3000,6 +3013,7 @@ static struct omap_hwmod ti81xx_tptc3_hwmod = {
 
 static __initdata struct omap_hwmod *ti81xx_hwmods[] = {
 	/* bus interconnect class */
+	&ti81xx_l3_main_hwmod,
 	&ti81xx_default_l3s_hwmod,
 	&ti81xx_alwon_l3s_hwmod,
 	&ti81xx_alwon_l3m_hwmod,
