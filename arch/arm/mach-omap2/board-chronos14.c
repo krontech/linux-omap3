@@ -241,18 +241,6 @@ static struct ti81xxvin_subdev_info hdvpss_capture_subdevs[] = {
 	},
 };
 
-/* Touchscreen platform data */
-static struct mxt_platform_data ts_platform_data = {
-	.x_line		= 18,
-	.y_line		= 12,
-	.x_size		= 800,
-	.y_size		= 480,
-	.blen		= 0x01,
-	.threshold	= 30,
-	.voltage	= 2800000,
-	.orient		= MXT_HORIZONTAL_FLIP,
-};
-
 static struct at24_platform_data eeprom_info = {
 	.byte_len       = (256*1024) / 8,
 	.page_size      = 64,
@@ -265,20 +253,7 @@ static struct i2c_board_info __initdata i2c_boardinfo_bus1[] = {
 		.platform_data	= &eeprom_info,
 	},
 	{
-		I2C_BOARD_INFO("cpld", 0x23),
-	},
-	{
 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
-	},
-	{
-		I2C_BOARD_INFO("IO Expander", 0x20),
-	},
-	{
-		I2C_BOARD_INFO("tlc59108", 0x40),
-	},
-	{
-		I2C_BOARD_INFO("qt602240_ts", 0x4a),
-		.platform_data = &ts_platform_data,
 	},
 	{
 		I2C_BOARD_INFO("s35390a", 0x30),
@@ -359,7 +334,7 @@ static struct spi_board_info __initdata spi_slave_info[] = {
 		.max_speed_hz = 48000000,
 		.bus_num = 3,
 		.chip_select = 1,
-		.controller_data = (void *) 33, /* GP1[0] -> 1 x 16 + 0 = 16*/
+		.controller_data = (void *) 33, /* GP1[1] -> 1 x 32 + 1 = 33 */
 	},
 };
 
@@ -518,8 +493,6 @@ static int chronos14_lsi_phy_fixup(struct phy_device *phydev)
 {
 	unsigned int val;
 
-	printk("%s: applying LSI PHY fixup\n", __func__);
-
 	/* This enables TX_CLK-ing in case of 10/100MBps operation */
 	val = phy_read(phydev, PHY_CONFIG_REG);
 	phy_write(phydev, PHY_CONFIG_REG, (val | BIT(5)));
@@ -532,9 +505,7 @@ static int chronos14_lsi_phy_fixup(struct phy_device *phydev)
 
 static int chronos14_micrel_phy_fixup(struct phy_device *phydev)
 {
-	printk("%s: applying Micrel PHY fixup\n", __func__);
-
-	phy_write(phydev, 0x104, 0xf0f0);	/* RGMII Clock and Control Pad Pkew. */
+	phy_write(phydev, 0x104, 0xf0f0);	/* RGMII Clock and Control Pad Skew. */
 	phy_write(phydev, 0x105, 0);		/* RGMII RX Data Pad Skew */
 	phy_write(phydev, 0x106, 0);		/* RGMII TX Data Pad Skew */
 	
