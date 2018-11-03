@@ -410,7 +410,7 @@ void __init omap_serial_board_init(struct omap_uart_port_info *info)
 		bdata.pads_cnt = 0;
 
 		if (cpu_is_omap44xx() || (cpu_is_omap34xx() &&
-							!cpu_is_am33xx()))
+					!cpu_is_am33xx() && !cpu_is_ti81xx()))
 			omap_serial_fill_default_pads(&bdata);
 
 		if (!info)
