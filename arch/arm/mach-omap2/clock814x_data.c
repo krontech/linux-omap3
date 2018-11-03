@@ -1269,8 +1269,8 @@ static struct clk pata_ick = {
 };
 
 /* Mail Box Clock(final) */
-static struct clk mailbox_fck = {
-	.name		= "mailbox_fck",
+static struct clk mailbox_ick = {
+	.name		= "mailbox_ick",
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.parent		= &sysclk6_ck,
 	.ops		= &clkops_ti81xx_dflt_wait,
@@ -3844,7 +3844,7 @@ static struct omap_clk ti814x_clks[] = {
 	CLK("omap_wdt",		"wdt2_ick",			&wdt2_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sync_timer_ick",		&sync_timer_ick,		CK_TI814X | CK_DM385),
 	CLK(NULL,		"pata_ick",			&pata_ick,			CK_TI814X),
-	CLK(NULL,		"mailbox_fck",			&mailbox_fck,			CK_TI814X | CK_DM385),
+	CLK(NULL,		"mailbox_ick",			&mailbox_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"spinbox_ick",			&spinbox_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr1_ick",			&sr1_ick,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"sr2_ick",			&sr2_ick,			CK_TI814X | CK_DM385),
