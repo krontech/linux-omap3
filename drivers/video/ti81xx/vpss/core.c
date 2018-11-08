@@ -160,7 +160,7 @@ static int __init vps_init(void)
         reg_value &= 0xFFFFFFFE;
 
         __raw_writel(reg_value, reg_base);
-        iounmap((u32 *)TI814x_HDMI_MUX_ADDR);
+        iounmap((u32 *)reg_base);
 
 	if (platform_driver_probe(&vps_driver, vps_probe)) {
 		VPSSERR("failed to register ti81xx-vpss driver\n");

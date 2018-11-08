@@ -507,7 +507,7 @@ void ti814x_set_clksrc_mux(int enable)
 		reg_value &= 0xFFFFFFFE;
 
 	__raw_writel(reg_value, reg_base);
-	iounmap((u32 *)TI814x_HDMI_MUX_ADDR);
+	iounmap((u32 *)reg_base);
 }
 
 
