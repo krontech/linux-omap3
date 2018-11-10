@@ -474,6 +474,13 @@ static void __init chronos14_eth_clk_init(void)
 	}
 }
 
+static void __init chronos14_fpga_memory_init(void)
+{
+	struct omap_hwmod *oh = omap_hwmod_lookup("gpmc");
+	if (oh)
+		omap_hwmod_enable(oh);
+}
+
 static struct platform_device *chronos14_devices[] __initdata = {
 	&vmmc0_device,
 	&vmmc1_device,
@@ -633,6 +640,8 @@ static void __init chronos14_init(void)
 	am33xx_cpsw_init(AM33XX_CPSW_MODE_RGMII, NULL, NULL);
 	phy_register_fixup_for_uid(MICREL_PHY_ID, MICREL_PHY_MASK, chronos14_micrel_phy_fixup);
 	phy_register_fixup_for_uid(LSI_PHY_ID, LSI_PHY_MASK, chronos14_lsi_phy_fixup);
+
+	chronos14_fpga_memory_init();
 
 	pm_power_off = camera_power_off;
 

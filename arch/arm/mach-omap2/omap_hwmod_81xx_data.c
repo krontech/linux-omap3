@@ -280,6 +280,7 @@ static struct omap_hwmod ti81xx_i2c1_hwmod;
 static struct omap_hwmod ti81xx_i2c2_hwmod;
 static struct omap_hwmod ti81xx_i2c3_hwmod;
 static struct omap_hwmod ti81xx_i2c4_hwmod;
+static struct omap_hwmod ti81xx_gpmc_hwmod;
 static struct omap_hwmod ti81xx_gpio1_hwmod;
 static struct omap_hwmod ti81xx_gpio2_hwmod;
 static struct omap_hwmod ti814x_gpio3_hwmod;
@@ -793,6 +794,66 @@ static struct omap_hwmod_class_sysconfig uart_sysc = {
 static struct omap_hwmod_class uart_class = {
 	.name = "uart",
 	.sysc = &uart_sysc,
+};
+
+
+/* gpmc */
+static struct omap_hwmod_class_sysconfig gpmc_sysc = {
+	.rev_offs	= 0x0,
+	.sysc_offs	= 0x10,
+	.syss_offs	= 0x14,
+	.sysc_flags	= (SYSC_HAS_AUTOIDLE | SYSC_HAS_SIDLEMODE |
+			SYSC_HAS_SOFTRESET | SYSS_HAS_RESET_STATUS),
+	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
+	.sysc_fields	= &omap_hwmod_sysc_type1,
+};
+
+static struct omap_hwmod_class ti81xx_gpmc_hwmod_class = {
+	.name		= "gpmc",
+	.sysc		= &gpmc_sysc,
+};
+
+struct omap_hwmod_addr_space ti81xx_gpmc_addr_space[] = {
+	{
+		.pa_start	= 0x50000000,
+		.pa_end		= 0x50000000 + SZ_8K - 1,
+		.flags		= ADDR_MAP_ON_INIT | ADDR_TYPE_RT,
+	},
+	{ }
+};
+
+struct omap_hwmod_ocp_if ti81xx_l3_main__gpmc = {
+	.master		= &ti81xx_l3_main_hwmod,
+	.slave		= &ti81xx_gpmc_hwmod,
+	.addr		= ti81xx_gpmc_addr_space,
+	.user		= OCP_USER_MPU,
+};
+
+static struct omap_hwmod_ocp_if *ti81xx_gpmc_slaves[] = {
+	&ti81xx_l3_main__gpmc,
+};
+
+static struct omap_hwmod_irq_info ti81xx_gpmc_irqs[] = {
+	{ .irq = 100 },
+	{ .irq = -1 }
+};
+
+static struct omap_hwmod ti81xx_gpmc_hwmod = {
+	.name		= "gpmc",
+	.class		= &ti81xx_gpmc_hwmod_class,
+	.clkdm_name	= "alwon_l3s_clkdm",
+	.mpu_irqs	= ti81xx_gpmc_irqs,
+	.main_clk	= "gpmc_fck",
+	.prcm		= {
+		.omap4	= {
+			.clkctrl_offs	= TI81XX_CM_ALWON_GPMC_CLKCTRL_OFFSET,
+			.modulemode	= MODULEMODE_SWCTRL,
+		},
+	},
+	.slaves		= ti81xx_gpmc_slaves,
+	.slaves_cnt	= ARRAY_SIZE(ti81xx_gpmc_slaves),
+	.flags		= (HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY |
+				HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET),
 };
 
 /* I2C common */
@@ -1836,19 +1897,19 @@ static struct omap_hwmod ti81xx_mcasp2_hwmod = {
  */
 static struct omap_hwmod_class_sysconfig ti81xx_mcspi_sysc = {
 	.rev_offs	= 0x0000,
-	.sysc_offs	= 0x0010,
-	.syss_offs	= 0x0014,
+	.sysc_offs	= 0x0110,
+	.syss_offs	= 0x0114,
 	.sysc_flags	= (SYSC_HAS_CLOCKACTIVITY | SYSC_HAS_SIDLEMODE |
 			SYSC_HAS_SOFTRESET | SYSC_HAS_AUTOIDLE |
 			SYSS_HAS_RESET_STATUS),
 	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART),
-	.sysc_fields    = &omap_hwmod_sysc_type1,
+	.sysc_fields	= &omap_hwmod_sysc_type1,
 };
 
-static struct omap_hwmod_class ti81xx_mcspi_class = {
-	.name = "mcspi",
-	.sysc = &ti81xx_mcspi_sysc,
-	.rev = OMAP4_MCSPI_REV,
+static struct omap_hwmod_class ti81xx_spi_hwmod_class = {
+	.name		= "mcspi",
+	.sysc		= &ti81xx_mcspi_sysc,
+	.rev		= OMAP4_MCSPI_REV,
 };
 
 /*
@@ -1882,7 +1943,7 @@ struct omap_hwmod_dma_info ti81xx_spi1_edma_reqs[] = {
 
 static struct omap_hwmod_addr_space ti81xx_mcspi1_addr_space[] = {
 	{
-		.pa_start	= 0x48030100,
+		.pa_start	= 0x48030000,
 		.pa_end		= 0x480301ff,
 		.flags		= ADDR_TYPE_RT,
 	},
@@ -1904,7 +1965,7 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi1_slaves[] = {
 
 static struct omap_hwmod ti81xx_mcspi1_hwmod = {
 	.name		= "mcspi1",
-	.class		= &ti81xx_mcspi_class,
+	.class		= &ti81xx_spi_hwmod_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi1_irqs,
 	.main_clk	= "mcspi_fck",
@@ -1936,7 +1997,7 @@ struct omap_hwmod_dma_info ti81xx_spi2_edma_reqs[] = {
 
 static struct omap_hwmod_addr_space ti81xx_mcspi2_addr_space[] = {
 	{
-		.pa_start	= 0x481A0100,
+		.pa_start	= 0x481A0000,
 		.pa_end		= 0x481A01ff,
 		.flags		= ADDR_TYPE_RT,
 	},
@@ -1957,7 +2018,7 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi2_slaves[] = {
 
 static struct omap_hwmod ti81xx_mcspi2_hwmod = {
 	.name		= "mcspi2",
-	.class		= &ti81xx_mcspi_class,
+	.class		= &ti81xx_spi_hwmod_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi2_irqs,
 	.main_clk	= "mcspi_fck",
@@ -1990,7 +2051,7 @@ struct omap_hwmod_dma_info ti81xx_spi3_edma_reqs[] = {
 
 static struct omap_hwmod_addr_space ti81xx_mcspi3_addr_space[] = {
 	{
-		.pa_start	= 0x481A2100,
+		.pa_start	= 0x481A2000,
 		.pa_end		= 0x481A21ff,
 		.flags		= ADDR_TYPE_RT,
 	},
@@ -2011,7 +2072,7 @@ static struct omap_hwmod_ocp_if *ti81xx_mcspi3_slaves[] = {
 
 static struct omap_hwmod ti81xx_mcspi3_hwmod = {
 	.name		= "mcspi3",
-	.class		= &ti81xx_mcspi_class,
+	.class		= &ti81xx_spi_hwmod_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi3_irqs,
 	.main_clk	= "mcspi_fck",
@@ -2037,7 +2098,7 @@ static struct omap_hwmod_irq_info ti81xx_spi4_irqs[] = {
 
 static struct omap_hwmod_addr_space ti81xx_mcspi4_addr_space[] = {
 	{
-		.pa_start	= 0x481A4100,
+		.pa_start	= 0x481A4000,
 		.pa_end		= 0x481A41ff,
 		.flags		= ADDR_TYPE_RT,
 	},
@@ -2062,7 +2123,7 @@ static struct omap2_mcspi_dev_attr mcspi4_attrib = {
 
 static struct omap_hwmod ti81xx_mcspi4_hwmod = {
 	.name		= "mcspi4",
-	.class		= &ti81xx_mcspi_class,
+	.class		= &ti81xx_spi_hwmod_class,
 	.clkdm_name	= "alwon_l3s_clkdm",
 	.mpu_irqs	= ti81xx_spi4_irqs,
 	.main_clk	= "mcspi_fck",
@@ -3028,6 +3089,7 @@ static __initdata struct omap_hwmod *ti81xx_hwmods[] = {
 	&ti81xx_i2c2_hwmod,
 	&ti81xx_i2c3_hwmod,
 	&ti81xx_i2c4_hwmod,
+	&ti81xx_gpmc_hwmod,
 	&ti81xx_gpio1_hwmod,
 	&ti81xx_gpio2_hwmod,
 	&ti814x_gpio3_hwmod,
