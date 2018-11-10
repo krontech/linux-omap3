@@ -2273,11 +2273,6 @@ struct usb_hcd *usb_create_shared_hcd(const struct hc_driver *driver,
 	hcd->speed = driver->flags & HCD_MASK;
 	hcd->product_desc = (driver->product_desc) ? driver->product_desc :
 			"USB Host Controller";
-
-	/* ehci omap specific */
-	if (hcd->driver->recover_hcd)
-		INIT_WORK(&hcd->ehci_omap_work, hcd->driver->recover_hcd);
-
 	return hcd;
 }
 EXPORT_SYMBOL_GPL(usb_create_shared_hcd);

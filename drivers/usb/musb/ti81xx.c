@@ -1308,29 +1308,14 @@ int ti81xx_musb_init(struct musb *musb)
 		usbid_sw_ctrl = 1;
 
 	if (is_otg_enabled(musb)) {
-		mode = MUSB_OTG;
 		/* if usb-id contolled through software for ti816x then
 		 * configure the usb0 in peripheral mode and usb1 in
 		 * host mode
 		*/
-		if (usbid_sw_ctrl && cpu_is_ti81xx()) {
-			if (musb->id == 0) {
-			#ifdef CONFIG_USB_MUSB0_DEVICE
-				mode = MUSB_PERIPHERAL;
-			#endif
-
-			#ifdef CONFIG_USB_MUSB0_HOST
-				mode = MUSB_HOST;
-			#endif
-			} else {
-			#ifdef CONFIG_USB_MUSB1_DEVICE
-				mode = MUSB_PERIPHERAL;
-			#endif
-			#ifdef CONFIG_USB_MUSB1_HOST
-				mode = MUSB_HOST;
-			#endif
-			}
-		}
+		if (usbid_sw_ctrl && cpu_is_ti816x())
+			mode = musb->id ? MUSB_HOST : MUSB_PERIPHERAL;
+		else
+			mode = MUSB_OTG;
 	} else
 		/* set musb controller to host mode */
 		mode = is_host_enabled(musb) ? MUSB_HOST : MUSB_PERIPHERAL;
