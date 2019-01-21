@@ -39,6 +39,7 @@
 #include <asm/mach/map.h>
 #include <asm/hardware/asp.h>
 
+#include <plat/omap-pm.h>
 #include <plat/mcspi.h>
 #include <plat/irqs.h>
 #include <plat/board.h>
@@ -72,6 +73,23 @@ static struct omap_board_mux board_mux[] __initdata = {
 #else
 #define board_mux     NULL
 #endif
+
+/* module pin mux structure */
+struct pinmux_config {
+	const char *string_name; /* signal name format */
+	int val; /* Options for the mux register value */
+};
+
+/*
+* @pin_mux - single module pin-mux structure which defines pin-mux
+*			details for all its pins.
+*/
+static void setup_pin_mux(struct pinmux_config *pin_mux)
+{
+	int i;
+	for (i = 0; pin_mux->string_name != NULL; pin_mux++)
+		omap_mux_init_signal(pin_mux->string_name, pin_mux->val);
+}
 
 static struct regulator_consumer_supply vmmc0_supply[] = {
 	REGULATOR_SUPPLY("vmmc", "omap_hsmmc.0"),
@@ -279,7 +297,7 @@ omap_writel(0x34, 0x48140E18);
 omap_writel(0x34, 0x48140E1c);
 
 	/* Already muxed in u-boot */
-	/* omap_mux_init_signal("mlb_clk.gpio0_31", TI814X_PULL_DIS | (1 << 18)); */
+	/* omap_mux_init_signal("mlb_clk.gpio0_31", TI814X_PULL_DISA | (1 << 18)); */
 
 	error = gpio_request(GPIO_TSC, "ts_irq");
 	if (error < 0) {
@@ -307,17 +325,29 @@ static u8 ti8148_iis_serializer_direction[] = {
 	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,	INACTIVE_MODE,
 };
 
-static struct snd_platform_data snd_data = {
-	.tx_dma_offset	= 0x46800000,
-	.rx_dma_offset	= 0x46800000,
+/* Module pin mux for mcasp1 */
+static struct pinmux_config ti81xx_mcasp1_pin_mux[] = {
+	{"xref_clk1.mcasp1_ahclkx",	TI814X_PIN_INPUT_PULLDOWN},
+	{"mcasp1_aclkx.mcasp1_aclkx", TI814X_PIN_INPUT_PULLDOWN},
+	{"mcasp1_fsx.mcasp1_fsx",	TI814X_PIN_INPUT_PULLDOWN},
+	{"mcasp1_axr0.mcasp1_axr0",	TI814X_PIN_INPUT_PULLDOWN},
+	{"mcasp1_axr1.mcasp1_axr1",	TI814X_PIN_OUTPUT},
+	{NULL, 0},
+};
+
+static struct snd_platform_data ti81xx_mcasp1_snd_data = {
+	.tx_dma_offset	= 0x46400000,	/* McASP1 */
+	.rx_dma_offset	= 0x46400000,
 	.op_mode	= DAVINCI_MCASP_IIS_MODE,
 	.num_serializer = ARRAY_SIZE(ti8148_iis_serializer_direction),
 	.tdm_slots	= 2,
 	.serial_dir	= ti8148_iis_serializer_direction,
 	.asp_chan_q	= EVENTQ_2,
-	.version	= MCASP_VERSION_2,
-	.txnumevt	= 1,
-	.rxnumevt	= 1,
+	.version	= MCASP_VERSION_3,
+	.txnumevt	= 32,
+	.rxnumevt	= 32,
+	.get_context_loss_count	=
+			omap_pm_get_dev_context_loss_count,
 };
 
 static struct spi_board_info __initdata spi_slave_info[] = {
@@ -630,12 +660,15 @@ static void camera_power_off(void)
 }
 
 static void __init chronos14_init(void)
-{
+{ 
 	ti814x_mux_init(board_mux);
 	omap_serial_init();
 	chronos14_tsc_init();
 	chronos14_i2c_init();
-	omap3_register_mcasp(&snd_data, 2);
+
+	setup_pin_mux(ti81xx_mcasp1_pin_mux);
+	omap3_register_mcasp(&ti81xx_mcasp1_snd_data, 1);
+	
 	omap2_hsmmc_init(mmc);
 	am33xx_cpsw_init(AM33XX_CPSW_MODE_RGMII, NULL, NULL);
 	phy_register_fixup_for_uid(MICREL_PHY_ID, MICREL_PHY_MASK, chronos14_micrel_phy_fixup);

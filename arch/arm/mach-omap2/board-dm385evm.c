@@ -290,7 +290,7 @@ static void __init ti814x_tsc_init(void)
 {
 	int error;
 
-	omap_mux_init_signal("mlb_clk.gpio0_31", TI814X_PULL_DIS | (1 << 18));
+	omap_mux_init_signal("mlb_clk.gpio0_31", TI814X_PULL_DISA | (1 << 18));
 
 	error = gpio_request(GPIO_TSC, "ts_irq");
 	if (error < 0) {

@@ -3080,8 +3080,8 @@ static const struct clksel mcasp0to6_auxclk_mux_sel[] = {
 };
 
 /* Mcasp3 aux_clk (mux out) */
-static struct clk mcasp4_fck = {
-	.name		= "mcasp4_fck",
+static struct clk mcasp3_fck = {
+	.name		= "mcasp3_fck",
 	.init		= &omap2_init_clksel_parent,
 	.ops		= &clkops_null,
 	.clksel		= mcasp0to6_auxclk_mux_sel,
@@ -3092,8 +3092,8 @@ static struct clk mcasp4_fck = {
 };
 
 /* Mcasp4 aux_clk (mux out) */
-static struct clk mcasp5_fck = {
-	.name		= "mcasp5_fck",
+static struct clk mcasp4_fck = {
+	.name		= "mcasp4_fck",
 	.init		= &omap2_init_clksel_parent,
 	.ops		= &clkops_null,
 	.clksel		= mcasp0to6_auxclk_mux_sel,
@@ -3104,8 +3104,8 @@ static struct clk mcasp5_fck = {
 };
 
 /* Mcasp5 aux_clk (mux out) */
-static struct clk mcasp6_fck = {
-	.name		= "mcasp6_fck",
+static struct clk mcasp5_fck = {
+	.name		= "mcasp5_fck",
 	.init		= &omap2_init_clksel_parent,
 	.ops		= &clkops_null,
 	.clksel		= mcasp0to6_auxclk_mux_sel,
@@ -3981,9 +3981,9 @@ static struct omap_clk ti814x_clks[] = {
 	CLK(NULL,		"gpt7_fck",			&timer7_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"gpt8_fck",			&timer8_fck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mcasp_auxclk_mux0_ck",		&mcasp_auxclk_mux0_ck,		CK_TI814X),
-	CLK("davinci-mcasp.3",	NULL,				&mcasp4_fck,			CK_TI814X),
-	CLK("davinci-mcasp.4",	NULL,				&mcasp5_fck,			CK_TI814X),
-	CLK("davinci-mcasp.5",	NULL,				&mcasp6_fck,			CK_TI814X),
+	CLK("davinci-mcasp.3",	NULL,				&mcasp3_fck,			CK_TI814X),
+	CLK("davinci-mcasp.4",	NULL,				&mcasp4_fck,			CK_TI814X),
+	CLK("davinci-mcasp.5",	NULL,				&mcasp5_fck,			CK_TI814X),
 	CLK(NULL,		"mcasp1_ahx_ck",		&mcasp1_ahx_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mcasp1_ahr_ck",		&mcasp1_ahr_ck,			CK_TI814X | CK_DM385),
 	CLK(NULL,		"mcasp2_ahx_ck",		&mcasp2_ahx_ck,			CK_TI814X | CK_DM385),

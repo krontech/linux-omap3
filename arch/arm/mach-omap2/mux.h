@@ -67,10 +67,18 @@
 #define	AM33XX_PIN_INPUT_PULLDOWN	(AM33XX_INPUT_EN)
 
 /* TI814x specific mux bit definitions */
-#define TI814X_PULL_DIS			(1 << 16)
+#define TI814X_PULL_ENBL		(0 << 17)
+#define TI814X_PULL_DISA		(1 << 16)
 #define TI814X_PULL_UP			(1 << 17)
 #define TI814X_INPUT_EN			(1 << 18)
-#define TI814X_SLEW_SLOW		(1 << 19)
+#define TI814X_SLEWCTRL_FAST		(0 << 19)
+#define TI814X_SLEWCTRL_SLOW		(1 << 19)
+
+#define TI814X_PIN_OUTPUT		(0)
+#define TI814X_PIN_OUTPUT_PULLUP	(TI814X_PULL_UP)
+#define TI814X_PIN_INPUT		(TI814X_INPUT_EN | TI814X_PULL_DISA)
+#define TI814X_PIN_INPUT_PULLUP		(TI814X_INPUT_EN | TI814X_PULL_UP)
+#define TI814X_PIN_INPUT_PULLDOWN	(TI814X_INPUT_EN)
 
 /* Active pin states */
 #define OMAP_PIN_OUTPUT			0

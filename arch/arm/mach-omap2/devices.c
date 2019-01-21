@@ -1082,7 +1082,7 @@ int map_xbar_event_to_channel(unsigned int event, unsigned int *channel,
 	unsigned int val = 0;
 	unsigned int offset = 0;
 	unsigned int mask = 0;
-	unsigned long addr = 0;
+	void __iomem *addr;
 
 	ctrl = EDMA_CTLR(event);
 	xbar_evt_no = event - (edma_cc[ctrl]->num_channels);
@@ -1097,7 +1097,6 @@ int map_xbar_event_to_channel(unsigned int event, unsigned int *channel,
 		offset = (*channel)/4;
 		offset *= 4;
 
-		
 		if (cpu_is_am33xx()) {
 			addr = AM33XX_CTRL_REGADDR(AM33XX_SCM_BASE_EDMA + offset);
 		} else {
@@ -1350,191 +1349,121 @@ static void __init ti81xx_video_mux(void)
 	} else if (cpu_is_ti814x())	{
 		/*VOUT0 DVO2 configuration*/
 		if (!machine_is_chronos14()) {
-			omap_mux_init_signal("vout0_fid_mux1", OMAP_MUX_MODE0);
+			omap_mux_init_signal("vout0_fid_mux1", TI814X_PIN_OUTPUT);
 		}
-		omap_mux_init_signal("vout0_clk", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_hsync", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_vsync", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_avid", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c2", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c3", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c4", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c5", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c6", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c7", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c8", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_b_cb_c9", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc2", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc3", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc4", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc5", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc6", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc7", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc8", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_g_y_yc9", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr2", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr3", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr4", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr5", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr6", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr7", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr8", OMAP_MUX_MODE0);
-		omap_mux_init_signal("vout0_r_cr9", OMAP_MUX_MODE0);
+		omap_mux_init_signal("vout0_clk", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_hsync", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_vsync", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_avid", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c2", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c3", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c4", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c5", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c6", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c7", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c8", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_b_cb_c9", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc2", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc3", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc4", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc5", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc6", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc7", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc8", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_g_y_yc9", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr2", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr3", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr4", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr5", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr6", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr7", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr8", TI814X_PIN_OUTPUT);
+		omap_mux_init_signal("vout0_r_cr9", TI814X_PIN_OUTPUT);
 
 		/*HDMI I2C scl and I2C sda Function 2*/
-		omap_mux_init_signal("hdmi_ddc_scl_mux0",
-			TI814X_PULL_UP | TI814X_INPUT_EN);
-		omap_mux_init_signal("hdmi_ddc_sda_mux0",
-			TI814X_PULL_UP | TI814X_INPUT_EN);
-		omap_mux_init_signal("hdmi_cec_mux0",
-			TI814X_PULL_UP | TI814X_INPUT_EN);
-		omap_mux_init_signal("hdmi_hpd_mux0",
-			TI814X_INPUT_EN);
+		omap_mux_init_signal("hdmi_ddc_scl_mux0", TI814X_PIN_INPUT_PULLUP);
+		omap_mux_init_signal("hdmi_ddc_sda_mux0", TI814X_PIN_INPUT_PULLUP);
+		omap_mux_init_signal("hdmi_cec_mux0", TI814X_PIN_INPUT_PULLUP);
+		omap_mux_init_signal("hdmi_hpd_mux0", TI814X_PIN_INPUT_PULLDOWN);
 
 		if (!machine_is_chronos14()) {
 			/*I2C2 configuration functon 6*/
-			omap_mux_init_signal("i2c2_scl_mux0",
-				TI814X_PULL_UP | TI814X_INPUT_EN);
-			omap_mux_init_signal("i2c2_sda_mux0",
-				TI814X_PULL_UP | TI814X_INPUT_EN);
+			omap_mux_init_signal("i2c2_scl_mux0", TI814X_PIN_INPUT_PULLUP);
+			omap_mux_init_signal("i2c2_sda_mux0", TI814X_PIN_INPUT_PULLUP);
 
 			/*VIN0 configuraiton*/
-			omap_mux_init_signal("vin0_clk1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_de0_mux0", OMAP_MUX_MODE0);
+			omap_mux_init_signal("vin0_clk1", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_de0_mux0", TI814X_PIN_OUTPUT);
 			/* force pin pad of  vin0_de0_mux0 to 0*/
 			omap_writel(0, 0x48140A18);
-			omap_mux_init_signal("vin0_fld0_mux0",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_clk0",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_hsync0",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_vsync0",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d0",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d2",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d3",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d4",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d5",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d6",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d7",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d8",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d9",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d10",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d11",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d12",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d13",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d14",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d15",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d16",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d17",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d18",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d19",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d20",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d21",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d22",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_d23",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_de0_mux1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_de1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_fld0_mux1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
-			omap_mux_init_signal("vin0_fld1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin0_fld0_mux0", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_clk0", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_hsync0", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_vsync0", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d0", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d1", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d2", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d3", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d4", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d5", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d6", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d7", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d8", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d9", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d10", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d11", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d12", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d13", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d14", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d15", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d16", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d17", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d18", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d19", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d20", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d21", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d22", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_d23", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_de0_mux1", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_de1", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_fld0_mux1", TI814X_PIN_INPUT);
+			omap_mux_init_signal("vin0_fld1", TI814X_PIN_INPUT);
 		}
 
 		/*VIN1 Configuration*/
 		if (!machine_is_chronos14()) {
-			omap_mux_init_signal("vin1_clk1",
-					TI814X_PULL_DIS | TI814X_INPUT_EN);
+			omap_mux_init_signal("vin1_clk1", TI814X_PIN_INPUT);
 		}
-		omap_mux_init_signal("vin1_hsync0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1_vsync0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1_fid0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1_de0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1_clk0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d0",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d1",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d2",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d3",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d4",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d5",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d6",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d8",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d9",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d10",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d11",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d12",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d13",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d14",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d15",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d16",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d17",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d18",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d19",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d20",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d21",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d22",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d23",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		omap_mux_init_signal("vin1a_d7",
-				TI814X_PULL_DIS | TI814X_INPUT_EN);
-		/*FIXME move to right place
-		    set divider for SYSCLK10*/
+		omap_mux_init_signal("vin1_hsync0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1_vsync0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1_fid0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1_de0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1_clk0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d0", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d1", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d2", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d3", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d4", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d5", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d6", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d8", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d9", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d10", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d11", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d12", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d13", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d14", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d15", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d16", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d17", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d18", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d19", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d20", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d21", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d22", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d23", TI814X_PIN_INPUT);
+		omap_mux_init_signal("vin1a_d7", TI814X_PIN_INPUT);
+		/*FIXME move to right place set divider for SYSCLK10*/
 		omap_writel(3, 0x48180324);
 	}
 }

@@ -155,8 +155,10 @@ static int evm_aic3x_init(struct snd_soc_pcm_runtime *rtd)
 
 	/* not connected */
 	snd_soc_dapm_disable_pin(dapm, "MONO_LOUT");
-	snd_soc_dapm_disable_pin(dapm, "HPLCOM");
-	snd_soc_dapm_disable_pin(dapm, "HPRCOM");
+	if (!machine_is_chronos14()) {
+		snd_soc_dapm_disable_pin(dapm, "HPLCOM");
+		snd_soc_dapm_disable_pin(dapm, "HPRCOM");
+	}
 
 	/* always connected */
 	snd_soc_dapm_enable_pin(dapm, "Headphone Jack");
@@ -359,9 +361,9 @@ static struct snd_soc_card ti81xx_snd_soc_card = {
 
 static void ti81xx_evm_dai_fixup(void)
 {
-	if (machine_is_ti8168evm() || machine_is_ti8148evm() || machine_is_chronos14()) {
+	if (machine_is_ti8168evm() || machine_is_ti8148evm()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.2";
-	} else if (machine_is_dm385evm()) {
+	} else if (machine_is_dm385evm() || machine_is_chronos14()) {
 		ti81xx_evm_dai[0].cpu_dai_name = "davinci-mcasp.1";
 	} else {
 		ti81xx_evm_dai[0].cpu_dai_name = NULL;
