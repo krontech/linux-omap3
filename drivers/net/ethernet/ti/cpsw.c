@@ -2118,6 +2118,9 @@ static int cpsw_switch_config_ioctl(struct net_device *ndev,
 static int cpsw_ndo_do_ioctl(struct net_device *ndev, struct ifreq *ifrq,
 		int cmd)
 {
+	struct cpsw_priv *priv = netdev_priv(ndev);
+	struct cpsw_slave *slave = priv->slaves + priv->emac_port;
+
 	if (!(netif_running(ndev)))
 		return -EINVAL;
 
@@ -2132,7 +2135,9 @@ static int cpsw_ndo_do_ioctl(struct net_device *ndev, struct ifreq *ifrq,
 #endif
 
 	default:
-		return -EOPNOTSUPP;
+		if (!slave->phy)
+			return -EINVAL;
+		return phy_mii_ioctl(slave->phy, ifrq, cmd);
 	}
 	return 0;
 }
