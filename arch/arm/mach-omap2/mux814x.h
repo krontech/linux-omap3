@@ -21,7 +21,7 @@
 #define TI814X_MUX(mode0, mux_val)					\
 {									\
 	.reg_offset	= (TI814X_CONTROL_PADCONF_##mode0##_OFFSET),	\
-	.value		= (mux_val & ~0xff) | (1 << (mux_val & 0x7)),	\
+	.value		= ((mux_val) & ~0xff) | (1 << ((mux_val) & 0x7)),	\
 }
 
 /*
