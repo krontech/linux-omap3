@@ -248,6 +248,26 @@ static struct clockdomain default_sata1_dm385_clkdm = {
 	.flags		= (CLKDM_CAN_SWSUP | CLKDM_NO_AUTODEPS),
 };
 
+/* I2C busses have a shared clock domain. */
+static struct clockdomain alwon_i2c02_814x_clkdm = {
+	.name		= "alwon_i2c02_clkdm",
+	.pwrdm		= { .name = "alwon_pwrdm" },
+	.cm_inst	= TI81XX_CM_ALWON_MOD,
+	.prcm_partition = TI81XX_PRM_PARTITION,
+	.clkdm_offs	= TI81XX_CM_ALWON_I2C_02_CLKCTRL_OFFSET,
+	.clktrctrl_mask	= TI81XX_CLKTRCTRL_MASK,
+	.flags		= (CLKDM_CAN_SWSUP | CLKDM_NO_AUTODEPS),
+};
+static struct clockdomain alwon_i2c13_814x_clkdm = {
+	.name		= "alwon_i2c13_clkdm",
+	.pwrdm		= { .name = "alwon_pwrdm" },
+	.cm_inst	= TI81XX_CM_ALWON_MOD,
+	.prcm_partition = TI81XX_PRM_PARTITION,
+	.clkdm_offs	= TI81XX_CM_ALWON_I2C_13_CLKCTRL_OFFSET,
+	.clktrctrl_mask	= TI81XX_CLKTRCTRL_MASK,
+	.flags		= (CLKDM_CAN_SWSUP | CLKDM_NO_AUTODEPS),
+};
+
 /*
  * TI816X only
  */
@@ -306,6 +326,8 @@ static struct clockdomain *clockdomains_ti814x[] __initdata = {
 	&ivahd_814x_clkdm,
 	&hdvpss_814x_clkdm,
 	&isp_814x_clkdm,
+	&alwon_i2c02_814x_clkdm,
+	&alwon_i2c13_814x_clkdm,
 	NULL,
 };
 

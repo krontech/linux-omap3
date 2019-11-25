@@ -677,6 +677,7 @@ static struct omap_hwmod_ocp_if *ti814x_mdio_slaves[] = {
 static struct omap_hwmod ti814x_mdio_hwmod = {
 	.name		= "mdio",
 	.class		= &ti814x_mdio_hwmod_class,
+	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
 	.clkdm_name	= "alwon_ethernet_clkdm",
 	.main_clk	= "cpgmac0_ick",
 	.slaves		= ti814x_mdio_slaves,
@@ -1264,7 +1265,6 @@ static struct omap_hwmod ti814x_wd_timer1_hwmod = {
 };
 
 /* I2C1 */
-
 static struct omap_hwmod_irq_info ti81xx_i2c1_irqs[] = {
 	{ .irq = 70, },
 	{ .irq = -1 }
@@ -1283,24 +1283,17 @@ static struct omap_hwmod_ocp_if *ti81xx_i2c1_slaves[] = {
 static struct omap_hwmod ti81xx_i2c1_hwmod = {
 	.name			= "i2c1",
 	.class			= &i2c_class,
-	.clkdm_name		= "alwon_l3s_clkdm",
+	.flags			= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+	.clkdm_name		= "alwon_i2c02_clkdm",
 	.mpu_irqs		= ti81xx_i2c1_irqs,
 	.sdma_reqs		= ti81xx_i2c1_edma_reqs,
 	.main_clk		= "i2c1_fck",
-	.prcm			= {
-		.omap4 = {
-			/* This controls both i2c-0 and i2c-2 with the same clock. */
-			.clkctrl_offs = TI81XX_CM_ALWON_I2C_02_CLKCTRL_OFFSET,
-			.modulemode	= MODULEMODE_SWCTRL,
-		},
-	},
 	.dev_attr	    = &i2c_dev_attr,
 	.slaves		    = ti81xx_i2c1_slaves,
 	.slaves_cnt	    = ARRAY_SIZE(ti81xx_i2c1_slaves),
 };
 
 /* I2C2 */
-
 static struct omap_hwmod_irq_info ti81xx_i2c2_irqs[] = {
 	{ .irq = 71, },
 	{ .irq = -1 }
@@ -1319,21 +1312,16 @@ static struct omap_hwmod_ocp_if *ti81xx_i2c2_slaves[] = {
 static struct omap_hwmod ti81xx_i2c2_hwmod = {
 	.name           = "i2c2",
 	.class			= &i2c_class,
-	.clkdm_name		= "alwon_l3s_clkdm",
+	.flags			= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+	.clkdm_name		= "alwon_i2c13_clkdm",
 	.mpu_irqs       = ti81xx_i2c2_irqs,
 	.sdma_reqs      = ti81xx_i2c2_edma_reqs,
 	.main_clk       = "i2c2_fck",
-	.prcm           = {
-		.omap4 = {
-			/* This controls both i2c-1 and i2c-3 with the same clock. */
-			.clkctrl_offs = TI81XX_CM_ALWON_I2C_13_CLKCTRL_OFFSET,
-			.modulemode	= MODULEMODE_SWCTRL,
-		},
-	},
 	.dev_attr	    = &i2c_dev_attr,
 	.slaves         = ti81xx_i2c2_slaves,
 	.slaves_cnt     = ARRAY_SIZE(ti81xx_i2c2_slaves),
 };
+
 /* I2C3 */
 static struct omap_hwmod_irq_info ti81xx_i2c3_irqs[] = {
 	{ .irq = 30, },
@@ -1347,24 +1335,17 @@ static struct omap_hwmod_ocp_if *ti81xx_i2c3_slaves[] = {
 static struct omap_hwmod ti81xx_i2c3_hwmod = {
 	.name           = "i2c3",
 	.class			= &i2c_class,
-	.clkdm_name		= "alwon_l3s_clkdm",
+	.flags			= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+	.clkdm_name		= "alwon_i2c02_clkdm",
 	.mpu_irqs       = ti81xx_i2c3_irqs,
 //	.sdma_reqs      = ti81xx_i2c3_edma_reqs, /* TODO: Need to figure out the EDMA crossbar */
 	.main_clk       = "i2c3_fck",
-	.prcm           = {
-		.omap4 = {
-			/* This controls both i2c-0 and i2c-2 with the same clock. */
-			.clkctrl_offs = TI81XX_CM_ALWON_I2C_02_CLKCTRL_OFFSET,
-			.modulemode	= MODULEMODE_SWCTRL,
-		},
-	},
 	.dev_attr	    = &i2c_dev_attr,
 	.slaves         = ti81xx_i2c3_slaves,
 	.slaves_cnt     = ARRAY_SIZE(ti81xx_i2c3_slaves),
 };
 
 /* I2C4 */
-
 static struct omap_hwmod_irq_info ti81xx_i2c4_irqs[] = {
 	{ .irq = 31, },
 	{ .irq = -1 }
@@ -1377,17 +1358,11 @@ static struct omap_hwmod_ocp_if *ti81xx_i2c4_slaves[] = {
 static struct omap_hwmod ti81xx_i2c4_hwmod = {
 	.name			= "i2c4",
 	.class			= &i2c_class,
-	.clkdm_name		= "alwon_l3s_clkdm",
+	.flags			= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET | HWMOD_NO_IDLEST),
+	.clkdm_name		= "alwon_i2c13_clkdm",
 	.mpu_irqs		= ti81xx_i2c4_irqs,
 //	.sdma_reqs		= ti81xx_i2c4_edma_reqs, /* TODO: Need to figure out the EDMA crossbar */
 	.main_clk		= "i2c4_fck",
-	.prcm			= {
-		.omap4 = {
-			/* This controls both i2c-1 and i2c-2 with the same clock. */
-			.clkctrl_offs = TI81XX_CM_ALWON_I2C_13_CLKCTRL_OFFSET,
-			.modulemode	= MODULEMODE_SWCTRL,
-		},
-	},
 	.slaves		= ti81xx_i2c4_slaves,
 	.slaves_cnt	= ARRAY_SIZE(ti81xx_i2c4_slaves),
 };
