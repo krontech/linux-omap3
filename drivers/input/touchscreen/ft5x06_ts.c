@@ -101,7 +101,9 @@ static ssize_t ft5x0x_show_version(struct device* cd,struct device_attribute *at
 static ssize_t ft5x0x_update(struct device* cd, struct device_attribute *attr, const char* buf, size_t len);
 static ssize_t ft5x0x_show_debug(struct device* cd,struct device_attribute *attr, char* buf);
 static ssize_t ft5x0x_store_debug(struct device* cd, struct device_attribute *attr,const char* buf, size_t len);
+static ssize_t ft5x0x_show_chipinfo(struct device* cd,struct device_attribute *attr, char* buf);
 static unsigned char ft5x0x_read_fw_ver(void);
+static int ft5x0x_read_reg(u8 addr, u8 *pdata);
 #ifdef HAS_EARLYSUSPEND
 static unsigned char suspend_flag=0; //0: sleep out; 1: sleep in
 static void ft5x0x_ts_suspend(struct early_suspend *handler);
@@ -146,6 +148,7 @@ struct ft5x0x_ts_data {
 
 static DEVICE_ATTR(update, S_IRUGO | S_IWUSR, ft5x0x_show_version, ft5x0x_update);
 static DEVICE_ATTR(debug, S_IRUGO | S_IWUSR, ft5x0x_show_debug, ft5x0x_store_debug);
+static DEVICE_ATTR(chipid, S_IRUGO, ft5x0x_show_chipinfo, NULL);
 
 static ssize_t ft5x0x_show_debug(struct device* cd,struct device_attribute *attr, char* buf)
 {
@@ -166,6 +169,31 @@ static ssize_t ft5x0x_store_debug(struct device* cd, struct device_attribute *at
 
 	printk("%s: debug_level=%d\n",__func__, debug_level);
 	
+	return len;
+}
+
+static ssize_t ft5x0x_print_chipreg(char *buf, unsigned char addr, const char *name)
+{
+	unsigned char val;
+	ft5x0x_read_reg(addr, &val);
+	return sprintf(buf, "%s: 0x%02x\n", name, val);
+}
+
+static ssize_t ft5x0x_show_chipinfo(struct device* cd, struct device_attribute *attr, char* buf)
+{
+	ssize_t len = 0;
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_AUTO_CLB_MODE, "AUTO_CLB_MODE");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_LIB_VERSION_H, "LIB_VERSION_H");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_LIB_VERSION_L, "LIB_VERSION_L");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_CIPHER, 		 "CIPHER");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_MODE,          "MODE");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_PMODE,         "PMODE");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_FIRMID,        "FIRMID");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_STATE,         "STATE");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_FT5201ID,      "FT5201ID");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_ERR,           "ERR");
+	len += ft5x0x_print_chipreg(buf + len, FT5X0X_REG_CLB,           "CLB");
+
 	return len;
 }
 
@@ -256,6 +284,7 @@ static int ft5x0x_create_sysfs(struct i2c_client *client)
 #endif
 	err = device_create_file(dev, &dev_attr_update);
 	err = device_create_file(dev, &dev_attr_debug);
+	err = device_create_file(dev, &dev_attr_chipid);
 	
 	return err;
 }
